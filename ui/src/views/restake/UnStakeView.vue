@@ -1,13 +1,69 @@
 <script setup lang="ts">
 import ChevronLeftIcon from '@/components/icons/ChevronLeftIcon.vue';
 import OutIcon from '@/components/icons/OutIcon.vue';
+import { notify } from '@/reactives/notify';
+import { findStrategy } from '@/scripts/constant';
 
+import { Contract } from '@/scripts/contract';
+import { Converter } from '@/scripts/converter';
+import type { Strategy } from '@/scripts/types';
+import { useBalanceStore } from '@/stores/balance';
+import { useSignAndExecuteTransactionBlock, useCurrentAccount } from 'sui-dapp-kit-vue';
+import { onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
+const balanceStore = useBalanceStore();
+const { currentAccount } = useCurrentAccount();
+const amount = ref<number | undefined>(undefined);
+const strategy = ref<Strategy | undefined>(undefined);
+
+const setAmount = (div: number = 1) => {
+    if (!strategy.value) return;
+
+    const bal = Converter.fromSUI(
+        balanceStore.restaked_balances[strategy.value.coin.type],
+        strategy.value.coin.decimals
+    );
+    if (bal === undefined) return;
+
+    amount.value = bal / div;
+};
+
+const unstake = async () => {
+    if (!strategy.value) return;
+
+    if (!currentAccount.value) {
+        return notify.push({
+            title: "Connect your wallet!",
+            description: "Wallet connection error.",
+            category: "error"
+        });
+    }
+
+    if (!amount.value) {
+        return notify.push({
+            title: "Enter a valid amount!",
+            description: "Input validation error.",
+            category: "error"
+        });
+    }
+
+};
+
+const getStrategy = (address: string) => {
+    strategy.value = findStrategy(address);
+};
+
+onMounted(() => {
+    getStrategy(route.params.id.toString());
+});
 </script>
 
 <template>
     <section>
         <div class="app_width">
-            <div class="stake">
+            <div class="stake" v-if="strategy">
                 <div class="stake_wrapper">
                     <div class="head">
                         <RouterLink to="/">
@@ -24,41 +80,56 @@ import OutIcon from '@/components/icons/OutIcon.vue';
                         </div>
 
                         <div class="input">
-                            <input type="number" placeholder="0.00">
+                            <input type="number" v-model="amount" placeholder="0.00">
                             <div class="helper">
                                 <p>0 suBTC</p>
                                 <div class="buttons">
-                                    <button>25%</button>
-                                    <button>50%</button>
-                                    <button>Max</button>
+                                    <button @click="setAmount(4)">25%</button>
+                                    <button @click="setAmount(2)">50%</button>
+                                    <button @click="setAmount()">Max</button>
                                 </div>
                             </div>
                         </div>
 
-                        <button class="restake">Unstake</button>
+                        <button class="restake" @click="unstake">Unstake</button>
                     </div>
                 </div>
 
                 <div class="stake_info">
                     <div class="stats">
                         <div class="stat">
-                            <p>Wallet Balance</p>
+                            <p>Restaked Balance</p>
                             <div class="value">
-                                <p>0</p> <span>suBTC</span>
+                                <p>
+                                    {{ Converter.toMoney(
+                                        Converter.fromSUI(balanceStore.restaked_balances[strategy.coin.type],
+                                            strategy.coin.decimals)
+                                    ) }}
+                                </p>
+                                <span>suBTC</span>
                             </div>
                         </div>
 
                         <div class="stat">
-                            <p>Restaked Balance</p>
+                            <p>Wallet Balance</p>
                             <div class="value">
-                                <p>10K</p>
+                                <p>
+                                    {{ Converter.toMoney(
+                                        Converter.fromSUI(balanceStore.balances[strategy.coin.type], strategy.coin.decimals)
+                                    ) }}
+                                </p>
                             </div>
                         </div>
 
                         <div class="stat">
                             <p>Total Value Restaked </p>
                             <div class="value">
-                                <p>12.4K</p>
+                                <p>
+                                    {{ Converter.toMoney(
+                                        Converter.fromSUI(balanceStore.total_value_restaked[strategy.coin.type],
+                                            strategy.coin.decimals)
+                                    ) }}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -171,6 +242,7 @@ import OutIcon from '@/components/icons/OutIcon.vue';
     border: none;
     background: var(--bg-lightest);
     color: var(--tx-semi);
+    cursor: pointer;
 }
 
 .restake {

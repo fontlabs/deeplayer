@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import ChevronLeftIcon from '@/components/icons/ChevronLeftIcon.vue';
 import OutIcon from '@/components/icons/OutIcon.vue';
+import { notify } from '@/reactives/notify';
 import { findStrategy } from '@/scripts/constant';
 
 import { Contract } from '@/scripts/contract';
@@ -8,7 +9,7 @@ import { Converter } from '@/scripts/converter';
 import type { Strategy } from '@/scripts/types';
 import { useBalanceStore } from '@/stores/balance';
 import { useSignAndExecuteTransactionBlock, useCurrentAccount } from 'sui-dapp-kit-vue';
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
@@ -32,9 +33,23 @@ const setAmount = (div: number = 1) => {
 };
 
 const restake = async () => {
-    if (!amount.value) return;
     if (!strategy.value) return;
-    if (!currentAccount.value) return;
+
+    if (!currentAccount.value) {
+        return notify.push({
+            title: "Connect your wallet!",
+            description: "Wallet connection error.",
+            category: "error"
+        });
+    }
+
+    if (!amount.value) {
+        return notify.push({
+            title: "Enter a valid amount!",
+            description: "Input validation error.",
+            category: "error"
+        });
+    }
 
     try {
         const value = Converter.toSUI(amount.value, strategy.value.coin.decimals);
@@ -61,10 +76,6 @@ const restake = async () => {
 const getStrategy = (address: string) => {
     strategy.value = findStrategy(address);
 };
-
-watch(currentAccount, () => {
-    balanceStore.getBalances(currentAccount.value?.address);
-});
 
 onMounted(() => {
     getStrategy(route.params.id.toString());
@@ -102,7 +113,7 @@ onMounted(() => {
                             </div>
                         </div>
 
-                        <button class="restake">Restake</button>
+                        <button class="restake" @click="restake">Restake</button>
                     </div>
                 </div>
 

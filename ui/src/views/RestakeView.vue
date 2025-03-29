@@ -9,9 +9,9 @@ import { useBalanceStore } from '@/stores/balance';
 
 const router = useRouter();
 const balanceStore = useBalanceStore();
+const { currentAccount } = useCurrentAccount();
 const search = ref<string | undefined>(undefined);
 const allStrategy = ref<Strategy[]>(strategies);
-const { currentAccount } = useCurrentAccount();
 const type = ref<'all' | 'sui_lst' | 'others'>('all');
 
 const getStrategies = () => {
@@ -42,9 +42,7 @@ watch(search, () => {
   getStrategies();
 });
 
-watch(currentAccount, () => {
-  balanceStore.getBalances(currentAccount.value?.address);
-});
+
 
 onMounted(() => {
   balanceStore.getBalances(currentAccount.value?.address);

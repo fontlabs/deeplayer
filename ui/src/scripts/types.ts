@@ -36,3 +36,11 @@ export type Coin = {
   isNative?: boolean;
   isLst?: boolean;
 };
+
+export type Notification = {
+  title: string;
+  description: string;
+  category: string;
+  linkTitle?: string;
+  linkUrl?: string;
+};
