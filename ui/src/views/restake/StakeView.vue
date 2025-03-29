@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import ChevronLeftIcon from '@/components/icons/ChevronLeftIcon.vue';
 import OutIcon from '@/components/icons/OutIcon.vue';
+import { CoinAPI } from '@/scripts/coin';
 
 import { Contract } from '@/scripts/contract';
 import { Converter } from '@/scripts/converter';
 import type { Strategy } from '@/scripts/types';
 import { useSignAndExecuteTransactionBlock, useCurrentAccount } from 'sui-dapp-kit-vue';
-import { ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 
+const balance = ref<number | undefined>(undefined);
 const amount = ref<number | undefined>(undefined);
+
 const { currentAccount } = useCurrentAccount();
 const { signAndExecuteTransactionBlock } = useSignAndExecuteTransactionBlock();
 const strategy = ref<Strategy | undefined>({
@@ -24,6 +27,20 @@ const strategy = ref<Strategy | undefined>({
         link: 'https://subtc.com'
     }
 });
+
+const getCoinBalance = async () => {
+    if (!strategy.value) return;
+    if (!currentAccount.value) return;
+
+    const result = await CoinAPI.getCoinBalance(
+        currentAccount.value.address,
+        strategy.value.coin.type
+    );
+
+    console.log(result);
+
+    balance.value = Converter.fromSUI(result, strategy.value.coin.decimals);
+};
 
 const restake = async () => {
     if (!amount.value) return;
@@ -48,6 +65,14 @@ const restake = async () => {
 
     }
 };
+
+watch(currentAccount, () => {
+    getCoinBalance();
+});
+
+onMounted(() => {
+    getCoinBalance();
+});
 </script>
 
 <template>
@@ -70,7 +95,7 @@ const restake = async () => {
                         </div>
 
                         <div class="input">
-                            <input type="number" placeholder="0.00">
+                            <input type="number" v-model="amount" placeholder="0.00">
                             <div class="helper">
                                 <p>0 {{ strategy.coin.symbol }}</p>
                                 <div class="buttons">
@@ -90,7 +115,7 @@ const restake = async () => {
                         <div class="stat">
                             <p>Wallet Balance</p>
                             <div class="value">
-                                <p>0</p> <span>{{ strategy.coin.symbol }}</span>
+                                <p>{{ Converter.toMoney(balance) }}</p> <span>{{ strategy.coin.symbol }}</span>
                             </div>
                         </div>
 
