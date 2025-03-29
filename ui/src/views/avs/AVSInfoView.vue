@@ -190,7 +190,7 @@ import OutIcon from '@/components/icons/OutIcon.vue';
 .service_info img {
     height: 28px;
     width: 28px;
-    border-radius: 20px;
+    border-radius: 8px;
 }
 
 .service_info p {

@@ -197,7 +197,6 @@ import OutIcon from '@/components/icons/OutIcon.vue';
     border-radius: 4px;
 }
 
-
 .operator {
     margin-top: 20px;
 }
@@ -218,7 +217,7 @@ import OutIcon from '@/components/icons/OutIcon.vue';
 .operator_info img {
     height: 28px;
     width: 28px;
-    border-radius: 20px;
+    border-radius: 8px;
 }
 
 .operator_info p {
