@@ -48,14 +48,14 @@ import OutIcon from '@/components/icons/OutIcon.vue';
                         </div>
                     </div>
 
-                    <div class="coin">
+                    <div class="operator">
                         <div class="title">
                             <h3>About</h3>
                         </div>
 
-                        <div class="coin_info">
+                        <div class="operator_info">
                             <img src="/images/colors.png" alt="btc">
-                            <p>Mysten Labs <span>suBTC</span></p>
+                            <p>Mysten Labs</p>
                         </div>
 
                         <div class="description">
@@ -228,40 +228,35 @@ import OutIcon from '@/components/icons/OutIcon.vue';
 }
 
 
-.coin {
+.operator {
     margin-top: 20px;
 }
 
-.coin .title h3 {
+.operator .title h3 {
     font-size: 16px;
     color: var(--tx-dimmed);
     font-weight: 500;
 }
 
-.coin_info {
+.operator_info {
     display: flex;
     align-items: center;
     gap: 10px;
     margin-top: 16px;
 }
 
-.coin_info img {
+.operator_info img {
     height: 28px;
     width: 28px;
     border-radius: 20px;
 }
 
-.coin_info p {
+.operator_info p {
     font-size: 16px;
     color: var(--tx-semi);
 }
 
-.coin_info p span {
-    margin-left: 8px;
-    color: var(--tx-dimmed);
-}
-
-.coin .description {
+.operator .description {
     margin: 10px 0;
     font-size: 14px;
     color: var(--tx-dimmed);
