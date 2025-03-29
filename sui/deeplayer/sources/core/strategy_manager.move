@@ -33,7 +33,6 @@ module deeplayer::strategy_manager_module {
         id: UID,
         strategy_whitelister: address,
         is_paused: bool,
-        version: string::String,
         strategy_is_whitelisted: table::Table<address, bool>,
         staker_deposit_shares: table::Table<address, table::Table<address, u64>>,
         staker_strategy_list: table::Table<address, vector<address>>,
@@ -71,17 +70,13 @@ module deeplayer::strategy_manager_module {
         shares_burned: u64,
     }
 
-    public entry fun initialize(
-        dl_cap: &DLCap,
-        version: vector<u8>,
-        initial_strategy_whitelister: address,
+    fun init(
         ctx: &mut TxContext
     ) {
         let strategy_manager = StrategyManager {
             id: object::new(ctx),
-            strategy_whitelister: initial_strategy_whitelister,
+            strategy_whitelister: tx_context::sender(ctx),
             is_paused: false,
-            version: string::utf8(version),
             strategy_is_whitelisted: table::new<address, bool>(ctx),
             staker_deposit_shares: table::new<address, table::Table<address, u64>>(ctx),
             staker_strategy_list: table::new<address, vector<address>>(ctx),

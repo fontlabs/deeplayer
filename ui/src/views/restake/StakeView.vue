@@ -2,12 +2,58 @@
 import ChevronLeftIcon from '@/components/icons/ChevronLeftIcon.vue';
 import OutIcon from '@/components/icons/OutIcon.vue';
 
+import { Contract } from '@/scripts/contract';
+import { Converter } from '@/scripts/converter';
+import type { Strategy } from '@/scripts/types';
+import { useSignAndExecuteTransactionBlock, useCurrentAccount } from 'sui-dapp-kit-vue';
+import { ref } from 'vue';
+
+const amount = ref<number | undefined>(undefined);
+const { currentAccount } = useCurrentAccount();
+const { signAndExecuteTransactionBlock } = useSignAndExecuteTransactionBlock();
+const strategy = ref<Strategy | undefined>({
+    address: '0x',
+    coin: {
+        address: '0x',
+        name: 'SUI Liquid Bitcoin',
+        symbol: 'suBTC',
+        decimals: 8,
+        image: '/images/btc.png',
+        type: '::',
+        about: 'Lorem ipsum dolor sit, amet consectetur adipisicing elit. Pariatur veniam itaque a tempora dicta ipsa perferendis corrupti nobis. Est amet ad omnis ex. Voluptas, similique. Aperiam nihil cupiditate molestiae labore?',
+        link: 'https://subtc.com'
+    }
+});
+
+const restake = async () => {
+    if (!amount.value) return;
+    if (!strategy.value) return;
+    if (!currentAccount.value) return;
+
+    try {
+        const transactionBlock = await Contract.depositIntoStrategy(
+            currentAccount.value.address,
+            strategy.value,
+            Converter.toSUI(amount.value, strategy.value.coin.decimals)
+        );
+
+        const { digest } = await signAndExecuteTransactionBlock({
+            // @ts-ignore
+            transactionBlock,
+            chain: 'sui:testnet'
+        });
+
+
+    } catch (error) {
+
+    }
+};
 </script>
 
 <template>
     <section>
         <div class="app_width">
-            <div class="stake">
+            <div class="stake" v-if="strategy">
                 <div class="stake_wrapper">
                     <div class="head">
                         <RouterLink to="/">
@@ -26,7 +72,7 @@ import OutIcon from '@/components/icons/OutIcon.vue';
                         <div class="input">
                             <input type="number" placeholder="0.00">
                             <div class="helper">
-                                <p>0 suBTC</p>
+                                <p>0 {{ strategy.coin.symbol }}</p>
                                 <div class="buttons">
                                     <button>25%</button>
                                     <button>50%</button>
@@ -44,7 +90,7 @@ import OutIcon from '@/components/icons/OutIcon.vue';
                         <div class="stat">
                             <p>Wallet Balance</p>
                             <div class="value">
-                                <p>0</p> <span>suBTC</span>
+                                <p>0</p> <span>{{ strategy.coin.symbol }}</span>
                             </div>
                         </div>
 
@@ -70,15 +116,14 @@ import OutIcon from '@/components/icons/OutIcon.vue';
 
                         <div class="coin_info">
                             <img src="/images/btc.png" alt="btc">
-                            <p>SUI Liquid Bitcoin <span>suBTC</span></p>
+                            <p>{{ strategy.coin.name }} <span>{{ strategy.coin.symbol }}</span></p>
                         </div>
 
                         <div class="description">
-                            Lorem ipsum dolor sit amet consectetur adipisicing elit. Illo architecto maiores non
-                            aspernatur doloremque nemo veritatis?
+                            {{ strategy.coin.about }}
                         </div>
 
-                        <a href="" target="_blank" class="link">
+                        <a v-if="strategy.coin.link" :href="strategy.coin.link" target="_blank" class="link">
                             <p>Learn more</p>
                             <OutIcon />
                         </a>
