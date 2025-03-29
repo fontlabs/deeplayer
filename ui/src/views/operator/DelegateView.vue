@@ -54,7 +54,7 @@ import OutIcon from '@/components/icons/OutIcon.vue';
                         </div>
 
                         <div class="operator_info">
-                            <img src="/images/colors.png" alt="btc">
+                            <img src="/images/colors.png" alt="operator">
                             <p>Mysten Labs</p>
                         </div>
 
@@ -73,9 +73,7 @@ import OutIcon from '@/components/icons/OutIcon.vue';
 
                 <div class="delegate_wrapper">
                     <div class="box">
-                        <div class="label">
-                            You're delegating
-                        </div>
+                        <div class="label">You're delegating</div>
 
                         <div class="input">
                             <input type="number" placeholder="0.00" disabled>
@@ -84,7 +82,6 @@ import OutIcon from '@/components/icons/OutIcon.vue';
                         <button class="redelegate">Delegate</button>
                     </div>
                 </div>
-
             </div>
         </div>
     </section>
@@ -128,33 +125,6 @@ import OutIcon from '@/components/icons/OutIcon.vue';
     outline: none;
     border: none;
     color: var(--tx-normal);
-}
-
-.helper {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 10px;
-}
-
-.helper>p {
-    font-size: 14px;
-    color: var(--tx-dimmed);
-}
-
-.helper .buttons {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.helper .buttons button {
-    height: 30px;
-    padding: 0 16px;
-    border-radius: 4px;
-    border: none;
-    background: var(--bg-lightest);
-    color: var(--tx-semi);
 }
 
 .redelegate {
