@@ -13,7 +13,6 @@ const Converter = {
     if (val === undefined) return "•••";
 
     return Intl.NumberFormat("en-US", {
-      minimumFractionDigits: 2,
       maximumFractionDigits: 6,
     }).format(val);
   },
@@ -26,6 +25,14 @@ const Converter = {
   fromSUI(val: bigint | undefined, decimals: number = 9): number | undefined {
     if (val === undefined) return val;
     return Number(val) / 10 ** decimals;
+  },
+
+  trimAddress(val: string, pad: number = 4): string {
+    return (
+      val.substring(0, pad) +
+      "..." +
+      val.substring(val.length - pad, val.length)
+    );
   },
 };
 

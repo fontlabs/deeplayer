@@ -1,5 +1,24 @@
 export type CoinType = `${string}:${string}:${string}`;
 
+export type AVS = {
+  name: string;
+  address: string;
+  description: string;
+  image: string;
+  link?: string;
+  reward_coin: Coin;
+  weekly_rewards: number;
+};
+
+export type Operator = {
+  name: string;
+  address: string;
+  about: string;
+  image: string;
+  link?: string;
+  active: boolean;
+};
+
 export type Strategy = {
   address: string;
   coin: Coin;

@@ -1,3 +1,11 @@
+<script setup lang="ts">
+import { services } from '@/scripts/constant';
+import { Converter } from '@/scripts/converter';
+import { useBalanceStore } from '@/stores/balance';
+
+const balanceStore = useBalanceStore();
+</script>
+
 <template>
     <section>
         <div class="app_width">
@@ -17,58 +25,64 @@
                 </div>
 
                 <div class="services">
-                    <RouterLink v-for="service in 16" :key="service" :to="`/avs/${service}`">
+                    <RouterLink v-for="service in services" :key="service.address" :to="`/avs/${service.address}`">
                         <div class="service">
                             <div class="service_info">
                                 <img src="/images/colors.png" alt="service">
                                 <div class="service_info_text">
-                                    <h3>SUI zkBridge</h3>
-                                    <p>0x6f9...18dd8</p>
+                                    <h3>{{ service.name }}</h3>
+                                    <p>{{ Converter.trimAddress(service.address) }}</p>
                                 </div>
                             </div>
 
                             <p class="description">
-                                RedStone is a decentralized oracle delivering fast, secure, and scalable data feeds for
-                                the
-                                DeFi industry, ensuring your dApp is powered by reliable, real-time information. As part
-                                of
-                                its ecosystem, RedStone introduces AVS, an innovative solution that leverages the
-                                concept of
-                                restaking to create a decentralized process for delivering price data to the blockchain.
+                                {{ service.description }}
                             </p>
 
                             <div class="stats">
                                 <div class="stat">
                                     <p>SUI Restaked</p>
                                     <div class="value">
-                                        <p>0</p> <span>SUI</span>
+                                        <p>
+                                            {{
+                                                Converter.toMoney(Converter.fromSUI(balanceStore.sui_restaked[service.address]))
+                                            }}
+                                        </p>
+                                        <span>SUI</span>
                                     </div>
                                 </div>
 
                                 <div class="stat">
                                     <p>Total Num. Operators</p>
                                     <div class="value">
-                                        <p>45</p>
+                                        <p>
+                                            {{
+                                                balanceStore.total_num_operators[service.address] || "•••"
+                                            }}
+                                        </p>
                                     </div>
                                 </div>
 
                                 <div class="stat">
                                     <p>Total Num. Stakers</p>
                                     <div class="value">
-                                        <p>12.4K</p>
+                                        <p>
+                                            {{
+                                                balanceStore.total_num_stakers[service.address] || "•••"
+                                            }}
+                                        </p>
                                     </div>
                                 </div>
 
                                 <div class="stat">
                                     <p>Reward Coin</p>
                                     <div class="value">
-                                        <p>SUI</p>
+                                        <p>{{ service.reward_coin.symbol }}</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </RouterLink>
-
                 </div>
             </div>
         </div>

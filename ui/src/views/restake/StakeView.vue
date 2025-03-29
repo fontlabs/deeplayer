@@ -1,34 +1,34 @@
 <script setup lang="ts">
 import ChevronLeftIcon from '@/components/icons/ChevronLeftIcon.vue';
 import OutIcon from '@/components/icons/OutIcon.vue';
-import { CoinAPI } from '@/scripts/coin';
 import { findStrategy } from '@/scripts/constant';
 
 import { Contract } from '@/scripts/contract';
 import { Converter } from '@/scripts/converter';
 import type { Strategy } from '@/scripts/types';
+import { useBalanceStore } from '@/stores/balance';
 import { useSignAndExecuteTransactionBlock, useCurrentAccount } from 'sui-dapp-kit-vue';
 import { onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
-const balance = ref<number | undefined>(undefined);
+const balanceStore = useBalanceStore();
+const { currentAccount } = useCurrentAccount();
 const amount = ref<number | undefined>(undefined);
 const strategy = ref<Strategy | undefined>(undefined);
 
-const { currentAccount } = useCurrentAccount();
 const { signAndExecuteTransactionBlock } = useSignAndExecuteTransactionBlock();
 
-const getCoinBalance = async () => {
+const setAmount = (div: number = 1) => {
     if (!strategy.value) return;
-    if (!currentAccount.value) return;
 
-    const result = await CoinAPI.getCoinBalance(
-        currentAccount.value.address,
-        strategy.value.coin.type
+    const bal = Converter.fromSUI(
+        balanceStore.balances[strategy.value.coin.type],
+        strategy.value.coin.decimals
     );
+    if (bal === undefined) return;
 
-    balance.value = Converter.fromSUI(result, strategy.value.coin.decimals);
+    amount.value = bal / div;
 };
 
 const restake = async () => {
@@ -63,12 +63,11 @@ const getStrategy = (address: string) => {
 };
 
 watch(currentAccount, () => {
-    getCoinBalance();
+    balanceStore.getBalances(currentAccount.value?.address);
 });
 
 onMounted(() => {
     getStrategy(route.params.id.toString());
-    getCoinBalance();
 });
 </script>
 
@@ -96,9 +95,9 @@ onMounted(() => {
                             <div class="helper">
                                 <p>0 {{ strategy.coin.symbol }}</p>
                                 <div class="buttons">
-                                    <button @click="balance ? amount = balance / 4 : null">25%</button>
-                                    <button @click="balance ? amount = balance / 2 : null">50%</button>
-                                    <button @click="balance ? amount = balance : null">Max</button>
+                                    <button @click="setAmount(4)">25%</button>
+                                    <button @click="setAmount(2)">50%</button>
+                                    <button @click="setAmount()">Max</button>
                                 </div>
                             </div>
                         </div>
@@ -112,21 +111,36 @@ onMounted(() => {
                         <div class="stat">
                             <p>Wallet Balance</p>
                             <div class="value">
-                                <p>{{ Converter.toMoney(balance) }}</p> <span>{{ strategy.coin.symbol }}</span>
+                                <p>
+                                    {{ Converter.toMoney(
+                                        Converter.fromSUI(balanceStore.balances[strategy.coin.type], strategy.coin.decimals)
+                                    ) }}
+                                </p>
+                                <span>{{ strategy.coin.symbol }}</span>
                             </div>
                         </div>
 
                         <div class="stat">
                             <p>Restaked Balance</p>
                             <div class="value">
-                                <p>10K</p>
+                                <p>
+                                    {{ Converter.toMoney(
+                                        Converter.fromSUI(balanceStore.restaked_balances[strategy.coin.type],
+                                            strategy.coin.decimals)
+                                    ) }}
+                                </p>
                             </div>
                         </div>
 
                         <div class="stat">
                             <p>Total Value Restaked </p>
                             <div class="value">
-                                <p>12.4K</p>
+                                <p>
+                                    {{ Converter.toMoney(
+                                        Converter.fromSUI(balanceStore.total_value_restaked[strategy.coin.type],
+                                            strategy.coin.decimals)
+                                    ) }}
+                                </p>
                             </div>
                         </div>
                     </div>

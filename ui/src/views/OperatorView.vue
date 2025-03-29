@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { operators } from '@/scripts/constant';
+import { Converter } from '@/scripts/converter';
+import { useBalanceStore } from '@/stores/balance';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
+const balanceStore = useBalanceStore();
 </script>
 
 <template>
@@ -33,19 +37,32 @@ const router = useRouter();
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="operator in 16" :key="operator" @click="router.push(`/operator/${operator}`)">
+                            <tr v-for="operator in operators" :key="operator.address"
+                                @click="router.push(`/operator/${operator.address}`)">
                                 <td>
                                     <div class="operator_info">
-                                        <img src="/images/colors.png" alt="operator">
-                                        <p>Mysten Labs</p>
+                                        <img :src="operator.image" alt="operator">
+                                        <p>{{ operator.name }}</p>
                                     </div>
                                 </td>
-                                <td>13.02M</td>
-                                <td>1.4K</td>
-                                <td>14</td>
+                                <td>
+                                    {{
+                                        Converter.toMoney(Converter.fromSUI(balanceStore.total_restaked_sui[operator.address]))
+                                    }}
+                                </td>
+                                <td>
+                                    {{
+                                        Converter.toMoney(Converter.fromSUI(balanceStore.total_shares[operator.address]))
+                                    }}
+                                </td>
+                                <td>
+                                    {{
+                                        balanceStore.avs_secured[operator.address] || "•••"
+                                    }}
+                                </td>
                                 <td>
                                     <div class="actions">
-                                        <RouterLink :to="`/operator/${operator}`">
+                                        <RouterLink :to="`/operator/${operator.address}`">
                                             <button>Delegate</button>
                                         </RouterLink>
                                     </div>
@@ -163,7 +180,7 @@ tbody tr:not(:last-child) {
 .operator_info img {
     height: 24px;
     width: 24px;
-    border-radius: 12px;
+    border-radius: 8px;
 }
 
 .operator_info p {

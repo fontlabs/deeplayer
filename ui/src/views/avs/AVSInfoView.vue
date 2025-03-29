@@ -1,13 +1,30 @@
 <script setup lang="ts">
 import ChevronLeftIcon from '@/components/icons/ChevronLeftIcon.vue';
 import OutIcon from '@/components/icons/OutIcon.vue';
+import { findService } from '@/scripts/constant';
+import { Converter } from '@/scripts/converter';
+import type { AVS } from '@/scripts/types';
+import { useBalanceStore } from '@/stores/balance';
+import { onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
 
+const route = useRoute();
+const balanceStore = useBalanceStore();
+const service = ref<AVS | undefined>(undefined);
+
+const getService = (address: string) => {
+    service.value = findService(address);
+};
+
+onMounted(() => {
+    getService(route.params.id.toString());
+});
 </script>
 
 <template>
     <section>
         <div class="app_width">
-            <div class="avs">
+            <div class="avs" v-if="service">
                 <div class="avs_info">
                     <div class="head">
                         <RouterLink to="/avs">
@@ -22,28 +39,41 @@ import OutIcon from '@/components/icons/OutIcon.vue';
                         <div class="stat">
                             <p>SUI Restaked</p>
                             <div class="value">
-                                <p>0</p> <span>SUI</span>
+                                <p>
+                                    {{
+                                        Converter.toMoney(Converter.fromSUI(balanceStore.sui_restaked[service.address]))
+                                    }}
+                                </p>
+                                <span>SUI</span>
                             </div>
                         </div>
 
                         <div class="stat">
                             <p>Total Num. Operators</p>
                             <div class="value">
-                                <p>45</p>
+                                <p>
+                                    {{
+                                        balanceStore.total_num_operators[service.address] || "•••"
+                                    }}
+                                </p>
                             </div>
                         </div>
 
                         <div class="stat">
                             <p>Total Num. Stakers</p>
                             <div class="value">
-                                <p>12.4K</p>
+                                <p>
+                                    {{
+                                        balanceStore.total_num_stakers[service.address] || "•••"
+                                    }}
+                                </p>
                             </div>
                         </div>
 
                         <div class="stat">
                             <p>Reward Coin</p>
                             <div class="value">
-                                <p>SUI</p>
+                                <p>{{ service.reward_coin.symbol }}</p>
                             </div>
                         </div>
                     </div>
@@ -54,17 +84,15 @@ import OutIcon from '@/components/icons/OutIcon.vue';
                         </div>
 
                         <div class="service_info">
-                            <img src="/images/colors.png" alt="service">
-                            <p>SUI zkBridge</p>
+                            <img :src="service.image" alt="service">
+                            <p>{{ service.name }}</p>
                         </div>
 
                         <div class="description">
-                            Lorem ipsum dolor sit amet consectetur adipisicing elit. Enim placeat harum ex rem minima
-                            error illo magni repellat excepturi rerum, voluptatibus, possimus maiores accusamus, atque
-                            totam voluptatem vitae qui sint!
+                            {{ service.description }}
                         </div>
 
-                        <a href="" target="_blank" class="link">
+                        <a v-if="service.link" :href="service.link" target="_blank" class="link">
                             <p>Learn more</p>
                             <OutIcon />
                         </a>
@@ -77,11 +105,15 @@ import OutIcon from '@/components/icons/OutIcon.vue';
 
                         <div class="reward">
                             <div class="reward_coin_info">
-                                <img src="/images/sui.png" alt="sui">
-                                <p>SUI</p>
+                                <img :src="service.reward_coin.image" alt="reward">
+                                <p>{{ service.reward_coin.symbol }}</p>
                             </div>
 
-                            <p class="reward_amount">1.3K</p>
+                            <p class="reward_amount">
+                                {{
+                                    Converter.toMoney(service.weekly_rewards)
+                                }}
+                            </p>
                         </div>
                     </div>
                 </div>

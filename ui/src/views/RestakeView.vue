@@ -1,31 +1,19 @@
 <script setup lang="ts">
-import { CoinAPI } from '@/scripts/coin';
 import { strategies } from '@/scripts/constant';
 import { Converter } from '@/scripts/converter';
 import { onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCurrentAccount } from 'sui-dapp-kit-vue';
 import type { Strategy } from '@/scripts/types';
+import { useBalanceStore } from '@/stores/balance';
 
 const router = useRouter();
-const balances = ref<{ [key: string]: bigint; }>({});
-const restaked_balances = ref<{ [key: string]: bigint; }>({});
-const total_value_restaked = ref<{ [key: string]: bigint; }>({});
+const balanceStore = useBalanceStore();
 const search = ref<string | undefined>(undefined);
 const allStrategy = ref<Strategy[]>(strategies);
 const { currentAccount } = useCurrentAccount();
 const type = ref<'all' | 'sui_lst' | 'others'>('all');
 
-const getCoinsBalance = async () => {
-  if (!currentAccount.value) return;
-
-  const result = await CoinAPI.getCoinsBalance(
-    currentAccount.value.address,
-    strategies.map((strategy) => strategy.coin.type)
-  );
-
-  balances.value = result;
-};
 const getStrategies = () => {
   allStrategy.value = strategies.filter(
     s => {
@@ -55,11 +43,11 @@ watch(search, () => {
 });
 
 watch(currentAccount, () => {
-  getCoinsBalance();
+  balanceStore.getBalances(currentAccount.value?.address);
 });
 
 onMounted(() => {
-  getCoinsBalance();
+  balanceStore.getBalances(currentAccount.value?.address);
 });
 </script>
 
@@ -131,15 +119,19 @@ onMounted(() => {
                     </div>
                   </td>
                   <td>
-                    {{ Converter.toMoney(Converter.fromSUI(balances[strategy.coin.type], strategy.coin.decimals)) }}
+                    {{ Converter.toMoney(Converter.fromSUI(balanceStore.balances[strategy.coin.type],
+                      strategy.coin.decimals))
+                    }}
                   </td>
                   <td>
-                    {{ Converter.toMoney(Converter.fromSUI(restaked_balances[strategy.coin.type],
-                      strategy.coin.decimals)) }}
+                    {{ Converter.toMoney(Converter.fromSUI(balanceStore.restaked_balances[strategy.coin.type],
+                      strategy.coin.decimals))
+                    }}
                   </td>
                   <td>
-                    {{ Converter.toMoney(Converter.fromSUI(total_value_restaked[strategy.coin.type],
-                      strategy.coin.decimals)) }}
+                    {{ Converter.toMoney(Converter.fromSUI(balanceStore.total_value_restaked[strategy.coin.type],
+                      strategy.coin.decimals))
+                    }}
                   </td>
                   <td>
                     <div class="actions">

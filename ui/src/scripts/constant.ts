@@ -1,4 +1,4 @@
-import type { Strategy } from "./types";
+import type { Strategy, AVS, Operator } from "./types";
 
 const strategies: Strategy[] = [
   {
@@ -113,8 +113,105 @@ const strategies: Strategy[] = [
   },
 ];
 
+const operators: Operator[] = [
+  {
+    name: "Mysten Labs (Unofficial)",
+    image: "/images/mysten.png",
+    about:
+      "At Mysten, we are building a company that aims to address these problems (and many others) by laying the foundations for a decentralized web stack suitable for mass adoption. The drive to unlock everything that web3 enables is our north star.",
+    active: true,
+    address:
+      "0x0000000000000000000000000000000000000000000000000000000000000001",
+    link: "https://mystenlabs.com",
+  },
+  {
+    name: "Pyth (Unofficial)",
+    image: "/images/pyth.png",
+    about:
+      "Pyth is a protocol that allows market participants to publish pricing information on-chain for others to use.",
+    active: true,
+    address:
+      "0x0000000000000000000000000000000000000000000000000000000000000002",
+    link: "https://pyth.network",
+  },
+  {
+    name: "Google (Unofficial)",
+    image: "/images/google.png",
+    about:
+      "Our Web3 team at Google Cloud is dedicated to empowering the next generation of decentralized applications and services by providing developers and businesses with the essential tools, infrastructure, and knowledge to build and scale in the Web3 space.",
+    active: true,
+    address:
+      "0x0000000000000000000000000000000000000000000000000000000000000003",
+    link: "https://google.com",
+  },
+];
+
+const services: AVS[] = [
+  {
+    name: "Randomizer",
+    address:
+      "0x0000000000000000000000000000000000000000000000000000000000000001",
+    description:
+      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Enim placeat harum ex rem minima error illo magni repellat excepturi rerum, voluptatibus, possimus maiores accusamus, atque totam voluptatem vitae qui sint!",
+    link: "https://sui-randomizer.netlify.app",
+    image: "/images/colors.png",
+    reward_coin: {
+      address:
+        "0x0000000000000000000000000000000000000000000000000000000000000002",
+      name: "Native SUI",
+      symbol: "SUI",
+      decimals: 9,
+      image: "/images/sui.png",
+      type: "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI",
+      about:
+        "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Pariatur veniam itaque a tempora dicta ipsa perferendis corrupti nobis. Est amet ad omnis ex. Voluptas, similique. Aperiam nihil cupiditate molestiae labore?",
+      link: "https://sui.io",
+      isNative: true,
+    },
+    weekly_rewards: 9432930,
+  },
+  {
+    name: "SUI zkBridge",
+    address:
+      "0x0000000000000000000000000000000000000000000000000000000000000002",
+    description:
+      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Enim placeat harum ex rem minima error illo magni repellat excepturi rerum, voluptatibus, possimus maiores accusamus, atque totam voluptatem vitae qui sint!",
+    link: "https://sui-zkbridge.netlify.app",
+    image: "/images/colors.png",
+    reward_coin: {
+      address:
+        "0xd1b72982e40348d069bb1ff701e634c117bb5f741f44dff91e472d3b01461e55",
+      name: "AlphaFi Staked SUI",
+      symbol: "stSUI",
+      decimals: 9,
+      image: "/images/alpha_stsui.png",
+      type: "0xd1b72982e40348d069bb1ff701e634c117bb5f741f44dff91e472d3b01461e55::stsui::STSUI",
+      about:
+        "AlphaFi Staked SUI (stSUI) is the first liquid staked token (LST) built on the innovative AlphaFi stSUI LST Standard. It offers instant unstaking, enhancing safety by mitigating the risk of depegging. Users can stake their SUI while maintaining full liquidity, allowing them to freely transfer, trade, or use stSUI in DeFi protocols without sacrificing staking rewards. The platform also enables other teams to deploy their own LSTs using the AlphaFi stSUI LST Standard—completely permissionless and at no cost.",
+      link: "https://stsui.com",
+      isLst: true,
+    },
+    weekly_rewards: 12291230,
+  },
+];
+
 const findStrategy = (address: string): Strategy | undefined => {
   return strategies.find((strategy) => strategy.address == address);
 };
 
-export { strategies, findStrategy };
+const findOperator = (address: string): Operator | undefined => {
+  return operators.find((operator) => operator.address == address);
+};
+
+const findService = (address: string): AVS | undefined => {
+  return services.find((service) => service.address == address);
+};
+
+export {
+  strategies,
+  findStrategy,
+  operators,
+  findOperator,
+  services,
+  findService,
+};

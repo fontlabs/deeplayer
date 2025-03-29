@@ -1,13 +1,30 @@
 <script setup lang="ts">
 import ChevronLeftIcon from '@/components/icons/ChevronLeftIcon.vue';
 import OutIcon from '@/components/icons/OutIcon.vue';
+import { findOperator } from '@/scripts/constant';
+import { Converter } from '@/scripts/converter';
+import type { Operator } from '@/scripts/types';
+import { useBalanceStore } from '@/stores/balance';
+import { onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
 
+const route = useRoute();
+const balanceStore = useBalanceStore();
+const operator = ref<Operator | undefined>(undefined);
+
+const getOperator = (address: string) => {
+    operator.value = findOperator(address);
+};
+
+onMounted(() => {
+    getOperator(route.params.id.toString());
+});
 </script>
 
 <template>
     <section>
         <div class="app_width">
-            <div class="delegate">
+            <div class="delegate" v-if="operator">
                 <div class="delegate_info">
                     <div class="head">
                         <RouterLink to="/operator">
@@ -22,28 +39,45 @@ import OutIcon from '@/components/icons/OutIcon.vue';
                         <div class="stat">
                             <p>Total Restaked</p>
                             <div class="value">
-                                <p>0</p> <span>SUI</span>
+                                <p>
+                                    {{
+                                        Converter.toMoney(Converter.fromSUI(balanceStore.total_restaked_sui[operator.address]))
+                                    }}
+                                </p>
+                                <span>SUI</span>
                             </div>
                         </div>
 
                         <div class="stat">
                             <p>Your Shares</p>
                             <div class="value">
-                                <p>0</p>
+                                <p>
+                                    {{
+                                        Converter.toMoney(Converter.fromSUI(balanceStore.your_shares[operator.address]))
+                                    }}
+                                </p>
                             </div>
                         </div>
 
                         <div class="stat">
                             <p>Total Shares</p>
                             <div class="value">
-                                <p>10K</p>
+                                <p>
+                                    {{
+                                        Converter.toMoney(Converter.fromSUI(balanceStore.total_shares[operator.address]))
+                                    }}
+                                </p>
                             </div>
                         </div>
 
                         <div class="stat">
                             <p>AVS Secured</p>
                             <div class="value">
-                                <p>14</p>
+                                <p>
+                                    {{
+                                        balanceStore.avs_secured[operator.address] || "•••"
+                                    }}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -54,17 +88,15 @@ import OutIcon from '@/components/icons/OutIcon.vue';
                         </div>
 
                         <div class="operator_info">
-                            <img src="/images/colors.png" alt="operator">
-                            <p>Mysten Labs</p>
+                            <img :src="operator.image" alt="operator">
+                            <p>{{ operator.name }}</p>
                         </div>
 
                         <div class="description">
-                            Lorem ipsum dolor sit amet consectetur adipisicing elit. Enim placeat harum ex rem minima
-                            error illo magni repellat excepturi rerum, voluptatibus, possimus maiores accusamus, atque
-                            totam voluptatem vitae qui sint!
+                            {{ operator.about }}
                         </div>
 
-                        <a href="" target="_blank" class="link">
+                        <a v-if="operator.link" :href="operator.link" target="_blank" class="link">
                             <p>Learn more</p>
                             <OutIcon />
                         </a>
