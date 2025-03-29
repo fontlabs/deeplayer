@@ -1,2 +1,2 @@
 // SPDX-License-Identifier: MIT
-module deeplayer::math {}
+module deeplayer::math_module {}

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-module deeplayer::allocation {
+module deeplayer::allocation_module {
     use std::option;
     use std::string;
     use std::vector;
@@ -9,11 +9,11 @@ module deeplayer::allocation {
     use sui::object::{Self, ID, UID};
     use sui::transfer;
     use sui::table;
-    use sui::bcs::to_bytes;
+    use sui::bcs;
     use sui::tx_context::{Self, TxContext};
 
     use deeplayer::deeplayer::{DLCap};
-    use deeplayer::delegation::{Self, DelegationManager};
+    use deeplayer::delegation_module::{Self, DelegationManager};
 
     // Constants
     const WAD: u64 = 100000000; 
@@ -221,8 +221,8 @@ module deeplayer::allocation {
         transfer::share_object(allocation);
     }
 
-    // Public functions
-    public entry fun slash_operator(
+    // Package functions
+    public(package) fun slash_operator(
         allocation_manager: &mut AllocationManager,
         delegation_manager: &mut DelegationManager,
         avs: address,
@@ -309,7 +309,7 @@ module deeplayer::allocation {
 
             _update_max_magnitude(allocation_manager, params.operator, strategy_address, info.max_magnitude);
 
-            delegation::slash_operator_shares(
+            delegation_module::slash_operator_shares(
                 delegation_manager,
                 params.operator,
                 strategy_address,
@@ -493,8 +493,8 @@ module deeplayer::allocation {
 
     fun operator_set_key(operator_set: OperatorSet): vector<u8> {
         let mut key = vector::empty<u8>();
-        vector::append(&mut key, to_bytes<address>(&operator_set.avs));
-        vector::append(&mut key, to_bytes<u32>(&operator_set.id));
+        vector::append(&mut key, bcs::to_bytes<address>(&operator_set.avs));
+        vector::append(&mut key, bcs::to_bytes<u32>(&operator_set.id));
         key
     }
 

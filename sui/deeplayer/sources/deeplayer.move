@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-module deeplayer::deeplayer {
+module deeplayer::deeplayer_module {
     use sui::object::{Self, UID};    
     use sui::tx_context::{Self, TxContext};
 

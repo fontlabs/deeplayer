@@ -12,7 +12,7 @@ module deeplayer::strategy_manager_module {
 
     use deeplayer::deeplayer::{DLCap};
     use deeplayer::strategy_module::{Self, Strategy};
-    use deeplayer::delegation::{Self, DelegationManager};
+    use deeplayer::delegation_module::{Self, DelegationManager};
 
     // Constants
     const MAX_STAKER_STRATEGY_LIST_LENGTH: u64 = 32;
@@ -223,13 +223,11 @@ module deeplayer::strategy_manager_module {
         set_strategy_whitelister_impl(strategy_manager, new_strategy_whitelister);
     }
 
-    public entry fun add_strategies_to_deposit_whitelist(
+    public(package) fun add_strategies_to_deposit_whitelist(
         strategy_manager: &mut StrategyManager,
         strategies_to_whitelist: vector<address>,
         ctx: &mut TxContext
     ) {
-        check_only_strategy_whitelister(strategy_manager, ctx);
-
         let i = 0;
         let len = vector::length(&strategies_to_whitelist);
         while (i < len) {
@@ -344,7 +342,7 @@ module deeplayer::strategy_manager_module {
             ctx
         );
 
-        delegation::increase_delegated_shares(
+        delegation_module::increase_delegated_shares(
             delegation_manager,
             staker, 
             strategy_address, 

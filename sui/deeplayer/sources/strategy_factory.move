@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-module deeplayer::strategy_factory {
+module deeplayer::strategy_factory_module {
     use std::option;
     use std::string;
     use sui::balance;
@@ -9,9 +9,10 @@ module deeplayer::strategy_factory {
     use sui::event;
     use sui::object::{Self, ID, UID};
     use sui::transfer;
+    use sui::object_bag:{Self, ObjectBag};
     use sui::tx_context::{Self, TxContext};
 
-    use deeplayer::coin_utils;
+    use deeplayer::coin_utils_module;
     use deeplayer::deeplayer::{DLCap};
     use deeplayer::strategy_module::{Self, Strategy};
     use deeplayer::strategy_manager_module::{Self, StrategyManager};
@@ -27,7 +28,8 @@ module deeplayer::strategy_factory {
     // Structs
     struct StrategyFactory has key {
         id: UID,
-        deployed_strategies: table::Table<string::String, address>,
+        deployed_strategies: ObjectBag,
+        deployed_strategies_with_address: ObjectBag,
         is_blacklisted: table::Table<address, bool>,
         is_paused: bool
     }
@@ -48,7 +50,8 @@ module deeplayer::strategy_factory {
     ) {
         let strategy_factory = StrategyFactory {
             id: object::new(ctx),
-            deployed_strategies: table::new<string::String, address>(ctx),
+            deployed_strategies: object_bag::new(ctx),
+            deployed_strategies_with_address: object_bag::new(ctx),
             is_blacklisted: table::new<address, bool>(ctx),
             is_paused: false
         };
@@ -61,21 +64,23 @@ module deeplayer::strategy_factory {
         strategy_factory: &mut StrategyFactory,
         strategy_manager: &mut StrategyManager,
         ctx: &mut TxContext
-    ): address {
+    ): Strategy<COIN> {
         check_not_paused(strategy_factory);
 
-        let coin_id = coin_utils::get_coin_id<COIN>();
+        let coin_id = coin_utils_module::get_coin_id<COIN>();
 
         assert!(!table::contains(&strategy_factory.is_blacklisted, &coin_id), E_BLACKLISTED_TOKEN);
-        assert!(!table::contains(&strategy_factory.deployed_strategies, &coin_id), E_STRATEGY_ALREADY_EXISTS);
+        assert!(!object_bag::contains(&strategy_factory.deployed_strategies, &coin_id), E_STRATEGY_ALREADY_EXISTS);
 
         let strategy = strategy_module::create<COIN>(ctx);
 
-        set_strategy_for_coin<COIN>(strategy_factory, &strategy);
+        let strategy_address = set_strategy_for_coin<COIN>(
+            strategy_factory, 
+            &strategy
+        );
 
         // Whitelist the strategy
-        let strategies_to_whitelist = vector[strategy];
-
+        let strategies_to_whitelist = vector[strategy_address];
         strategy_manager_module::add_strategies_to_deposit_whitelist(
             strategy_manager,
             strategies_to_whitelist, 
@@ -87,23 +92,26 @@ module deeplayer::strategy_factory {
 
     public entry fun blacklist_coins(
         strategy_factory: &mut StrategyFactory,
-        coins: vector<address>,
+        coin_ids: vector<string::String>,
         ctx: &mut TxContext
     ) {
-        check_only_owner(strategy_factory, ctx);
-
         let strategies_to_remove = vector::empty<address>();
         let i = 0;
-        let len = vector::length(&coins);
+        let len = vector::length(&coin_ids);
         while (i < len) {
-            let coin_id = *vector::borrow(&coins, i);
+            let coin_id = *vector::borrow(&coin_ids, i);
             assert!(!table::contains(&strategy_factory.is_blacklisted, &coin_id), E_ALREADY_BLACKLISTED);
+            
             table::add(&mut strategy_factory.is_blacklisted, coin_id, true);
-            event::emit(CoinBlacklisted { coin_id });
+          
+            event::emit(CoinBlacklisted { 
+                coin_id
+            });
 
-            if (table::contains(&strategy_factory.deployed_strategies, &coin_id)) {
-                let strategy = *table::borrow(&strategy_factory.deployed_strategies, &coin_id);
-                vector::push_back(&mut strategies_to_remove, strategy);
+            if (object_bag::contains(&strategy_factory.deployed_strategies, coin_id)) {
+                let strategy = get_strategy<any>(coin_id);
+                let strategy_address = object::id_to_address(&object::id(strategy));
+                vector::push_back(&mut strategies_to_remove, strategy_address);
             };
             i = i + 1;
         };
@@ -118,7 +126,6 @@ module deeplayer::strategy_factory {
 
     public entry fun whitelist_strategies(
         strategy_factory: &mut StrategyFactory,
-        dl_cap: &DLCap,
         strategies_to_whitelist: vector<address>,
         ctx: &mut TxContext
     ) {
@@ -130,7 +137,6 @@ module deeplayer::strategy_factory {
 
     public entry fun remove_strategies_from_whitelist(
         strategy_factory: &mut StrategyFactory,
-        dl_cap: &DLCap,
         strategy_manager: &mut StrategyManager,
         strategies_to_remove_from_whitelist: vector<address>,
         ctx: &mut TxContext
@@ -142,16 +148,45 @@ module deeplayer::strategy_factory {
         );
     }
 
+    // View functions
+    public fun get_strategy<COIN>(
+        strategy_factory: &mut StrategyFactory,
+        coin_id: string::String
+    ): Strategy<COIN> {
+        object_bag::borrow<String, Strategy<COIN>>(
+            &strategy_factory.deployed_strategies, 
+            coin_id
+        )
+    }
+
+    public fun get_strategy_from_address<COIN>(
+        strategy_factory: &mut StrategyFactory,
+        strategy_address: address
+    ): Strategy<COIN> {
+        object_bag::borrow<String, Strategy<COIN>>(
+            &strategy_factory.deployed_strategies_with_address, 
+            strategy_address
+        )
+    }
+
     // Internal functions
     fun set_strategy_for_coin<COIN>(
         strategy_factory: &mut StrategyFactory,
         strategy: &Strategy<COIN>
-    ) {
-        let coin_id = coin_utils::get_coin_id<COIN>();
-        let strategy_address = object::id_to_address(&object::id(strategy));
+    ): address {
+        let coin_id = coin_utils_module::get_coin_id<COIN>();
 
-        table::add(&mut strategy_factory.deployed_strategies, coin_id, strategy_address);
-        event::emit(StrategySetForCoin { coin_id, strategy_address });
+        object_bag::add(&mut strategy_factory.deployed_strategies, coin_id, strategy);
+
+        let strategy_address = object::id_to_address(&object::id(strategy));
+        object_bag::add(&mut strategy_factory.deployed_strategies_with_address, strategy_address, strategy);
+
+        event::emit(StrategySetForCoin { 
+            coin_id, 
+            strategy_address
+        });
+
+        strategy_address
     }
 
     // Modifier checks

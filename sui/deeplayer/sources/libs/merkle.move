@@ -1,3 +1,3 @@
-module deeplayer::merkle {
+module deeplayer::merkle_module {
     
 }
