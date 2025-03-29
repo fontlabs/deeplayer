@@ -140,16 +140,15 @@ onMounted(() => {
                         </div>
 
                         <div class="coin_info">
-                            <img src="/images/btc.png" alt="btc">
-                            <p>SUI Liquid Bitcoin <span>suBTC</span></p>
+                            <img :src="strategy.coin.image" alt="btc">
+                            <p>{{ strategy.coin.name }} <span>{{ strategy.coin.symbol }}</span></p>
                         </div>
 
                         <div class="description">
-                            Lorem ipsum dolor sit amet consectetur adipisicing elit. Illo architecto maiores non
-                            aspernatur doloremque nemo veritatis?
+                            {{ strategy.coin.about }}
                         </div>
 
-                        <a href="" target="_blank" class="link">
+                        <a v-if="strategy.coin.link" :href="strategy.coin.link" target="_blank" class="link">
                             <p>Learn more</p>
                             <OutIcon />
                         </a>
