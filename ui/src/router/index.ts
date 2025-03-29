@@ -5,7 +5,6 @@ import AVSView from "../views/AVSView.vue";
 import StakeView from "@/views/restake/StakeView.vue";
 import UnStakeView from "@/views/restake/UnStakeView.vue";
 import DelegateView from "@/views/operator/DelegateView.vue";
-import UnDelegateView from "@/views/operator/UnDelegateView.vue";
 import AVSInfoView from "@/views/avs/AVSInfoView.vue";
 
 const router = createRouter({
@@ -47,11 +46,6 @@ const router = createRouter({
       path: "/operator/:id",
       name: "operator-delegate",
       component: DelegateView,
-    },
-    {
-      path: "/operator/:id/undelegate",
-      name: "operator-undelegate",
-      component: UnDelegateView,
     },
     {
       path: "/avs/:id",
