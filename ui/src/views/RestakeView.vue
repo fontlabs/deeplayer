@@ -1,7 +1,66 @@
 <script setup lang="ts">
+import { CoinAPI } from '@/scripts/coin';
+import { strategies } from '@/scripts/constant';
+import { Converter } from '@/scripts/converter';
+import { onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useCurrentAccount } from 'sui-dapp-kit-vue';
+import type { Strategy } from '@/scripts/types';
 
 const router = useRouter();
+const balances = ref<{ [key: string]: bigint; }>({});
+const restaked_balances = ref<{ [key: string]: bigint; }>({});
+const total_value_restaked = ref<{ [key: string]: bigint; }>({});
+const search = ref<string | undefined>(undefined);
+const allStrategy = ref<Strategy[]>(strategies);
+const { currentAccount } = useCurrentAccount();
+const type = ref<'all' | 'sui_lst' | 'others'>('all');
+
+const getCoinsBalance = async () => {
+  if (!currentAccount.value) return;
+
+  const result = await CoinAPI.getCoinsBalance(
+    currentAccount.value.address,
+    strategies.map((strategy) => strategy.coin.type)
+  );
+
+  balances.value = result;
+};
+const getStrategies = () => {
+  allStrategy.value = strategies.filter(
+    s => {
+      if (type.value == 'all') {
+        return search.value ? s.coin.name.toLowerCase().includes(search.value.toLowerCase()) :
+          true;
+      }
+      else if (type.value == 'sui_lst') {
+        return search.value ?
+          s.coin.name.toLowerCase().includes(search.value.toLowerCase()) && (s.coin.isLst || s.coin.isNative) :
+          (s.coin.isLst || s.coin.isNative);
+      } else {
+        return search.value ?
+          s.coin.name.toLowerCase().includes(search.value.toLowerCase()) && !(s.coin.isLst || s.coin.isNative) :
+          !(s.coin.isLst || s.coin.isNative);
+      }
+    }
+  );
+};
+
+watch(type, () => {
+  getStrategies();
+});
+
+watch(search, () => {
+  getStrategies();
+});
+
+watch(currentAccount, () => {
+  getCoinsBalance();
+});
+
+onMounted(() => {
+  getCoinsBalance();
+});
 </script>
 
 <template>
@@ -44,12 +103,13 @@ const router = useRouter();
           <div class="coins_wrapper">
             <div class="toolbar">
               <div class="tabs">
-                <button class="tab tab_active">All</button>
-                <button class="tab">SUI & LSTs</button>
-                <button class="tab">Others</button>
+                <button :class="type == 'all' ? 'tab tab_active' : 'tab'" @click="type = 'all'">All</button>
+                <button :class="type == 'sui_lst' ? 'tab tab_active' : 'tab'" @click="type = 'sui_lst'">SUI &
+                  LSTs</button>
+                <button :class="type == 'others' ? 'tab tab_active' : 'tab'" @click="type = 'others'">Others</button>
               </div>
 
-              <input type="text" placeholder="Search">
+              <input type="text" v-model="search" placeholder="Search">
             </div>
 
             <table>
@@ -63,22 +123,30 @@ const router = useRouter();
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="coin in 16" :key="coin">
-                  <td @click="router.push(`/restake/${coin}`)">
+                <tr v-for="strategy in allStrategy" :key="strategy.address">
+                  <td @click="router.push(`/restake/${strategy.address}`)">
                     <div class="coin_info">
-                      <img src="/images/btc.png" alt="btc">
-                      <p>SUI Liquid Bitcoin <span>suBTC</span></p>
+                      <img :src="strategy.coin.image" alt="btc">
+                      <p>{{ strategy.coin.name }} <span>{{ strategy.coin.symbol }}</span></p>
                     </div>
                   </td>
-                  <td>1.02</td>
-                  <td>0.5425</td>
-                  <td>10.54M</td>
+                  <td>
+                    {{ Converter.toMoney(Converter.fromSUI(balances[strategy.coin.type], strategy.coin.decimals)) }}
+                  </td>
+                  <td>
+                    {{ Converter.toMoney(Converter.fromSUI(restaked_balances[strategy.coin.type],
+                      strategy.coin.decimals)) }}
+                  </td>
+                  <td>
+                    {{ Converter.toMoney(Converter.fromSUI(total_value_restaked[strategy.coin.type],
+                      strategy.coin.decimals)) }}
+                  </td>
                   <td>
                     <div class="actions">
-                      <RouterLink :to="`/restake/${coin}`">
+                      <RouterLink :to="`/restake/${strategy.address}`">
                         <button>Restake</button>
                       </RouterLink>
-                      <RouterLink :to="`/restake/${coin}/unstake`">
+                      <RouterLink :to="`/restake/${strategy.address}/unstake`">
                         <button>Unstake</button>
                       </RouterLink>
                     </div>

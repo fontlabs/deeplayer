@@ -14,4 +14,6 @@ export type Coin = {
   about: string;
   link?: string;
   address: string;
+  isNative?: boolean;
+  isLst?: boolean;
 };

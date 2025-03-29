@@ -2,31 +2,22 @@
 import ChevronLeftIcon from '@/components/icons/ChevronLeftIcon.vue';
 import OutIcon from '@/components/icons/OutIcon.vue';
 import { CoinAPI } from '@/scripts/coin';
+import { findStrategy } from '@/scripts/constant';
 
 import { Contract } from '@/scripts/contract';
 import { Converter } from '@/scripts/converter';
 import type { Strategy } from '@/scripts/types';
 import { useSignAndExecuteTransactionBlock, useCurrentAccount } from 'sui-dapp-kit-vue';
 import { onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 
+const route = useRoute();
 const balance = ref<number | undefined>(undefined);
 const amount = ref<number | undefined>(undefined);
+const strategy = ref<Strategy | undefined>(undefined);
 
 const { currentAccount } = useCurrentAccount();
 const { signAndExecuteTransactionBlock } = useSignAndExecuteTransactionBlock();
-const strategy = ref<Strategy | undefined>({
-    address: '0x',
-    coin: {
-        address: '0x',
-        name: 'SUI Liquid Bitcoin',
-        symbol: 'suBTC',
-        decimals: 8,
-        image: '/images/btc.png',
-        type: '::',
-        about: 'Lorem ipsum dolor sit, amet consectetur adipisicing elit. Pariatur veniam itaque a tempora dicta ipsa perferendis corrupti nobis. Est amet ad omnis ex. Voluptas, similique. Aperiam nihil cupiditate molestiae labore?',
-        link: 'https://subtc.com'
-    }
-});
 
 const getCoinBalance = async () => {
     if (!strategy.value) return;
@@ -37,8 +28,6 @@ const getCoinBalance = async () => {
         strategy.value.coin.type
     );
 
-    console.log(result);
-
     balance.value = Converter.fromSUI(result, strategy.value.coin.decimals);
 };
 
@@ -48,16 +37,19 @@ const restake = async () => {
     if (!currentAccount.value) return;
 
     try {
+        const value = Converter.toSUI(amount.value, strategy.value.coin.decimals);
+        if (!value) return;
+
         const transactionBlock = await Contract.depositIntoStrategy(
             currentAccount.value.address,
             strategy.value,
-            Converter.toSUI(amount.value, strategy.value.coin.decimals)
+            value
         );
 
         const { digest } = await signAndExecuteTransactionBlock({
             // @ts-ignore
             transactionBlock,
-            chain: 'sui:testnet'
+            chain: 'sui:mainnet'
         });
 
 
@@ -66,11 +58,16 @@ const restake = async () => {
     }
 };
 
+const getStrategy = (address: string) => {
+    strategy.value = findStrategy(address);
+};
+
 watch(currentAccount, () => {
     getCoinBalance();
 });
 
 onMounted(() => {
+    getStrategy(route.params.id.toString());
     getCoinBalance();
 });
 </script>
@@ -99,9 +96,9 @@ onMounted(() => {
                             <div class="helper">
                                 <p>0 {{ strategy.coin.symbol }}</p>
                                 <div class="buttons">
-                                    <button>25%</button>
-                                    <button>50%</button>
-                                    <button>Max</button>
+                                    <button @click="balance ? amount = balance / 4 : null">25%</button>
+                                    <button @click="balance ? amount = balance / 2 : null">50%</button>
+                                    <button @click="balance ? amount = balance : null">Max</button>
                                 </div>
                             </div>
                         </div>
@@ -140,7 +137,7 @@ onMounted(() => {
                         </div>
 
                         <div class="coin_info">
-                            <img src="/images/btc.png" alt="btc">
+                            <img :src="strategy.coin.image" alt="btc">
                             <p>{{ strategy.coin.name }} <span>{{ strategy.coin.symbol }}</span></p>
                         </div>
 
@@ -241,6 +238,7 @@ onMounted(() => {
     border: none;
     background: var(--bg-lightest);
     color: var(--tx-semi);
+    cursor: pointer;
 }
 
 .restake {

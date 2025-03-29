@@ -1,6 +1,6 @@
 const Converter = {
   toMoney(val: number | undefined): string {
-    if (val === undefined) return "Nil";
+    if (val === undefined) return "•••";
 
     return Intl.NumberFormat("en-US", {
       notation: "compact",
@@ -10,7 +10,7 @@ const Converter = {
   },
 
   format(val: number | undefined): string {
-    if (val === undefined) return "Nil";
+    if (val === undefined) return "•••";
 
     return Intl.NumberFormat("en-US", {
       minimumFractionDigits: 2,
@@ -18,12 +18,14 @@ const Converter = {
     }).format(val);
   },
 
-  toSUI(val: number, decimals: number = 8): bigint {
-    return BigInt(0);
+  toSUI(val: number | undefined, decimals: number = 9): bigint | undefined {
+    if (val === undefined) return val;
+    return BigInt(Math.round(val * 10 ** decimals));
   },
 
-  fromSUI(val: bigint, decimals: number = 8): number {
-    return 0;
+  fromSUI(val: bigint | undefined, decimals: number = 9): number | undefined {
+    if (val === undefined) return val;
+    return Number(val) / 10 ** decimals;
   },
 };
 
