@@ -9,7 +9,9 @@ module deeplayer::hello_world_service_manager {
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
 
-    use deeplayer::signature_module::{Self, SignatureWithSaltAndExpiry};
+    use deeplayer::slasher_module;
+    use deeplayer::signature_module;
+    use deeplayer::ecdsa_service_manager_module;
 
     // Constants
     const MIN_CONFIRMATIONS: u64 = 2;
@@ -31,8 +33,7 @@ module deeplayer::hello_world_service_manager {
     }
 
     public struct Task has copy, drop, store {
-        name: string::String,
-        task_created_block: u64,
+        name: string::String
     }
 
     public struct TaskResponse has copy, drop, store {
@@ -49,6 +50,7 @@ module deeplayer::hello_world_service_manager {
     public struct TaskInfo has copy, drop, store {
         task_hash: vector<u8>,
         confirmations: u64,
+        task_created_block: u64,
         responded: bool
     }
 
@@ -101,16 +103,17 @@ module deeplayer::hello_world_service_manager {
         ctx: &mut TxContext
     ) {
         let new_task = Task {
-            name,
-            task_created_block: tx_context::epoch(ctx),
+            name
         };
 
+        let block_number = tx_context::epoch(ctx);
         let task_index = service_manager.latest_task_num;
-        let task_hash = calculate_task_hash(&new_task);
+        let task_hash = calculate_task_hash(&new_task, block_number);
 
         let task_info = TaskInfo {
             task_hash,
             confirmations: 0,
+            task_created_block: block_number,
             responded: false
         };
         table::add(&mut service_manager.task_infos, task_hash, task_info);
@@ -138,10 +141,10 @@ module deeplayer::hello_world_service_manager {
         // Check task hash matches
         let task_info = get_task_info(service_manager, task_hash);
 
-        // assert!(
-        //     tx_context::epoch(ctx) <= task.task_created_block + service_manager.max_response_interval_blocks,
-        //     E_RESPONSE_TIME_EXPIRED
-        // );
+        assert!(
+            tx_context::epoch(ctx) <= task_info.task_created_block + service_manager.max_response_interval_blocks,
+            E_RESPONSE_TIME_EXPIRED
+        );
 
         let signature_data = signature_module::create(signature, salt, expiry);
         let verify = signature_module::verify(
@@ -190,7 +193,7 @@ module deeplayer::hello_world_service_manager {
         assert!(is_task_responded(service_manager, task_hash), E_TASK_ALREADY_RESPONDED);
 
         // Check operator was registered when task was created
-        // let operator_weight = get_operator_weight_at_block(stake_registry, operator, task.task_created_block);
+        // let operator_weight = get_operator_weight_at_block(stake_registry, operator, task_info.task_created_block);
         // assert!(operator_weight > 0, E_OPERATOR_NOT_REGISTERED_AT_TASK);
 
         event::emit(OperatorSlashed {
@@ -224,11 +227,12 @@ module deeplayer::hello_world_service_manager {
 
     // Helper functions
     fun calculate_task_hash(
-        task: &Task
+        task: &Task,
+        block_number: u64
     ): vector<u8> {
         let mut hash = vector::empty<u8>();
         vector::append(&mut hash, bcs::to_bytes<string::String>(&task.name));
-        vector::append(&mut hash, bcs::to_bytes<u64>(&task.task_created_block));
+        vector::append(&mut hash, bcs::to_bytes<u64>(&block_number));
         hash
     }
 

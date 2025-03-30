@@ -4,8 +4,12 @@ import { CoinAPI } from "./coin";
 
 const Contract = {
   deeplayer: "0x",
+  avsDirectory: "0x",
+  strategyFactory: "0x",
   strategyManager: "0x",
+  rewardsCondinator: "0x",
   delegationManager: "0x",
+  allocationManager: "0x",
 
   async depositIntoStrategy(
     sender: string,
