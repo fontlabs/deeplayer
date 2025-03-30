@@ -4,13 +4,12 @@ module deeplayer::strategy_factory_module {
     use std::option;
     use std::string;
     use sui::balance;
-    use std::string;
     use sui::coin;
     use sui::table;
     use sui::event;
-    use sui::object::{Self, ID, UID};
+    use sui::object::{Self, UID};
     use sui::transfer;
-    use sui::bag:{Self, Bag};
+    use sui::bag::{Self, Bag};
     use sui::tx_context::{Self, TxContext};
 
     use deeplayer::coin_utils_module;
@@ -24,9 +23,8 @@ module deeplayer::strategy_factory_module {
     const E_ONLY_OWNER: u64 = 4;
     const E_PAUSED: u64 = 5;
 
-
     // Structs
-    struct StrategyFactory has key {
+    public struct StrategyFactory has key {
         id: UID,
         deployed_strategies: Bag,
         is_blacklisted: table::Table<string::String, bool>,
@@ -34,11 +32,11 @@ module deeplayer::strategy_factory_module {
     }
 
     // Events
-    struct CoinBlacklisted has copy, drop {
+    public struct CoinBlacklisted has copy, drop {
         coin_type: string::String,
     }
 
-    struct StrategySetForCoin has copy, drop {
+    public struct StrategySetForCoin has copy, drop {
         coin_type: string::String,
         strategy_address: address,
     }
@@ -70,9 +68,7 @@ module deeplayer::strategy_factory_module {
         assert!(!table::contains(&strategy_factory.is_blacklisted, coin_type), E_BLACKLISTED_TOKEN);
         assert!(!bag::contains(&strategy_factory.deployed_strategies, coin_type), E_STRATEGY_ALREADY_EXISTS);
 
-        let strategy = strategy_module::create<COIN>(ctx);
-        let strategy_address = object::id_to_address(&object::id(strategy));
-
+        let (strategy, strategy_address) = strategy_module::create<COIN>(ctx);
         bag::add(&mut strategy_factory.deployed_strategies, coin_type, strategy);
 
         event::emit(StrategySetForCoin { 
@@ -91,11 +87,12 @@ module deeplayer::strategy_factory_module {
 
     public entry fun blacklist_coins(
         strategy_factory: &mut StrategyFactory,
-        coin_types: vector<address>,
+        strategy_manager: &mut StrategyManager,
+        coin_types: vector<string::String>,
         ctx: &mut TxContext
     ) {
         let strategies_to_remove = vector::empty<address>();
-        let i = 0;
+        let mut i = 0;
         let len = vector::length(&coin_types);
         while (i < len) {
             let coin_type = *vector::borrow(&coin_types, i);
@@ -114,7 +111,8 @@ module deeplayer::strategy_factory_module {
         };
 
         if (vector::length(&strategies_to_remove) > 0) {
-            strategy_manager::remove_strategies_from_deposit_whitelist(
+            strategy_manager_module::remove_strategies_from_deposit_whitelist(
+                strategy_manager,
                 strategies_to_remove, 
                 ctx
             );
@@ -122,11 +120,12 @@ module deeplayer::strategy_factory_module {
     }
 
     public entry fun whitelist_strategies(
-        strategy_factory: &mut StrategyFactory,
+        strategy_manager: &mut StrategyManager,
         strategies_to_whitelist: vector<address>,
         ctx: &mut TxContext
     ) {
-        strategy_manager::add_strategies_to_deposit_whitelist(
+        strategy_manager_module::add_strategies_to_deposit_whitelist(
+            strategy_manager,
             strategies_to_whitelist, 
             ctx
         );
@@ -150,7 +149,7 @@ module deeplayer::strategy_factory_module {
         strategy_factory: &mut StrategyFactory,
         coin_type: string::String
     ): &mut Strategy<COIN> {
-        bag::borrow_mut<String, Strategy<COIN>>(
+        bag::borrow_mut<string::String, Strategy<COIN>>(
             &mut strategy_factory.deployed_strategies, 
             coin_type
         )

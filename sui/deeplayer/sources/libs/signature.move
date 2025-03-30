@@ -6,20 +6,28 @@ module deeplayer::signature_module {
     use sui::bcs;
 
     // Structs
-    public struct SignatureWithSaltAndExpiry has copy, drop {
+    public struct SignatureWithSaltAndExpiry has copy, drop, store {
         signature: vector<u8>,
         salt: vector<u8>,
         expiry: u64,
     }
 
     public(package) fun salt(
-        signature_data: &SignatureWithSaltAndExpiry,
+        signature_data: SignatureWithSaltAndExpiry,
     ): vector<u8> {
         signature_data.salt
     }
 
+    public(package) fun create(
+        signature: vector<u8>,
+        salt: vector<u8>,
+        expiry: u64,
+    ): SignatureWithSaltAndExpiry {
+        SignatureWithSaltAndExpiry { signature, salt, expiry }
+    }
+
     public(package) fun verify(
-        signature_data: &SignatureWithSaltAndExpiry,
+        signature_data: SignatureWithSaltAndExpiry,
         signer: address,
         the_clock: &clock::Clock,
         ctx: &mut TxContext

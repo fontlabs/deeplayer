@@ -5,7 +5,7 @@ module deeplayer::strategy_manager_module {
     use sui::balance;
     use sui::coin;
     use sui::event;
-    use sui::object::{Self, ID, UID};
+    use sui::object::{Self, UID};
     use sui::transfer;
     use sui::table;
     use sui::tx_context::{Self, TxContext};
@@ -133,14 +133,14 @@ module deeplayer::strategy_manager_module {
         }
     }
 
-    public(package) fun add_shares<COIN>(
+    public(package) fun add_shares(
         strategy_manager: &mut StrategyManager,
         staker: address,
         strategy_address: address,
         shares: u64,
         ctx: &mut TxContext
     ): (u64, u64) {
-        add_shares_impl<COIN>(
+        add_shares_impl(
             strategy_manager, 
             staker, 
             strategy_address, 
@@ -170,7 +170,7 @@ module deeplayer::strategy_manager_module {
         );
     }
 
-    public(package) fun increase_burnable_shares<COIN>(
+    public(package) fun increase_burnable_shares(
         strategy_manager: &mut StrategyManager,
         strategy_address: address,
         added_shares_to_burn: u64,
@@ -195,7 +195,7 @@ module deeplayer::strategy_manager_module {
         strategies_to_whitelist: vector<address>,
         ctx: &mut TxContext
     ) {
-        let i = 0;
+        let mut i = 0;
         let len = vector::length(&strategies_to_whitelist);
         while (i < len) {
             let strategy_address = *vector::borrow(&strategies_to_whitelist, i);
@@ -215,7 +215,7 @@ module deeplayer::strategy_manager_module {
         strategies_to_remove_from_whitelist: vector<address>,
         ctx: &mut TxContext
     ) {
-        let i = 0;
+        let mut i = 0;
         let len = vector::length(&strategies_to_remove_from_whitelist);
         while (i < len) {
             let strategy_address = *vector::borrow(&strategies_to_remove_from_whitelist, i);
@@ -232,7 +232,7 @@ module deeplayer::strategy_manager_module {
     }
 
     // Internal functions
-    fun add_shares_impl<COIN>(
+    fun add_shares_impl(
         strategy_manager: &mut StrategyManager,
         staker: address,
         strategy_address: address,
@@ -286,6 +286,8 @@ module deeplayer::strategy_manager_module {
     ): u64 {
         let strategy_address = object::id_to_address(&object::id(strategy));
 
+        check_strategy_whitelisted_for_deposit(strategy_manager, strategy_address);
+
         assert!(
             table::contains(&strategy_manager.strategy_is_whitelisted, strategy_address) &&
             *table::borrow(&strategy_manager.strategy_is_whitelisted, strategy_address),
@@ -298,7 +300,7 @@ module deeplayer::strategy_manager_module {
             ctx
         );
 
-        let (prev_deposit_shares, added_shares) = add_shares_impl<COIN>(
+        let (prev_deposit_shares, added_shares) = add_shares_impl(
             strategy_manager,
             staker, 
             strategy_address, 
@@ -362,7 +364,7 @@ module deeplayer::strategy_manager_module {
         assert!(table::contains(&strategy_manager.staker_strategy_list, staker), E_STRATEGY_NOT_FOUND);
         let strategies = table::borrow_mut(&mut strategy_manager.staker_strategy_list, staker);
         
-        let i = 0;
+        let mut i = 0;
         let len = vector::length(strategies);
         while (i < len) {
             if (*vector::borrow(strategies, i) == strategy_address) {
@@ -385,14 +387,14 @@ module deeplayer::strategy_manager_module {
         
         let strategies = table::borrow(&strategy_manager.staker_strategy_list, staker);
         let len = vector::length(strategies);
-        let deposited_shares = vector::empty<u64>();
+        let mut deposited_shares = vector::empty<u64>();
         
-        let i = 0;
+        let mut i = 0;
         while (i < len) {
-            let strategy = *vector::borrow(strategies, i);
+            let strategy_address = *vector::borrow(strategies, i);
             let shares = if (table::contains(&strategy_manager.staker_deposit_shares, staker) &&
-                table::contains(table::borrow(&strategy_manager.staker_deposit_shares, staker), strategy)) {
-                *table::borrow(table::borrow(&strategy_manager.staker_deposit_shares, staker), strategy)
+                table::contains(table::borrow(&strategy_manager.staker_deposit_shares, staker), strategy_address)) {
+                *table::borrow(table::borrow(&strategy_manager.staker_deposit_shares, staker), strategy_address)
             } else {
                 0
             };
@@ -419,18 +421,8 @@ module deeplayer::strategy_manager_module {
     public fun get_staker_strategy_list(
         strategy_manager: &StrategyManager,
         staker: address
-    ): &vector<address> {
-        table::borrow(&strategy_manager.staker_strategy_list, staker)
-    }
-
-    public fun staker_strategy_list_length(
-        strategy_manager: &StrategyManager,
-        staker: address
-    ): u64 {
-        if (!table::contains(&strategy_manager.staker_strategy_list, staker)) {
-            return 0;
-        };
-        vector::length(table::borrow(&strategy_manager.staker_strategy_list, staker))
+    ): vector<address> {
+        *table::borrow(&strategy_manager.staker_strategy_list, staker)
     }
 
     public fun get_burnable_shares(
@@ -444,18 +436,11 @@ module deeplayer::strategy_manager_module {
         }
     }
 
-    public fun get_strategies_with_burnable_shares(
-        strategy_manager: &StrategyManager
-    ): (vector<address>, vector<u64>) {
-        let strategies = vector::empty<address>();
-        let shares = vector::empty<u64>();
-        
-        
-        (strategies, shares)
-    }
-
     // Modifier checks
-    fun check_strategy_whitelisted_for_deposit(strategy_manager: &StrategyManager, strategy_address: address) {
+    fun check_strategy_whitelisted_for_deposit(
+        strategy_manager: &StrategyManager,
+        strategy_address: address
+    ) {
         assert!(
             table::contains(&strategy_manager.strategy_is_whitelisted, strategy_address) &&
             *table::borrow(&strategy_manager.strategy_is_whitelisted, strategy_address),
@@ -463,7 +448,9 @@ module deeplayer::strategy_manager_module {
         );
     }
 
-    fun check_not_paused(strategy_manager: &StrategyManager) {
+    fun check_not_paused(
+        strategy_manager: &StrategyManager
+    ) {
         assert!(!strategy_manager.is_paused, E_PAUSED);
     }
 }

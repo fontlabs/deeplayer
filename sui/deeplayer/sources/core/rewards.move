@@ -1,82 +1,118 @@
 // SPDX-License-Identifier: MIT
 #[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::rewards_module {
-    // public struct RewardsMerkleClaim has copy, drop {
-    //     root_index: u64,
-    //     earner_index: u64,
-    //     earner_tree_proof: vector<u8>,
-    //     earner_leaf: EarnerTreeMerkleLeaf,
-    //     token_indices: vector<u64>,
-    //     token_tree_proofs: vector<vector<u8>>,
-    //     token_leaves: vector<TokenTreeMerkleLeaf>,
-    // }
+    use sui::object::{Self, UID}; 
+    use sui::clock;
+    use sui::balance::{Self, Balance};
+    use sui::transfer;
+    use sui::coin;
+    use sui::tx_context::{Self, TxContext};
+    use sui::event;
+    use sui::bcs;
+    use sui::bag::{Self, Bag};
+    use sui::table;
 
-    // public struct StrategyAndMultiplier has copy, drop {
-    //     strategy_address: address,
-    //     multiplier: u64,
-    // }
+    use deeplayer::strategy_module::{Strategy};
+    use deeplayer::delegation_module::{Self, DelegationManager};
+    use deeplayer::strategy_manager_module::{Self, StrategyManager};
 
-    // public struct RewardsSubmission has copy, drop {
-    //     token: ID,
-    //     amount: u64,
-    //     strategies_and_multipliers: vector<StrategyAndMultiplier>,
-    //     start_timestamp: u64,
-    //     duration: u64,
-    // }
+    // Errors
+    const E_PAUSED: u64 = 1;
+   
+    public struct RewardsSubmission<phantom COIN> has store {
+        unclaimed: balance::Balance<COIN>,
+        claimed: u64,
+        start_timestamp: u64,
+        duration: u64,
+    }
 
-    // public struct RewardsCoordinator has key {
-    //     id: UID,
-    //     calculation_interval_seconds: u64,
-    //     max_rewards_duration: u64,
-    //     max_retroactive_length: u64,
-    //     max_future_length: u64,
-    //     genesis_rewards_timestamp: u64,
-    //     pauser_registry: ID,
-    //     version: string::String,
-    //     owner: address,
-    //     paused_status: u64,
-    //     rewards_updater: address,
-    //     activation_delay: u64,
-    //     default_split_bips: u64,
-    //     curr_rewards_calculation_end_timestamp: u64,
-    //     distribution_roots: vector<DistributionRoot>,
-    //     is_rewards_for_all_submitter: vector<address>,
-    //     submission_nonce: vector<address>,
-    // }
+    public struct RewardsCoordinator has key {
+        id: UID,
+        is_paused: bool,
+        rewards_submissions: bag::Bag,
+        rewards_submission_claims: table::Table<vector<u8>, table::Table<address, bool>>,
+    }
 
-    // // Public functions
-    // public entry fun create_avs_rewards_submission<COIN>(
-    //     coordinator: &mut RewardsCoordinator,
-    //     avs: address,
-    //     rewards_submissions: vector<RewardsSubmission>,
-    //     coin_rewards: Coin<COIN>,
-    //     ctx: &mut TxContext
-    // ) {
-    //     check_not_paused(coordinator);
+    fun init(
+        ctx: &mut TxContext
+    ) {
+        let rewards_coordinator = RewardsCoordinator {
+            id: object::new(ctx),
+            is_paused: false,
+            rewards_submissions: bag::new(ctx),
+            rewards_submission_claims: table::new<vector<u8>, table::Table<address, bool>>(ctx)
+        };
+
+        transfer::share_object(rewards_coordinator);
+    }
+
+    // Public functions
+    public entry fun create_avs_rewards_submission<COIN>(
+        rewards_coordinator: &mut RewardsCoordinator,
+        avs: address,
+        duration: u64,
+        coin_rewards: coin::Coin<COIN>,
+        the_clock: &clock::Clock,
+        ctx: &mut TxContext
+    ) {
+        check_not_paused(rewards_coordinator);
         
-    //     let i = 0;
-    //     while (i < rewards_submissions.length()) {
-    //         let rewards_submission = vector::borrow(&rewards_submissions, i);
-    //         let nonce = get_submission_nonce(coordinator, avs);
-    //         let rewards_submission_hash = calculate_rewards_submission_hash(
-    //             avs,
-    //             nonce,
-    //             rewards_submission
-    //         );
+        let rewards_submission = RewardsSubmission {
+            unclaimed: coin::into_balance(coin_rewards),
+            claimed: 0,
+            start_timestamp: clock::timestamp_ms(the_clock),
+            duration: duration
+        };
 
-    //         validate_rewards_submission(coordinator, rewards_submission);
+        let rewards_root = calc_rewards_root<COIN>(&rewards_submission, avs);
 
-    //         // In a real implementation, we'd store the hash and increment nonce
-    //         set_submission_nonce(coordinator, sender, nonce + 1);
+        bag::add(&mut rewards_coordinator.rewards_submissions, rewards_root, rewards_submission);
+    }
 
-    //         event::emit(AVSRewardsSubmissionCreated {
-    //             avs,
-    //             nonce,
-    //             rewards_submission_hash,
-    //             rewards_submission: *rewards_submission,
-    //         });
+    public entry fun claim_rewards<COIN>(
+        rewards_coordinator: &mut RewardsCoordinator,
+        delegation_manager: &DelegationManager,
+        strategy_manager: &StrategyManager,
+        strategy: &Strategy<COIN>,
+        rewards_root: vector<u8>,
+        the_clock: &clock::Clock,
+        ctx: &mut TxContext
+    ) {
+        check_not_paused(rewards_coordinator);
 
-    //         i = i + 1;
-    //     };
-    // }
+        let strategy_address = object::id_to_address(&object::id(strategy));
+
+        let staker = tx_context::sender(ctx);
+        let rewards_submission = bag::borrow_mut<vector<u8>, RewardsSubmission<COIN>>(
+            &mut rewards_coordinator.rewards_submissions, 
+            rewards_root
+        );
+
+        let total_rewards = balance::value(&rewards_submission.unclaimed) + rewards_submission.claimed;
+
+        // let total_shares = 0;
+        // let staker_shares = strategy_manager_module::staker_deposit_shares(
+        //     strategy_manager,
+        //     staker,
+        //     strategy_address
+        // );
+
+    }
+
+    fun calc_rewards_root<COIN>(
+        rewards_submission: &RewardsSubmission<COIN>,
+        avs: address
+    ): vector<u8> {
+        let mut root = vector::empty<u8>();
+        vector::append(&mut root, bcs::to_bytes<u64>(&rewards_submission.start_timestamp));
+        vector::append(&mut root, bcs::to_bytes<u64>(&rewards_submission.duration));
+        vector::append(&mut root, bcs::to_bytes<address>(&avs));
+        root
+    }
+
+    fun check_not_paused(
+        rewards_coordinator: &RewardsCoordinator,
+    ) {
+        assert!(!rewards_coordinator.is_paused, E_PAUSED)
+    }
 }

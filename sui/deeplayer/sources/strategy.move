@@ -3,10 +3,10 @@
 module deeplayer::strategy_module {
     use std::option;
     use std::string;
-    use sui::balance;
+    use sui::balance::{Self, Balance};
     use sui::coin;
     use sui::event;
-    use sui::object::{Self, ID, UID};
+    use sui::object::{Self, UID};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
 
@@ -30,7 +30,7 @@ module deeplayer::strategy_module {
     public struct Strategy<phantom COIN> has key, store {
         id: UID,
         total_shares: u64,
-        coin_underlying: coin::Coin<COIN>, 
+        balance_underlying: balance::Balance<COIN>, 
         is_paused: bool
     }
 
@@ -42,17 +42,19 @@ module deeplayer::strategy_module {
     // Public functions
     public(package) fun create<COIN>(
         ctx: &mut TxContext
-    ): Strategy<COIN> {
+    ): (Strategy<COIN>, address) {
+        let id = object::new(ctx);
+
         let strategy = Strategy {
-            id: object::new(ctx),
+            id,
             total_shares: 0,
-            coin_underlying: coin::zero<COIN>(ctx),
+            balance_underlying: balance::zero<COIN>(),
             is_paused: false
-        };
+        };       
 
         transfer::share_object(strategy);
 
-        strategy
+        (strategy, @0x0)
     }
 
     public(package) fun deposit<COIN>(
@@ -64,11 +66,11 @@ module deeplayer::strategy_module {
 
         let amount = coin::value(&coin_deposited);
 
-        coin::join<COIN>(&mut strategy.coin_underlying, coin_deposited);
+        balance::join<COIN>(&mut strategy.balance_underlying, coin::into_balance(coin_deposited));
 
         let prior_total_shares = strategy.total_shares;
         let virtual_share_amount = prior_total_shares + SHARES_OFFSET;
-        let virtual_coin_balance = coin::value(&strategy.coin_underlying) + BALANCE_OFFSET;
+        let virtual_coin_balance = balance::value(&strategy.balance_underlying) + BALANCE_OFFSET;
         let virtual_prior_coin_balance = virtual_coin_balance - amount;
         let new_shares = (amount * virtual_share_amount) / virtual_prior_coin_balance;
 
@@ -94,7 +96,7 @@ module deeplayer::strategy_module {
         assert!(amount_shares <= prior_total_shares, E_WITHDRAWAL_AMOUNT_EXCEEDS_TOTAL);
 
         let virtual_prior_total_shares = prior_total_shares + SHARES_OFFSET;
-        let virtual_coin_balance = coin::value(&strategy.coin_underlying) + BALANCE_OFFSET;
+        let virtual_coin_balance = balance::value(&strategy.balance_underlying) + BALANCE_OFFSET;
         let amount_to_send = (virtual_coin_balance * amount_shares) / virtual_prior_total_shares;
 
         strategy.total_shares = prior_total_shares - amount_shares;
@@ -104,36 +106,20 @@ module deeplayer::strategy_module {
     }
 
     // View functions
-    public fun shares_to_underlying_view<COIN>(
-        strategy: &Strategy<COIN>,
-        amount_shares: u64
-    ): u64 {
-        let virtual_total_shares = strategy.total_shares + SHARES_OFFSET;
-        let virtual_coin_balance = coin::value(&strategy.coin_underlying) + BALANCE_OFFSET;
-        (virtual_coin_balance * amount_shares) / virtual_total_shares
-    }
-
     public fun shares_to_underlying<COIN>(
         strategy: &Strategy<COIN>,
         amount_shares: u64
     ): u64 {
-        shares_to_underlying_view(strategy, amount_shares)
-    }
-
-    public fun underlying_to_shares_view<COIN>(
-        strategy: &Strategy<COIN>,
-        amount_underlying: u64
-    ): u64 {
-        let virtual_total_shares = strategy.total_shares + SHARES_OFFSET;
-        let virtual_coin_balance = coin::value(&strategy.coin_underlying) + BALANCE_OFFSET;
-        (amount_underlying * virtual_total_shares) / virtual_coin_balance
+        shares_to_underlying_impl(strategy, amount_shares)
     }
 
     public fun underlying_to_shares<COIN>(
         strategy: &Strategy<COIN>,
         amount_underlying: u64
     ): u64 {
-        underlying_to_shares_view(strategy, amount_underlying)
+        let virtual_total_shares = strategy.total_shares + SHARES_OFFSET;
+        let virtual_coin_balance = balance::value(&strategy.balance_underlying) + BALANCE_OFFSET;
+        (amount_underlying * virtual_total_shares) / virtual_coin_balance
     }
 
     public fun user_underlying_view<COIN>(        
@@ -141,7 +127,7 @@ module deeplayer::strategy_module {
         strategy: &Strategy<COIN>,
         user: address
     ): u64 {
-        shares_to_underlying_view(strategy, shares(strategy_manager, strategy, user))
+        shares_to_underlying_impl(strategy, shares(strategy_manager, strategy, user))
     }
 
     public fun user_underlying<COIN>(
@@ -166,13 +152,23 @@ module deeplayer::strategy_module {
     }
 
     // Internal functions
+    fun shares_to_underlying_impl<COIN>(
+        strategy: &Strategy<COIN>,
+        amount_shares: u64
+    ): u64 {
+        let virtual_total_shares = strategy.total_shares + SHARES_OFFSET;
+        let virtual_coin_balance = balance::value(&strategy.balance_underlying) + BALANCE_OFFSET;
+        (virtual_coin_balance * amount_shares) / virtual_total_shares
+    }
+
     fun after_withdrawal<COIN>(
         strategy: &mut Strategy<COIN>,
         recipient: address,
         amount_to_send: u64,
         ctx: &mut TxContext
     ) {
-        let coin_sent = coin::split(&mut strategy.coin_underlying, amount_to_send, ctx);
+        let balance_sent = balance::split(&mut strategy.balance_underlying, amount_to_send);
+        let coin_sent = coin::from_balance(balance_sent, ctx);
         transfer::public_transfer(coin_sent, recipient);
     }
 

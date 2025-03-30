@@ -1,13 +1,14 @@
 module deeplayer::ecdsa_service_manager_module {
     use std::string;
     use sui::event;
-    use sui::object::{Self, ID, UID};
+    use sui::object::{Self, UID};
     use sui::transfer;
-    use sui::table;
+    use sui::coin;
+    use sui::clock;
     use sui::tx_context::{Self, TxContext};
 
     use deeplayer::allocation_module;    
-    use deeplayer::rewards_module;    
+    use deeplayer::rewards_module::{Self, RewardsCoordinator};    
     use deeplayer::avs_directory_module::{Self, AVSDirectory};
     use deeplayer::delegation_module::{Self, DelegationManager};
     use deeplayer::signature_module::{Self, SignatureWithSaltAndExpiry};
@@ -26,20 +27,30 @@ module deeplayer::ecdsa_service_manager_module {
         )
     }
 
-    public entry fun create_avs_rewards_submission(
-        rewards_submissions: &vector<RewardsSubmission>
+    public entry fun create_avs_rewards_submission<COIN>(
+        rewards_coordinator: &mut RewardsCoordinator,
+        avs: address,
+        duration: u64,
+        coin_rewards: coin::Coin<COIN>,
+        the_clock: &clock::Clock,
+        ctx: &mut TxContext
     ) {
-        rewards::create_avs_rewards_submission(
-            rewards_submissions
+        rewards_module::create_avs_rewards_submission<COIN>(
+            rewards_coordinator,
+            avs,
+            duration,
+            coin_rewards,
+            the_clock,
+            ctx
         )
     }
 
-    public entry fun register_operator_to_avs(
+    public fun register_operator_to_avs(
         directory: &mut AVSDirectory,
         delegation_manager: &DelegationManager,
         avs: address,
         operator: address,
-        operator_signature: &SignatureWithSaltAndExpiry,
+        operator_signature: SignatureWithSaltAndExpiry,
         the_clock: &clock::Clock,
         ctx: &mut TxContext
     ) {
