@@ -11,11 +11,12 @@ module deeplayer::avs_directory_module {
 
     const OPERATOR_AVS_REG_UNREGISTERED: u64 = 0;
     const OPERATOR_AVS_REG_REGISTERED: u64 = 1;
-    const E_INVALID_SIGNATURE: u64 = 3;
 
     // Errors
     const E_OPERATOR_ALREADY_REGISTERED_TO_AVS: u64 = 0;
     const E_OPERATOR_NOT_REGISTERED_TO_AVS: u64 = 1;
+    const E_INVALID_SIGNATURE: u64 = 3;
+    const E_SALT_SPENT: u64 = 4;
 
     // Structs
     public struct AVSDirectory has key {
@@ -59,12 +60,12 @@ module deeplayer::avs_directory_module {
             table::add(&mut directory.operator_salt_is_spent, operator, table::new<vector<u8>, bool>(ctx));
         };
         let mut operator_salt = table::borrow_mut(&mut directory.operator_salt_is_spent, operator);
-        if (!table::contains(operator_salt, operator_signature.salt)) {
-            table::add(operator_salt, operator_signature.salt, true);
-        }; else {
-            let is_spent = table::borrow_mut(operator_salt, operator_signature.salt);
+        if (!table::contains(operator_salt, salt)) {
+            table::add(operator_salt, salt, true);
+        } else {
+            let is_spent = table::borrow_mut(operator_salt, salt);
             is_spent = true;
-        }
+        };
     }
 
     public(package) fun register_operator_to_avs(
@@ -72,7 +73,8 @@ module deeplayer::avs_directory_module {
         delegation_manager: &DelegationManager,
         avs: address,
         operator: address,
-        operator_signature: SignatureWithSaltAndExpiry,
+        operator_signature: &SignatureWithSaltAndExpiry,
+        the_clock: &clock::Clock,
         ctx: &mut TxContext
     ) {
         check_not_paused(directory);
@@ -93,12 +95,13 @@ module deeplayer::avs_directory_module {
         if (!table::contains(&directory.operator_salt_is_spent, operator)) {
             table::add(&mut directory.operator_salt_is_spent, operator, table::new<vector<u8>, bool>(ctx));
         };
+        let salt = signature_module::salt(operator_signature);
         let mut operator_salt = table::borrow_mut(&mut directory.operator_salt_is_spent, operator);
-        if (!table::contains(operator_salt, operator_signature.salt)) {
+        if (!table::contains(operator_salt, salt)) {
             table::add(operator_salt, operator, false);
         };
 
-        let salt_is_spent = table::borrow(operator_salt, operator_signature.salt);
+        let salt_is_spent = table::borrow(operator_salt, salt);
         assert!(!salt_is_spent, E_SALT_SPENT);
         
         let is_operator = delegation_module::is_operator(delegation_manager, operator);
@@ -107,6 +110,7 @@ module deeplayer::avs_directory_module {
         let verify = signature_module::verify(
             operator_signature,
             operator,
+            the_clock,
             ctx
         );
 

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::strategy_module {
     use std::option;
     use std::string;
@@ -9,14 +10,13 @@ module deeplayer::strategy_module {
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
 
-    use deeplayer::deeplayer::{DLCap};
     use deeplayer::strategy_manager_module::{Self, StrategyManager};
 
     // Constants
-    const SHARES_OFFSET: u64 = 1000; // 1e3
-    const BALANCE_OFFSET: u64 = 1000; // 1e3
-    const MAX_TOTAL_SHARES: u64 = 1000000000000000000 - 1; // 1e18 - 1
-    const WAD: u64 = 100000000;
+    const WAD: u64 = 1_000_000_000;
+    const SHARES_OFFSET: u64 = 1_000; 
+    const BALANCE_OFFSET: u64 = 1_000; 
+    const MAX_TOTAL_SHARES: u64 = 1_000_000_000_000_000_000 - 1;
 
     // Error codes
     const E_ONLY_STRATEGY_MANAGER: u64 = 1;
@@ -27,7 +27,7 @@ module deeplayer::strategy_module {
     const E_PAUSED: u64 = 6;
 
     // Structs
-    public struct Strategy<phantom COIN> has key {
+    public struct Strategy<phantom COIN> has key, store {
         id: UID,
         total_shares: u64,
         coin_underlying: coin::Coin<COIN>, 

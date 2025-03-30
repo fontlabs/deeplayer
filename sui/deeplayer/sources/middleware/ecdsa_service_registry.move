@@ -1,7 +1,5 @@
 module deeplayer::ecdsa_stake_registry_module {
-    use std::error;
     use std::option;
-    use std::signer;
     use std::string;
     use sui::clock;
     use sui::dynamic_field;

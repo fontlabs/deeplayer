@@ -10,16 +10,17 @@ module deeplayer::strategy_manager_module {
     use sui::table;
     use sui::tx_context::{Self, TxContext};
 
-    use deeplayer::deeplayer::{DLCap};
+    use deeplayer::coin_utils_module;
     use deeplayer::strategy_module::{Self, Strategy};
+    use deeplayer::allocation_module::{AllocationManager};
     use deeplayer::delegation_module::{Self, DelegationManager};
+    use deeplayer::strategy_factory_module::{Self, StrategyFactory};
 
     // Constants
     const MAX_STAKER_STRATEGY_LIST_LENGTH: u64 = 32;
     const DEFAULT_BURN_ADDRESS: address = @0x0;
 
     // Error codes
-    const E_ONLY_STRATEGY_WHITELISTER: u64 = 1;
     const E_STRATEGY_NOT_WHITELISTED: u64 = 2;
     const E_PAUSED: u64 = 3;
     const E_STAKER_ADDRESS_ZERO: u64 = 4;
@@ -31,7 +32,6 @@ module deeplayer::strategy_manager_module {
     // Structs
     public struct StrategyManager has key {
         id: UID,
-        strategy_whitelister: address,
         is_paused: bool,
         strategy_is_whitelisted: table::Table<address, bool>,
         staker_deposit_shares: table::Table<address, table::Table<address, u64>>,
@@ -47,11 +47,6 @@ module deeplayer::strategy_manager_module {
 
     public struct StrategyRemovedFromDepositWhitelist has copy, drop {
         strategy_address: address,
-    }
-
-    public struct StrategyWhitelisterChanged has copy, drop {
-        old_whitelister: address,
-        new_whitelister: address,
     }
 
     public struct Deposit has copy, drop {
@@ -75,7 +70,6 @@ module deeplayer::strategy_manager_module {
     ) {
         let strategy_manager = StrategyManager {
             id: object::new(ctx),
-            strategy_whitelister: tx_context::sender(ctx),
             is_paused: false,
             strategy_is_whitelisted: table::new<address, bool>(ctx),
             staker_deposit_shares: table::new<address, table::Table<address, u64>>(ctx),
@@ -91,6 +85,7 @@ module deeplayer::strategy_manager_module {
     public entry fun deposit_into_strategy<COIN>(
         strategy_manager: &mut StrategyManager,
         delegation_manager: &mut DelegationManager,
+        allocation_manager: &AllocationManager,
         strategy: &mut Strategy<COIN>,
         coin_deposited: coin::Coin<COIN>,
         ctx: &mut TxContext
@@ -100,87 +95,15 @@ module deeplayer::strategy_manager_module {
         deposit_into_strategy_impl(
             strategy_manager, 
             delegation_manager,
+            allocation_manager,
             tx_context::sender(ctx), 
             strategy,
             coin_deposited, 
             ctx
         );
     }
-
-    public entry fun remove_deposit_shares<COIN>(
-        strategy_manager: &mut StrategyManager,
-        dl_cap: &DLCap,
-        staker: address,
-        strategy: &Strategy<COIN>,
-        deposit_shares_to_remove: u64,
-        ctx: &mut TxContext
-    ): u64 {
-        let (_, shares_after) = remove_deposit_shares_impl<COIN>(
-            strategy_manager, 
-            staker, 
-            strategy, 
-            deposit_shares_to_remove
-        );
-
-        shares_after
-    }
-
-    public entry fun add_shares<COIN>(
-        dl_cap: &DLCap,
-        strategy_manager: &mut StrategyManager,
-        staker: address,
-        strategy: &Strategy<COIN>,
-        shares: u64,
-        ctx: &mut TxContext
-    ): (u64, u64) {
-        add_shares_impl<COIN>(
-            strategy_manager, 
-            staker, 
-            strategy, 
-            shares,
-            ctx
-        )
-    }
-
-    public entry fun withdraw_shares_as_coins<COIN>(
-        strategy: &mut Strategy<COIN>,
-        staker: address,
-        shares: u64,
-        ctx: &mut TxContext
-    ) {
-        strategy_module::withdraw(
-            strategy,
-            staker, 
-            shares, 
-            ctx
-        );
-    }
-
-    public entry fun increase_burnable_shares<COIN>(
-        dl_cap: DLCap,
-        strategy_manager: &mut StrategyManager,
-        strategy: &Strategy<COIN>,
-        added_shares_to_burn: u64,
-        ctx: &mut TxContext
-    ) {
-        let strategy_address = object::id_to_address(&object::id(strategy));
-
-        let current_shares = if (table::contains(&strategy_manager.burnable_shares, strategy_address)) {
-            *table::borrow(&strategy_manager.burnable_shares, strategy_address)
-        } else {
-            0
-        };
-
-        table::add(&mut strategy_manager.burnable_shares, strategy_address, current_shares + added_shares_to_burn);
-      
-        event::emit(BurnableSharesIncreased {
-            strategy_address,
-            added_shares_to_burn,
-        });
-    }
-
+    
     public entry fun burn_shares<COIN>(
-        dl_cap: DLCap,
         strategy_manager: &mut StrategyManager,
         strategy: &mut Strategy<COIN>,
         ctx: &mut TxContext
@@ -210,12 +133,61 @@ module deeplayer::strategy_manager_module {
         }
     }
 
-    public entry fun set_strategy_whitelister(
+    public(package) fun add_shares<COIN>(
         strategy_manager: &mut StrategyManager,
-        dl_cap: &DLCap,
-        new_strategy_whitelister: address
+        staker: address,
+        strategy_address: address,
+        shares: u64,
+        ctx: &mut TxContext
+    ): (u64, u64) {
+        add_shares_impl<COIN>(
+            strategy_manager, 
+            staker, 
+            strategy_address, 
+            shares,
+            ctx
+        )
+    }
+
+    public(package) fun withdraw_shares_as_coins<COIN>(
+        strategy_factory: &mut StrategyFactory,
+        staker: address,
+        shares: u64,
+        ctx: &mut TxContext
     ) {
-        set_strategy_whitelister_impl(strategy_manager, new_strategy_whitelister);
+        let coin_type = coin_utils_module::get_coin_type<COIN>();
+
+        let strategy = strategy_factory_module::get_strategy<COIN>(
+            strategy_factory,
+            coin_type
+        );
+
+        strategy_module::withdraw<COIN>(
+            strategy,
+            staker, 
+            shares, 
+            ctx
+        );
+    }
+
+    public(package) fun increase_burnable_shares<COIN>(
+        strategy_manager: &mut StrategyManager,
+        strategy_address: address,
+        added_shares_to_burn: u64,
+        ctx: &mut TxContext
+    ) {
+        let current_shares = if (table::contains(&strategy_manager.burnable_shares, strategy_address)) {
+            *table::borrow(&strategy_manager.burnable_shares, strategy_address)
+        } else {
+            0
+        };
+
+        table::add(&mut strategy_manager.burnable_shares, strategy_address, current_shares + added_shares_to_burn);
+      
+        event::emit(BurnableSharesIncreased {
+            strategy_address,
+            added_shares_to_burn,
+        });
     }
 
     public(package) fun add_strategies_to_deposit_whitelist(
@@ -238,13 +210,11 @@ module deeplayer::strategy_manager_module {
         };
     }
 
-    public entry fun remove_strategies_from_deposit_whitelist(
+    public(package) fun remove_strategies_from_deposit_whitelist(
         strategy_manager: &mut StrategyManager,
         strategies_to_remove_from_whitelist: vector<address>,
         ctx: &mut TxContext
     ) {
-        check_only_strategy_whitelister(strategy_manager, ctx);
-
         let i = 0;
         let len = vector::length(&strategies_to_remove_from_whitelist);
         while (i < len) {
@@ -265,14 +235,12 @@ module deeplayer::strategy_manager_module {
     fun add_shares_impl<COIN>(
         strategy_manager: &mut StrategyManager,
         staker: address,
-        strategy: &Strategy<COIN>,
+        strategy_address: address,
         shares: u64,
         ctx: &mut TxContext
     ): (u64, u64) {
         assert!(staker != @0x0, E_STAKER_ADDRESS_ZERO);
         assert!(shares != 0, E_SHARES_AMOUNT_ZERO);
-
-        let strategy_address = object::id_to_address(&object::id(strategy));
 
         let prev_deposit_shares = if (table::contains(&strategy_manager.staker_deposit_shares, staker) &&
             table::contains(table::borrow_mut(&mut strategy_manager.staker_deposit_shares, staker), strategy_address)) {
@@ -310,6 +278,7 @@ module deeplayer::strategy_manager_module {
     fun deposit_into_strategy_impl<COIN>(
         strategy_manager: &mut StrategyManager,
         delegation_manager: &mut DelegationManager,
+        allocation_manager: &AllocationManager,
         staker: address,
         strategy: &mut Strategy<COIN>,
         coin_deposited: coin::Coin<COIN>,
@@ -332,13 +301,14 @@ module deeplayer::strategy_manager_module {
         let (prev_deposit_shares, added_shares) = add_shares_impl<COIN>(
             strategy_manager,
             staker, 
-            strategy, 
+            strategy_address, 
             shares,
             ctx
         );
 
         delegation_module::increase_delegated_shares(
             delegation_manager,
+            allocation_manager,
             staker, 
             strategy_address, 
             prev_deposit_shares, 
@@ -349,15 +319,13 @@ module deeplayer::strategy_manager_module {
         shares
     }
 
-    fun remove_deposit_shares_impl<COIN>(
+    public(package) fun remove_deposit_shares(
         strategy_manager: &mut StrategyManager,
         staker: address,
-        strategy: &Strategy<COIN>,
+        strategy_address: address,
         deposit_shares_to_remove: u64
     ): (bool, u64) {
         assert!(deposit_shares_to_remove != 0, E_SHARES_AMOUNT_ZERO);
-
-        let strategy_address = object::id_to_address(&object::id(strategy));
 
         let user_deposit_shares = if (table::contains(&strategy_manager.staker_deposit_shares, staker) &&
             table::contains(table::borrow_mut(&mut strategy_manager.staker_deposit_shares, staker), strategy_address)) {
@@ -404,19 +372,6 @@ module deeplayer::strategy_manager_module {
             i = i + 1;
         };
         assert!(false, E_STRATEGY_NOT_FOUND);
-    }
-
-    fun set_strategy_whitelister_impl(
-        strategy_manager: &mut StrategyManager,
-        new_strategy_whitelister: address
-    ) {
-        let old_whitelister = strategy_manager.strategy_whitelister;
-        strategy_manager.strategy_whitelister = new_strategy_whitelister;
-
-        event::emit(StrategyWhitelisterChanged {
-            old_whitelister,
-            new_whitelister: new_strategy_whitelister,
-        });
     }
 
     // View functions
@@ -500,13 +455,6 @@ module deeplayer::strategy_manager_module {
     }
 
     // Modifier checks
-    fun check_only_strategy_whitelister(
-        strategy_manager: &StrategyManager,
-        ctx: &mut TxContext
-    ) {
-        assert!(tx_context::sender(ctx) == strategy_manager.strategy_whitelister, E_ONLY_STRATEGY_WHITELISTER);
-    }
-
     fun check_strategy_whitelisted_for_deposit(strategy_manager: &StrategyManager, strategy_address: address) {
         assert!(
             table::contains(&strategy_manager.strategy_is_whitelisted, strategy_address) &&

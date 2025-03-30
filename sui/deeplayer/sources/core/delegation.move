@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
+#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::delegation_module {
     use std::option;
     use std::string;
     use std::vector;
+    use std::clock;
     use sui::balance;
-    use sui::coin;
     use sui::event;
     use sui::object::{Self, ID, UID};
     use sui::transfer;
@@ -14,11 +15,11 @@ module deeplayer::delegation_module {
 
     use deeplayer::signature;
     use deeplayer::allocation_module::{Self, AllocationManager};
-    use deeplayer::strategy_factory_module::{StrategyFactory};
+    use deeplayer::strategy_factory_module::{Self, StrategyFactory};
     use deeplayer::strategy_manager_module::{Self, StrategyManager};
 
     // Constants
-    const WAD: u64 = 100000000;
+    const WAD: u64 = 1_000_000_000;
     const MIN_WITHDRAWAL_DELAY: u64 = 100;
 
     // Error codes
@@ -53,7 +54,7 @@ module deeplayer::delegation_module {
         expiry: u64,
     }
 
-    public struct Withdrawal has store {
+    public struct Withdrawal has store, drop {
         staker: address,
         delegated_to: address,
         withdrawer: address,
@@ -177,11 +178,11 @@ module deeplayer::delegation_module {
         delegation_manager: &mut DelegationManager,
         allocation_manager, &AllocationManager,
         init_delegation_approver: address,
-        allocation_delay: u32,
+        allocation_delay: u64,
         metadata_uri: vector<u8>,
         ctx: &mut TxContext
     ) {
-        let sender = tx_context::sender();
+        let sender = tx_context::sender(ctx);
         assert!(!is_delegated(delegation_manager, sender), E_ACTIVELY_DELEGATED);
 
         allocation_module::set_allocation_delay(sender, allocation_delay);
@@ -238,11 +239,11 @@ module deeplayer::delegation_module {
         delegation_manager: &mut DelegationManager,
         allocation_manager: &AllocationManager,
         operator: address,
-        approver_signature_and_expiry: SignatureWithExpiry,
-        approver_salt: vector<u8>,
+        signature: &SignatureWithExpiry,
+        the_clock: &clock::Clock,
         ctx: &mut TxContext
     ) {
-        let sender = tx_context::sender();
+        let sender = tx_context::sender(ctx);
 
         assert!(!is_delegated(delegation_manager, sender), E_ACTIVELY_DELEGATED);
         assert!(is_operator(delegation_manager, operator), E_OPERATOR_NOT_REGISTERED);
@@ -252,8 +253,8 @@ module deeplayer::delegation_module {
             delegation_manager,
             sender,
             operator,
-            approver_signature_and_expiry,
-            approver_salt,
+            signature,
+            the_clock,
             ctx
         );
 
@@ -263,6 +264,7 @@ module deeplayer::delegation_module {
 
     public entry fun undelegate(
         delegation_manager: &mut DelegationManager,
+        strategy_manager: &mut StrategyManager,
         allocation_manager: &AllocationManager,
         staker: address,
         ctx: &mut TxContext
@@ -270,7 +272,7 @@ module deeplayer::delegation_module {
         assert!(is_delegated(delegation_manager, staker), E_NOT_ACTIVELY_DELEGATED);
         assert!(!is_operator(delegation_manager, staker), E_OPERATORS_CANNOT_UNDELEGATE);
 
-        let sender = tx_context::sender();
+        let sender = tx_context::sender(ctx);
         if (sender != staker) {
             let operator = *table::borrow(&delegation_manager.delegated_to, staker);
             assert!(
@@ -283,21 +285,30 @@ module deeplayer::delegation_module {
                 staker,
                 operator
             });
-        }
+        };
 
-        undelegate_impl(delegation_manager, allocation_manager, staker, ctx);
+        undelegate_impl(delegation_manager, strategy_manager, allocation_manager, staker, ctx);
     }
 
     public entry fun redelegate(
         delegation_manager: &mut DelegationManager,
+        strategy_manager: &mut StrategyManager,
         allocation_manager: &AllocationManager,
         new_operator: address,
         new_operator_approver_sig: SignatureWithExpiry,
         approver_salt: vector<u8>,
+        the_clock: &clock::Clock,
         ctx: &mut TxContext
     ) {
-        undelegate_impl(delegation_manager, allocation_manager, tx_context::sender(), ctx);
-        delegate_to(delegation_manager, new_operator, new_operator_approver_sig, approver_salt, ctx);
+        undelegate_impl(delegation_manager, strategy_manager, allocation_manager, tx_context::sender(ctx), ctx);
+        delegate_to(
+            delegation_manager, 
+            new_operator, 
+            new_operator_approver_sig, 
+            approver_salt, 
+            the_clock,
+            ctx
+        );
     }
 
     public entry fun queue_withdrawals(
@@ -310,7 +321,7 @@ module deeplayer::delegation_module {
     ) {
         check_not_paused(delegation_manager);
 
-        let sender = tx_context::sender();
+        let sender = tx_context::sender(ctx);
         let operator = *table::borrow(&delegation_manager.delegated_to, sender);
 
         let i = 0;
@@ -346,18 +357,19 @@ module deeplayer::delegation_module {
         }
     }
 
-    public entry fun complete_queued_withdrawal(
+    public entry fun complete_queued_withdrawal<COIN>(
         delegation_manager: &mut DelegationManager,
         allocation_manager: &AllocationManager,
+        strategy_factory: &mut StrategyFactory,
+        strategy_manager: &StrategyManager,
         withdrawal: &Withdrawal,
-        coin_ids: vector<UID>,
         receive_as_coins: bool,
         ctx: &mut TxContext
     ) {
         check_not_paused(delegation_manager);
 
         assert!(
-            tx_context::sender() == withdrawal.withdrawer,
+            tx_context::sender(ctx) == withdrawal.withdrawer,
             E_WITHDRAWER_NOT_CALLER
         );
 
@@ -368,7 +380,7 @@ module deeplayer::delegation_module {
         );
 
         assert!(
-            vector::length(&withdrawal.strategies) == vector::length(&coin_ids),
+            vector::length(&withdrawal.strategies) == vector::length(&coin_types),
             E_INPUT_ARRAY_LENGTH_MISMATCH
         );
 
@@ -423,7 +435,6 @@ module deeplayer::delegation_module {
         let len = vector::length(&withdrawal.strategies);
         while (i < len) {
             let strategy_address = *vector::borrow(&withdrawal.strategies, i);
-            let coin = *vector::borrow(&coins, i);
             let scaled_shares = *vector::borrow(&withdrawal.scaled_shares, i);
             let prev_slashing_factor = *vector::borrow(&prev_slashing_factors, i);
             let new_slashing_factor = *vector::borrow(&new_slashing_factors, i);
@@ -438,16 +449,17 @@ module deeplayer::delegation_module {
             };
 
             if (receive_as_coins) {
-                strategy_manager_module::withdraw_shares_as_coins(
-                    strategy,
+                strategy_manager_module::withdraw_shares_as_coins<COIN>(
+                    strategy_factory,
                     withdrawal.staker,
                     shares_to_withdraw,
                     ctx
                 );
             } else {
-                strategy_manager_module::add_shares(
+                let (prev_deposit_shares, added_shares) = strategy_manager_module::add_shares(
+                    strategy_manager,
                     withdrawal.staker,
-                    strategy,
+                    strategy_address,
                     shares_to_withdraw,
                     ctx
                 )
@@ -471,6 +483,7 @@ module deeplayer::delegation_module {
     // Package functions
     public(package) fun increase_delegated_shares(
         delegation_manager: &mut DelegationManager,
+        allocation_manager: &AllocationManager,
         staker: address,
         strategy_address: address,
         prev_deposit_shares: u64,
@@ -478,12 +491,12 @@ module deeplayer::delegation_module {
         ctx: &mut TxContext
     ) {      
         let operator = *table::borrow(&delegation_manager.delegated_to, staker);
-        let max_magnitude = allocation_module::get_max_magnitude(operator, strategy);
+        let max_magnitude = allocation_module::get_max_magnitude(allocation_manager, operator, strategy_address);
 
         let slashing_factor = get_slashing_factor(
             delegation_manager,
             staker,
-            strategy,
+            strategy_address,
             max_magnitude
         );
 
@@ -491,7 +504,7 @@ module deeplayer::delegation_module {
             delegation_manager,
             operator,
             staker,
-            strategy,
+            strategy_address,
             prev_deposit_shares,
             added_shares,
             slashing_factor,
@@ -499,16 +512,14 @@ module deeplayer::delegation_module {
         );
     }
 
-    public(package) fun slash_operator_shares<COIN>(
+    public(package) fun slash_operator_shares(
         delegation_manager: &mut DelegationManager,
         operator: address,
-        strategy: &Strategy<COIN>,
+        strategy_address: address,
         prev_max_magnitude: u64,
         new_max_magnitude: u64,
         ctx: &mut TxContext
-    ) {       
-        let strategy_address = object::id_to_address(&object::id(strategy));
-       
+    ) {             
         let operator_shares = get_operator_shares_impl(
             delegation_manager, 
             operator, 
@@ -547,8 +558,8 @@ module deeplayer::delegation_module {
 
         // Increase burnable shares in strategy manager
         strategy_manager_module::increase_burnable_shares<COIN>(
-            dl_cap,
-            strategy, 
+            strategy_manager,
+            strategy_address, 
             total_deposit_shares_to_burn, 
             ctx
         );
@@ -719,22 +730,16 @@ module deeplayer::delegation_module {
                     delegation_manager,
                     operator,
                     staker,
-                    strategy,
+                    strategy_address,
                     withdrawable
                 );
             };
 
             // Remove deposit shares from strategy manager
-            let strategy = strategy_factory_module::get_strategy_from_address<any>(
-                strategy_factory,
-                strategy_address
-            );
-
-            let shares_after = strategy_manager_module::remove_deposit_shares(
+               let shares_after = strategy_manager_module::remove_deposit_shares(
                 strategy_manager,
-                dl_cap,
                 staker, 
-                strategy, 
+                strategy_address, 
                 deposit_shares, 
                 ctx
             );
@@ -854,6 +859,7 @@ module deeplayer::delegation_module {
         staker: address,
         operator: address,
         signature: SignatureWithSaltAndExpiry,
+        the_clock: &clock::Clock,
         ctx: &mut TxContext
     ) {
         let approver = delegation_approver(delegation_manager, operator);
@@ -874,7 +880,12 @@ module deeplayer::delegation_module {
         table::add(approver_salts, signature,salt, true);
 
         // Validate signature       
-        let verify = signature_module::verify(&signature.signature, approver, ctx);
+        let verify = signature_module::verify(
+            &signature.signature, 
+            approver, 
+            the_clock,
+            ctx
+        );
         assert!(verify, E_INVALID_SIGNATURE);
     }
 
@@ -1008,7 +1019,7 @@ module deeplayer::delegation_module {
         allocation_manager: &AllocationManager,
         withdrawal_root: vector<u8>,
         ctx: &mut TxContext
-    ): (&Withdrawal, vector<u64>) {
+    ): (Withdrawal, vector<u64>) {
         let withdrawal = table::borrow(&delegation_manager.queued_withdrawals, withdrawal_root);
         let shares = get_shares_by_withdrawal_root(
             delegation_manager, 
@@ -1021,6 +1032,7 @@ module deeplayer::delegation_module {
 
     public fun get_queued_withdrawals(
         delegation_manager: &DelegationManager,
+        allocation_manager: &AllocationManager,
         staker: address
     ): (vector<Withdrawal>, vector<vector<u64>>) {
         let withdrawal_roots = get_queued_withdrawal_roots(delegation_manager, staker);
@@ -1028,11 +1040,16 @@ module deeplayer::delegation_module {
         let shares = vector::empty<vector<u64>>();
 
         let i = 0;
-        let len = vector::length(&withdrawal_roots);
+        let len = vector::length(withdrawal_roots);
         while (i < len) {
-            let root = *vector::borrow(&withdrawal_roots, i);
-            let (withdrawal, share) = get_queued_withdrawal(delegation_manager, root);
-            vector::push_back(&mut withdrawals, *withdrawal);
+            let root = vector::borrow(withdrawal_roots, i);
+            let (withdrawal, share) = get_queued_withdrawal(
+                delegation_manager, 
+                allocation_manager, 
+                root, 
+                ctx
+            );
+            vector::push_back(&mut withdrawals, withdrawal);
             vector::push_back(&mut shares, share);
             i = i + 1;
         };

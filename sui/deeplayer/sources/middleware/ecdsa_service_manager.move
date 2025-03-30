@@ -6,8 +6,8 @@ module deeplayer::ecdsa_service_manager_module {
     use sui::table;
     use sui::tx_context::{Self, TxContext};
 
-    use deeplayer::allocation;    
-    use deeplayer::rewards;    
+    use deeplayer::allocation_module;    
+    use deeplayer::rewards_module;    
     use deeplayer::avs_directory_module::{Self, AVSDirectory};
     use deeplayer::delegation_module::{Self, DelegationManager};
     use deeplayer::signature_module::{Self, SignatureWithSaltAndExpiry};
@@ -39,7 +39,8 @@ module deeplayer::ecdsa_service_manager_module {
         delegation_manager: &DelegationManager,
         avs: address,
         operator: address,
-        operator_signature: SignatureWithSaltAndExpiry,
+        operator_signature: &SignatureWithSaltAndExpiry,
+        the_clock: &clock::Clock,
         ctx: &mut TxContext
     ) {
         avs_directory_module::register_operator_to_avs(
@@ -48,6 +49,7 @@ module deeplayer::ecdsa_service_manager_module {
             avs,
             operator,
             operator_signature,
+            the_clock,
             ctx
         )
     }
@@ -67,8 +69,7 @@ module deeplayer::ecdsa_service_manager_module {
     }
 
     public fun get_operator_weight_at_block(
-
     ): u64 {
-        
+        0
     }
 }

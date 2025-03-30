@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::allocation_module {
     use std::option;
     use std::string;
@@ -12,11 +13,10 @@ module deeplayer::allocation_module {
     use sui::bcs;
     use sui::tx_context::{Self, TxContext};
 
-    use deeplayer::deeplayer::{DLCap};
     use deeplayer::delegation_module::{Self, DelegationManager};
 
     // Constants
-    const WAD: u64 = 100000000; 
+    const WAD: u64 = 1_000_000_000;
 
     // Error codes
     const E_INPUT_ARRAY_LENGTH_MISMATCH: u64 = 1;
@@ -41,7 +41,7 @@ module deeplayer::allocation_module {
     // Structs
     public struct OperatorSet has copy, drop {
         avs: address,
-        id: u32,
+        id: u64,
     }
 
     public struct Allocation has copy, drop, store {
@@ -69,7 +69,7 @@ module deeplayer::allocation_module {
 
     public struct SlashingParams has copy, drop {
         operator: address,
-        operator_set_id: u32,
+        operator_set_id: u64,
         strategies: vector<address>,
         wads_to_slash: vector<u64>,
         description: string::String,
@@ -83,28 +83,27 @@ module deeplayer::allocation_module {
 
     public struct RegisterParams has copy, drop {
         avs: address,
-        operator_set_ids: vector<u32>,
+        operator_set_ids: vector<u64>,
         data: vector<u8>,
     }
 
     public struct DeregisterParams has copy, drop {
         operator: address,
         avs: address,
-        operator_set_ids: vector<u32>,
+        operator_set_ids: vector<u64>,
     }
 
     public struct CreateSetParams has copy, drop {
-        operator_set_id: u32,
+        operator_set_id: u64,
         strategies: vector<address>,
     }
 
     public struct AllocationManager has key {
         id: UID,
-        deallocation_delay: u32,
-        allocation_configuration_delay: u32,
+        deallocation_delay: u64,
+        allocation_configuration_delay: u64,
         is_paused: bool,
-        version: string::String,
-        operator_sets: table::Table<address, vector<u32>>,
+        operator_sets: table::Table<address, vector<u64>>,
         operator_set_members: table::Table<vector<u8>, vector<address>>,
         operator_set_strategies: table::Table<vector<u8>, vector<address>>,
         registered_sets: table::Table<address, vector<vector<u8>>>,
@@ -161,7 +160,7 @@ module deeplayer::allocation_module {
 
     public struct AllocationDelaySet has copy, drop {
         operator: address,
-        delay: u32,
+        delay: u64,
         effect_block: u64,
     }
 
@@ -189,20 +188,15 @@ module deeplayer::allocation_module {
         strategy_address: address,
     }
 
-    public entry fun initialize(
-        dl_cap: &DLCap,
-        deallocation_delay: u32,
-        allocation_configuration_delay: u32,
-        version: vector<u8>,
+    fun init(
         ctx: &mut TxContext
     ) {
-        let allocation = AllocationManager {
+        let allocation_manager = AllocationManager {
             id: object::new(ctx),
-            deallocation_delay,
-            allocation_configuration_delay,
+            deallocation_delay: 1_000,
+            allocation_configuration_delay: 1_000,
             is_paused: false,
-            version: string::utf8(version),
-            operator_sets: table::new<address, vector<u32>>(ctx),
+            operator_sets: table::new<address, vector<u64>>(ctx),
             operator_set_members: table::new<vector<u8>, vector<address>>(ctx),
             operator_set_strategies: table::new<vector<u8>, vector<address>>(ctx),
             registered_sets: table::new<address, vector<vector<u8>>>(ctx),
@@ -218,7 +212,7 @@ module deeplayer::allocation_module {
             avs_registered_metadata: table::new<address, bool>(ctx),
         };
 
-        transfer::share_object(allocation);
+        transfer::share_object(allocation_manager);
     }
 
     // Package functions
@@ -231,7 +225,7 @@ module deeplayer::allocation_module {
     ) {
         check_not_paused(allocation_manager);
 
-        check_can_call(allocation_manager, avs, ctx);
+        // check_can_call(allocation_manager, avs, ctx);
 
         let operator_set = OperatorSet { avs, id: params.operator_set_id };
         assert!(vector::length(&params.strategies) == vector::length(&params.wads_to_slash), E_INPUT_ARRAY_LENGTH_MISMATCH);
@@ -296,7 +290,8 @@ module deeplayer::allocation_module {
                 operator_set,
                 strategy_address,
                 info,
-                allocation
+                allocation,
+                ctx
             );
 
             // emit_allocation_updated(
@@ -307,7 +302,7 @@ module deeplayer::allocation_module {
             //     tx_context::epoch(ctx)
             // );
 
-            _update_max_magnitude(allocation_manager, params.operator, strategy_address, info.max_magnitude);
+            update_max_magnitude(allocation_manager, params.operator, strategy_address, info.max_magnitude);
 
             delegation_module::slash_operator_shares(
                 delegation_manager,
@@ -333,12 +328,12 @@ module deeplayer::allocation_module {
     public entry fun modify_allocations(
         allocation_manager: &mut AllocationManager,
         operator: address,
-        params: vector<&AllocateParams>,
+        params: vector<AllocateParams>,
         ctx: &mut TxContext
     ) {
-        check_not_paused(allocation);
+        check_not_paused(allocation_manager);
 
-        assert!(_check_can_call(allocation_manager, operator), E_INVALID_CALLER);
+        assert!(check_can_call(allocation_manager, operator), E_INVALID_CALLER);
 
         let (is_set, delay) = get_allocation_delay(allocation_manager, operator, ctx);
         assert!(is_set, E_UNINITIALIZED_ALLOCATION_DELAY);
@@ -384,12 +379,12 @@ module deeplayer::allocation_module {
                     is_operator_slashable
                 );
 
-                allocation.pending_diff = _calc_delta(allocation.current_magnitude, new_magnitude);
+                allocation.pending_diff = calc_delta(allocation.current_magnitude, new_magnitude);
                 assert!(allocation.pending_diff != 0, E_SAME_MAGNITUDE);
 
                 if (allocation.pending_diff < 0) {
                     if (is_slashable) {
-                        _add_to_deallocation_queue(allocation_manager, operator, strategy, operator_set);
+                        add_to_deallocation_queue(allocation_manager, operator, strategy, operator_set);
                         allocation.effect_block = tx_context::epoch(ctx) + allocation_manager.deallocation_delay + 1;
                     } else {
                         info.encumbered_magnitude = info.encumbered_magnitude + allocation.pending_diff;
@@ -430,15 +425,13 @@ module deeplayer::allocation_module {
     }
 
     fun clear_deallocation_queue(
-        allocation_manager: &AllocationManager,
+        allocation_manager: &mut AllocationManager,
         operator: address,
         strategy_address: address,
         num_to_clear: u64
     ) {
-        let i = 0;
-        let num_cleared = 0;
         let len = if (table::contains(&allocation_manager.deallocation_queue, operator)) {
-            let strategies = table::borrow_mut(&mut allocation.deallocation_queue, operator);
+            let strategies = table::borrow_mut(&mut allocation_manager.deallocation_queue, operator);
             if (table::contains(strategies, strategy_address)) {
                 let queue = table::borrow(strategies, strategy_address);
                 vector::length(queue)
@@ -449,11 +442,13 @@ module deeplayer::allocation_module {
             0
         }
 
-        while (i < len && num_cleared < num_to_clear)  {
+        let i = 0;
+        let num_cleared = 0;
+        while (i < len && num_cleared < num_to_clear) {
 
             i = i + 1;
             num_cleared = num_cleared + 1;
-        }
+        };
     }
     // - register_for_operator_sets
     // - deregister_from_operator_sets
@@ -475,7 +470,7 @@ module deeplayer::allocation_module {
             return false;
         };
         let sets = table::borrow(&allocation_manager.operator_sets, operator_set.avs);
-        vector::contains(sets, operator_set.id)
+        vector::contains(sets, &operator_set.id)
     }
 
     fun operator_set_contains_strategy(
@@ -487,14 +482,14 @@ module deeplayer::allocation_module {
         if (!table::contains(&allocation_manager.operator_set_strategies, key)) {
             return false;
         };
-        let strategies = &mut table::borrow_mut(&allocation_manager.operator_set_strategies, key);
+        let strategies = table::borrow(&allocation_manager.operator_set_strategies, key);
         vector::contains(strategies, strategy_address)
     }
 
     fun operator_set_key(operator_set: OperatorSet): vector<u8> {
         let mut key = vector::empty<u8>();
         vector::append(&mut key, bcs::to_bytes<address>(&operator_set.avs));
-        vector::append(&mut key, bcs::to_bytes<u32>(&operator_set.id));
+        vector::append(&mut key, bcs::to_bytes<u64>(&operator_set.id));
         key
     }
 
@@ -619,11 +614,11 @@ module deeplayer::allocation_module {
 
     // Additional helper functions would be implemented similarly...
     // - clear_deallocation_queue
-    // - _add_to_deallocation_queue
-    // - _update_max_magnitude
-    // - _calc_delta
+    // - add_to_deallocation_queue
+    // - update_max_magnitude
+    // - calc_delta
     // - is_allocation_slashable
-    // - _check_can_call
+    // - check_can_call
     // - check_not_paused
 
     fun check_not_paused(

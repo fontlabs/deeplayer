@@ -12,16 +12,23 @@ module deeplayer::signature_module {
         expiry: u64,
     }
 
+    public(package) fun salt(
+        signature_data: &SignatureWithSaltAndExpiry,
+    ): vector<u8> {
+        signature_data.salt
+    }
+
     public(package) fun verify(
         signature_data: &SignatureWithSaltAndExpiry,
         signer: address,
+        the_clock: &clock::Clock,
         ctx: &mut TxContext
     ): bool {
-        let timestamp = clock::now(ctx);
+        let timestamp = clock::timestamp_ms(the_clock);
 
         // Check if the signature is expired
         if (signature_data.expiry < timestamp) {
-            false
+            return false;
         };
 
         // Contruct signed message
@@ -33,7 +40,7 @@ module deeplayer::signature_module {
         ed25519_verify(
             &signature_data.signature, 
             &address::to_bytes(signer), 
-            msg
+            &msg
         )
     }
 }

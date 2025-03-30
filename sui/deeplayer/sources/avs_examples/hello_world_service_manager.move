@@ -1,9 +1,13 @@
 module deeplayer::hello_world_service_manager {
     use std::string;
     use sui::event;
+    use sui::table;
+    use sui::bcs;
     use sui::object::{Self, ID, UID};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
+
+    use deeplayer::signature_module::{Self, SignatureWithSaltAndExpiry};
 
     // Constants
     const E_OPERATOR_NOT_REGISTERED: u64 = 0;
@@ -17,23 +21,27 @@ module deeplayer::hello_world_service_manager {
     const E_OPERATOR_NOT_REGISTERED_AT_TASK: u64 = 8;
 
     // Structs
-    struct Task has copy, drop {
+    public struct OwnerCap has key { 
+        id: UID
+    }
+
+    public struct Task has copy, drop {
         name: string::String,
         task_created_block: u64,
     }
 
-    struct TaskResponse has copy, drop {
+    public struct TaskResponse has copy, drop {
         value: string::String,
     }
 
-    struct HelloWorldServiceManager has key {
+    public struct HelloWorldServiceManager has key {
         id: UID,
         max_response_interval_blocks: u64,
         task_infos: table::Table<u64, TaskInfo>,
         latest_task_num: u64,
     }
 
-    struct TaskInfo has copy, drop. store {
+    public struct TaskInfo has copy, drop, store {
         id: UID,
         task_hash: vector<u8>,
         confirmations: u64,
@@ -46,19 +54,19 @@ module deeplayer::hello_world_service_manager {
         task: Task,
     }
 
-    struct TaskConfirmation has copy, drop {
+    public struct TaskConfirmation has copy, drop {
         task_index: u64,
         task_response: TaskResponse,
         operator: address,
     }
     
-    struct TaskResponded has copy, drop {
+    public struct TaskResponded has copy, drop {
         task_index: u64,
         task: Task,
         task_response: TaskResponse,
     }
 
-    struct OperatorSlashed has copy, drop {
+    public struct OperatorSlashed has copy, drop {
         task_index: u64,
         operator: address,
     }
@@ -75,6 +83,12 @@ module deeplayer::hello_world_service_manager {
         }
 
         transfer::share_object(service_manager);
+
+        let owner_cap = OwnerCap {
+            id: object::new(ctx)
+        }
+
+        transfer::transfer(owner_cap, tx_context::sender(ctx));
     }
 
     // Public functions
@@ -113,12 +127,10 @@ module deeplayer::hello_world_service_manager {
         task_response: &TaskResponse,
         reference_task_index: u64,
         signature_data: &SignatureWithSaltAndExpiry,
+        the_clock: &clock::Clock,
         ctx: &mut TxContext
     ) {
         let operator = tx_context::sender(ctx);
-
-        // Check operator hasn't already responded
-        assert!(!has_operator_responded(service_manager, operator, reference_task_index), E_OPERATOR_ALREADY_RESPONDED);
 
         // Check task hash matches
         let task_hash = calculate_task_hash(&task);
@@ -135,12 +147,13 @@ module deeplayer::hello_world_service_manager {
         let verify = signature_module::verify(
             signature_data,
             operator,
+            the_clock,
             ctx
         );
 
         assert!(verify, E_INVALID_SIGNATURE);
         
-        stake_registry::validdate(operator);
+        // stake_registry::validate(operator);
 
         task_info.confirmations = task_info.confirmations + 1;
 
@@ -151,6 +164,8 @@ module deeplayer::hello_world_service_manager {
         });
 
         if (task_info.confirmations >= MIN_CONFIRMATIONS) {
+            task_info.responded = true;
+
             event::emit(TaskResponded {
                 task_index: reference_task_index,
                 task,
@@ -162,26 +177,23 @@ module deeplayer::hello_world_service_manager {
     public entry fun slash_operator(
         owner_cap: &OwnerCap,
         service_manager: &mut HelloWorldServiceManager,
-        task: Task,
+        task: &Task,
         reference_task_index: u64,
         operator: address,
         ctx: &mut TxContext
     ) {
         // Check task hash matches
-        let task_hash = calculate_task_hash(&task);
+        let task_hash = calculate_task_hash(task);
         let task_info = get_task_info(service_manager, reference_task_index);
         
         assert!(task_hash == task_info.task_hash, E_TASK_MISMATCH);
 
         // Check task has been responded
-        assert!(is_task_responded(reference_task_index), E_TASK_ALREADY_RESPONDED);
-
-        // Check operator has responded
-        assert!(has_operator_responded(operator, reference_task_index), E_OPERATOR_ALREADY_RESPONDED);
+        assert!(is_task_responded(service_manager, reference_task_index), E_TASK_ALREADY_RESPONDED);
 
         // Check operator was registered when task was created
-        let operator_weight = get_operator_weight_at_block(stake_registry, operator, task.task_created_block);
-        assert!(operator_weight > 0, E_OPERATOR_NOT_REGISTERED_AT_TASK);
+        // let operator_weight = get_operator_weight_at_block(stake_registry, operator, task.task_created_block);
+        // assert!(operator_weight > 0, E_OPERATOR_NOT_REGISTERED_AT_TASK);
 
         event::emit(OperatorSlashed {
             task_index: reference_task_index,
@@ -204,12 +216,20 @@ module deeplayer::hello_world_service_manager {
         service_manager.max_response_interval_blocks
     }
 
+    public fun is_task_responded(
+        service_manager: &mut HelloWorldServiceManager,
+        reference_task_index: u64
+    ): bool {
+        let task_info = get_task_info(service_manager, reference_task_index);
+        task_info.responded
+    }
+
     // Helper functions
     fun calculate_task_hash(
         task: &Task
     ): vector<u8> {
         let mut hash = vector::empty<u8>();
-        vector::append(&mut hash, bcs::to_bytes<string::String>(task.name));
+        vector::append(&mut hash, bcs::to_bytes<string::String>(&task.name));
         vector::append(&mut hash, bcs::to_bytes<u64>(task.task_created_block));
         hash
     }
