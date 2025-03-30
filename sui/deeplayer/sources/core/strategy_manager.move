@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 module deeplayer::strategy_manager_module {
     use std::option;
     use std::string;

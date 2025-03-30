@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 module deeplayer::avs_directory_module {
     use std::string;
     use sui::event;

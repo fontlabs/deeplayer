@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 module deeplayer::slasher_module {
     use sui::tx_context::{Self, TxContext};
 
