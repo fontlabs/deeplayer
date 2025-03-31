@@ -31,7 +31,7 @@ interface EventListenerCallback {
 class EventSubmitter {
   async submitEvent(event: EthereumMessage) {
     try {
-      const client = new SuiClient({ url: getFullnodeUrl("mainnet") });
+      const client = new SuiClient({ url: getFullnodeUrl("testnet") });
 
       if (!process.env.SECRET_KEY) throw new Error("Invalid secret key!");
 

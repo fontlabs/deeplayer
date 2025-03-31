@@ -16,7 +16,7 @@ const Contract = {
     strategy: Strategy,
     amount: bigint
   ): Promise<TransactionBlock> {
-    const block = new TransactionBlock();
+    const transaction = new TransactionBlock();
 
     const coins = await CoinAPI.getCoins(sender, strategy.coin.type);
     const coinsObject = coins.data.map((coin) => coin.coinObjectId);
@@ -25,25 +25,25 @@ const Contract = {
 
     if (coinsObject.length > 1) {
       const [, ...otherInCoins] = coinsObject;
-      block.mergeCoins(destinationInCoin, otherInCoins);
+      transaction.mergeCoins(destinationInCoin, otherInCoins);
     }
 
-    const [coinDesposited] = block.splitCoins(destinationInCoin, [
-      block.pure.u64(amount),
+    const [coinDesposited] = transaction.splitCoins(destinationInCoin, [
+      transaction.pure.u64(amount),
     ]);
 
-    block.moveCall({
+    transaction.moveCall({
       target: `${this.deeplayer}::strategy_manager_module::deposit_into_strategy`,
       arguments: [
-        block.object(this.strategyManager),
-        block.object(this.delegationManager),
-        block.object(strategy.address),
-        block.object(coinDesposited),
+        transaction.object(this.strategyManager),
+        transaction.object(this.delegationManager),
+        transaction.object(strategy.address),
+        transaction.object(coinDesposited),
       ],
       typeArguments: [strategy.coin.type],
     });
 
-    return block;
+    return transaction;
   },
 };
 

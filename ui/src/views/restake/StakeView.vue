@@ -63,8 +63,7 @@ const restake = async () => {
 
         const { digest } = await signAndExecuteTransactionBlock({
             // @ts-ignore
-            transactionBlock,
-            chain: 'sui:mainnet'
+            transactionBlock
         });
 
 

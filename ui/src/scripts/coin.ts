@@ -5,15 +5,13 @@ import {
 } from "@mysten/sui/client";
 
 const CoinAPI = {
+  client: new SuiClient({ url: getFullnodeUrl("testnet") }),
+
   async getCoinsBalance(
     owner: string,
     coinTypes: string[]
   ): Promise<{ [key: string]: bigint }> {
-    const client = new SuiClient({
-      url: getFullnodeUrl("mainnet"),
-    });
-
-    const coins = await client.getAllCoins({ owner });
+    const coins = await this.client.getAllCoins({ owner });
     const balances: { [key: string]: bigint } = {};
 
     for (let index = 0; index < coinTypes.length; index++) {
@@ -36,11 +34,7 @@ const CoinAPI = {
   },
 
   getCoins(owner: string, coinType: string): Promise<PaginatedCoins> {
-    const client = new SuiClient({
-      url: getFullnodeUrl("mainnet"),
-    });
-
-    return client.getCoins({ owner, coinType });
+    return this.client.getCoins({ owner, coinType });
   },
 };
 
