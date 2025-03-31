@@ -1,5 +1,5 @@
 import { CoinAPI } from "@/scripts/coin";
-import { strategies } from "@/scripts/constant";
+import { strategy_ids } from "@/scripts/constant";
 import { defineStore } from "pinia";
 
 export const useBalanceStore = defineStore("balance", {
@@ -29,7 +29,7 @@ export const useBalanceStore = defineStore("balance", {
 
       const result = await CoinAPI.getCoinsBalance(
         owner,
-        strategies.map((strategy) => strategy.coin.type)
+        strategy_ids.map((strategy) => strategy.coin.type)
       );
 
       this.balances = result;

@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
+#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::strategy_module {
     use std::option;
     use std::string;
     use sui::balance::{Self, Balance};
     use sui::coin;
     use sui::event;
-    use sui::object::{Self, UID};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
 
-    use deeplayer::strategy_manager_module::{Self, StrategyManager};
+    use deeplayer::coin_utils_module;
 
     // Constants
     const WAD: u64 = 1_000_000_000;
@@ -26,8 +26,7 @@ module deeplayer::strategy_module {
     const E_PAUSED: u64 = 6;
 
     // Structs
-    public struct Strategy<phantom COIN> has key, store {
-        id: UID,
+    public struct Strategy<phantom COIN> has store {
         total_shares: u64,
         balance_underlying: balance::Balance<COIN>, 
         is_paused: bool
@@ -35,25 +34,21 @@ module deeplayer::strategy_module {
 
     // Events
     public struct ExchangeRateEmitted has copy, drop {
+        strategy_id: string::String,
         rate: u64,
     }
 
     // Public functions
     public(package) fun create<COIN>(
         ctx: &mut TxContext
-    ): (Strategy<COIN>, address) {
-        let id = object::new(ctx);
-
+    ): Strategy<COIN> {
         let strategy = Strategy {
-            id,
             total_shares: 0,
             balance_underlying: balance::zero<COIN>(),
             is_paused: false
         };       
 
-        transfer::share_object(strategy);
-
-        (strategy, @0x0)
+        strategy
     }
 
     public(package) fun deposit<COIN>(
@@ -78,7 +73,8 @@ module deeplayer::strategy_module {
         strategy.total_shares = prior_total_shares + new_shares;
         assert!(strategy.total_shares <= MAX_TOTAL_SHARES, E_TOTAL_SHARES_EXCEEDS_MAX);
 
-        emit_exchange_rate(strategy, virtual_coin_balance, strategy.total_shares + SHARES_OFFSET);
+        let strategy_id = coin_utils_module::get_strategy_id<COIN>();
+        emit_exchange_rate(strategy_id, virtual_coin_balance, strategy.total_shares + SHARES_OFFSET);
 
         new_shares
     }
@@ -100,7 +96,9 @@ module deeplayer::strategy_module {
 
         strategy.total_shares = prior_total_shares - amount_shares;
 
-        emit_exchange_rate(strategy, virtual_coin_balance - amount_to_send, strategy.total_shares + SHARES_OFFSET);
+        let strategy_id = coin_utils_module::get_strategy_id<COIN>();
+        emit_exchange_rate(strategy_id, virtual_coin_balance - amount_to_send, strategy.total_shares + SHARES_OFFSET);
+
         after_withdrawal(strategy, recipient, amount_to_send, ctx);
     }
 
@@ -119,35 +117,6 @@ module deeplayer::strategy_module {
         let virtual_total_shares = strategy.total_shares + SHARES_OFFSET;
         let virtual_coin_balance = balance::value(&strategy.balance_underlying) + BALANCE_OFFSET;
         (amount_underlying * virtual_total_shares) / virtual_coin_balance
-    }
-
-    public fun user_underlying_view<COIN>(        
-        strategy_manager: &StrategyManager,
-        strategy: &Strategy<COIN>,
-        user: address
-    ): u64 {
-        shares_to_underlying_impl(strategy, shares(strategy_manager, strategy, user))
-    }
-
-    public fun user_underlying<COIN>(
-        strategy_manager: &StrategyManager,
-        strategy: &Strategy<COIN>,
-        user: address
-    ): u64 {
-        shares_to_underlying(strategy, shares(strategy_manager, strategy, user))
-    }
-
-    public fun shares<COIN>(
-        strategy_manager: &StrategyManager,
-        strategy: &Strategy<COIN>,
-        user: address
-    ): u64 {       
-        let strategy_address = object::id_to_address(&object::id(strategy));
-        strategy_manager_module::staker_deposit_shares(
-            strategy_manager, 
-            user, 
-            strategy_address
-        )
     }
 
     // Internal functions
@@ -171,12 +140,13 @@ module deeplayer::strategy_module {
         transfer::public_transfer(coin_sent, recipient);
     }
 
-    fun emit_exchange_rate<COIN>(
-        strategy: &Strategy<COIN>,
+    fun emit_exchange_rate(
+        strategy_id: string::String,
         virtual_coin_balance: u64,
         virtual_total_shares: u64
     ) {
         event::emit(ExchangeRateEmitted {
+            strategy_id,
             rate: (WAD * virtual_coin_balance) / virtual_total_shares,
         });
     }

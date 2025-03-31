@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::allocation_module {
     use std::option;
     use std::string;
@@ -12,8 +13,7 @@ module deeplayer::allocation_module {
     use sui::bcs;
     use sui::tx_context::{Self, TxContext};
 
-    use deeplayer::delegation_module::{Self, DelegationManager};
-    use deeplayer::strategy_manager_module::{Self, StrategyManager};
+    use deeplayer::strategy_manager_module::{StrategyManager};
 
     // Constants
     const WAD: u64 = 1_000_000_000;
@@ -75,14 +75,14 @@ module deeplayer::allocation_module {
     public struct SlashingParams has copy, drop, store {
         operator: address,
         operator_set_id: u64,
-        strategies: vector<address>,
+        strategy_ids: vector<string::String>,
         wads_to_slash: vector<u64>,
         description: string::String,
     }
 
     public struct AllocateParams has copy, drop {
         operator_set: OperatorSet,
-        strategies: vector<address>,
+        strategy_ids: vector<string::String>,
         new_magnitudes: vector<u64>,
     }
 
@@ -100,19 +100,19 @@ module deeplayer::allocation_module {
 
     public struct CreateSetParams has copy, drop {
         operator_set_id: u64,
-        strategies: vector<address>,
+        strategy_ids: vector<string::String>,
     }
 
     public struct AllocationManager has key {
         id: UID,
         is_paused: bool,
         operator_sets: table::Table<address, vector<u64>>,
-        operator_set_strategies: table::Table<vector<u8>, vector<address>>,
+        operator_set_strategies: table::Table<vector<u8>, vector<string::String>>,
         allocated_sets: table::Table<address, vector<vector<u8>>>,
-        allocated_strategies: table::Table<address, table::Table<vector<u8>, vector<address>>>,
-        allocations: table::Table<address, table::Table<vector<u8>, table::Table<address, Allocation>>>,
-        max_magnitude_snapshots: table::Table<address, table::Table<address, vector<Snapshot>>>,
-        encumbered_magnitude: table::Table<address, table::Table<address, u64>>,
+        allocated_strategies: table::Table<address, table::Table<vector<u8>, vector<string::String>>>,
+        allocations: table::Table<address, table::Table<vector<u8>, table::Table<string::String, Allocation>>>,
+        max_magnitude_snapshots: table::Table<address, table::Table<string::String, vector<Snapshot>>>,
+        encumbered_magnitude: table::Table<address, table::Table<string::String, u64>>,
         registration_status: table::Table<address, table::Table<vector<u8>, RegistrationStatus>>,
         allocation_delay_info: table::Table<address, AllocationDelayInfo>,
     }
@@ -121,7 +121,7 @@ module deeplayer::allocation_module {
     public struct OperatorSlashed has copy, drop {
         operator: address,
         operator_set: OperatorSet,
-        strategies: vector<address>,
+        strategy_ids: vector<string::String>,
         wad_slashed: vector<u64>,
         description: string::String,
     }
@@ -129,20 +129,20 @@ module deeplayer::allocation_module {
     public struct AllocationUpdated has copy, drop {
         operator: address,
         operator_set: OperatorSet,
-        strategy_address: address,
+        strategy_id: string::String,
         magnitude: u64,
         effect_block: u64,
     }
 
     public struct EncumberedMagnitudeUpdated has copy, drop {
         operator: address,
-        strategy_address: address,
+        strategy_id: string::String,
         magnitude: u64,
     }
 
     public struct MaxMagnitudeUpdated has copy, drop {
         operator: address,
-        strategy_address: address,
+        strategy_id: string::String,
         magnitude: u64,
     }
 
@@ -162,11 +162,6 @@ module deeplayer::allocation_module {
         effect_block: u64,
     }
 
-    public struct AVSRegistrarSet has copy, drop {
-        avs: address,
-        registrar: address,
-    }
-
     public struct AVSMetadataURIUpdated has copy, drop {
         avs: address,
         metadata_uri: string::String,
@@ -178,12 +173,12 @@ module deeplayer::allocation_module {
 
     public struct StrategyAddedToOperatorSet has copy, drop {
         operator_set: OperatorSet,
-        strategy_address: address,
+        strategy_id: string::String,
     }
 
     public struct StrategyRemovedFromOperatorSet has copy, drop {
         operator_set: OperatorSet,
-        strategy_address: address,
+        strategy_id: string::String,
     }
 
     fun init(
@@ -193,12 +188,12 @@ module deeplayer::allocation_module {
             id: object::new(ctx),
             is_paused: false,
             operator_sets: table::new<address, vector<u64>>(ctx),
-            operator_set_strategies: table::new<vector<u8>, vector<address>>(ctx),
+            operator_set_strategies: table::new<vector<u8>, vector<string::String>>(ctx),
             allocated_sets: table::new<address, vector<vector<u8>>>(ctx),
-            allocated_strategies: table::new<address, table::Table<vector<u8>, vector<address>>>(ctx),
-            allocations: table::new<address, table::Table<vector<u8>, table::Table<address, Allocation>>>(ctx),
-            max_magnitude_snapshots: table::new<address, table::Table<address, vector<Snapshot>>>(ctx),
-            encumbered_magnitude: table::new<address, table::Table<address, u64>>(ctx),
+            allocated_strategies: table::new<address, table::Table<vector<u8>, vector<string::String>>>(ctx),
+            allocations: table::new<address, table::Table<vector<u8>, table::Table<string::String, Allocation>>>(ctx),
+            max_magnitude_snapshots: table::new<address, table::Table<string::String, vector<Snapshot>>>(ctx),
+            encumbered_magnitude: table::new<address, table::Table<string::String, u64>>(ctx),
             registration_status: table::new<address, table::Table<vector<u8>, RegistrationStatus>>(ctx),
             allocation_delay_info: table::new<address, AllocationDelayInfo>(ctx),
         };
@@ -210,7 +205,6 @@ module deeplayer::allocation_module {
     public(package) fun slash_operator(
         allocation_manager: &mut AllocationManager,
         strategy_manager: &mut StrategyManager,
-        delegation_manager: &mut DelegationManager,
         avs: address,
         params: SlashingParams,
         ctx: &mut TxContext
@@ -218,26 +212,26 @@ module deeplayer::allocation_module {
         check_not_paused(allocation_manager);
 
         let operator_set = OperatorSet { avs, id: params.operator_set_id };
-        assert!(vector::length(&params.strategies) == vector::length(&params.wads_to_slash), E_INPUT_ARRAY_LENGTH_MISMATCH);
+        assert!(vector::length(&params.strategy_ids) == vector::length(&params.wads_to_slash), E_INPUT_ARRAY_LENGTH_MISMATCH);
         assert!(operator_set_exists(allocation_manager, operator_set), E_INVALID_OPERATOR_SET);
         assert!(is_operator_slashable(allocation_manager, params.operator, operator_set, ctx), E_OPERATOR_NOT_SLASHABLE);
 
         let mut wad_slashed = vector::empty<u64>();
 
         let mut i = 0;
-        let len = vector::length(&params.strategies);
+        let len = vector::length(&params.strategy_ids);
         while (i < len) {
-            let strategy_address = *vector::borrow(&params.strategies, i);
+            let strategy_id = *vector::borrow(&params.strategy_ids, i);
             let wad_to_slash = *vector::borrow(&params.wads_to_slash, i);
 
             assert!(0 < wad_to_slash && wad_to_slash <= WAD, E_INVALID_WAD_TO_SLASH);
-            assert!(operator_set_contains_strategy(allocation_manager, operator_set, strategy_address), E_STRATEGY_NOT_IN_OPERATOR_SET);
+            assert!(operator_set_contains_strategy(allocation_manager, operator_set, strategy_id), E_STRATEGY_NOT_IN_OPERATOR_SET);
 
             let (mut info, mut allocation) = get_updated_allocation(
                 allocation_manager,
                 params.operator,
                 operator_set,
-                strategy_address,
+                strategy_id,
                 ctx
             );
 
@@ -263,7 +257,7 @@ module deeplayer::allocation_module {
                 // emit_allocation_updated(
                 //     params.operator,
                 //     operator_set,
-                //     strategy_address,
+                //     strategy_id,
                 //     allocation.current_magnitude + allocation.pending_diff,
                 //     allocation.effect_block
                 // );
@@ -273,7 +267,7 @@ module deeplayer::allocation_module {
                 allocation_manager,
                 params.operator,
                 operator_set,
-                strategy_address,
+                strategy_id,
                 info,
                 allocation,
                 ctx
@@ -282,22 +276,22 @@ module deeplayer::allocation_module {
             // emit_allocation_updated(
             //     params.operator,
             //     operator_set,
-            //     strategy_address,
+            //     strategy_id,
             //     allocation.current_magnitude,
             //     tx_context::epoch(ctx)
             // );
 
-            update_max_magnitude(allocation_manager, params.operator, strategy_address, info.max_magnitude, ctx);
+            update_max_magnitude(allocation_manager, params.operator, strategy_id, info.max_magnitude, ctx);
 
-            delegation_module::slash_operator_shares(
-                delegation_manager,
-                strategy_manager,
-                params.operator,
-                strategy_address,
-                prev_max_magnitude,
-                info.max_magnitude,
-                ctx
-            );
+            // delegation_module::slash_operator_shares(
+            //     delegation_manager,
+            //     strategy_manager,
+            //     params.operator,
+            //     strategy_id,
+            //     prev_max_magnitude,
+            //     info.max_magnitude,
+            //     ctx
+            // );
 
             i = i + 1;
         };
@@ -305,7 +299,7 @@ module deeplayer::allocation_module {
         event::emit(OperatorSlashed {
             operator: params.operator,
             operator_set,
-            strategies: params.strategies,
+            strategy_ids: params.strategy_ids,
             wad_slashed,
             description: params.description,
         });
@@ -326,14 +320,14 @@ module deeplayer::allocation_module {
     fun operator_set_contains_strategy(
         allocation_manager: &AllocationManager,
         operator_set: OperatorSet,
-        strategy_address: address
+        strategy_id: string::String
     ): bool {
         let key = operator_set_key(operator_set);
         if (!table::contains(&allocation_manager.operator_set_strategies, key)) {
             return false;
         };
-        let strategies = table::borrow(&allocation_manager.operator_set_strategies, key);
-        vector::contains(strategies, &strategy_address)
+        let strategy_ids = table::borrow(&allocation_manager.operator_set_strategies, key);
+        vector::contains(strategy_ids, &strategy_id)
     }
 
     fun operator_set_key(operator_set: OperatorSet): vector<u8> {
@@ -347,14 +341,14 @@ module deeplayer::allocation_module {
         allocation_manager: &AllocationManager,
         operator: address,
         operator_set: OperatorSet,
-        strategy_address: address,
+        strategy_id: string::String,
         ctx: &mut TxContext
     ): (StrategyInfo, Allocation) {
-        let max_magnitude = get_max_magnitude(allocation_manager, operator, strategy_address, 0);
+        let max_magnitude = get_max_magnitude(allocation_manager, operator, strategy_id, 0);
         
         let encumbered_magnitude = if (table::contains(&allocation_manager.encumbered_magnitude, operator) &&
-            table::contains(table::borrow(&allocation_manager.encumbered_magnitude, operator), strategy_address)) {
-            *table::borrow(table::borrow(&allocation_manager.encumbered_magnitude, operator), strategy_address)
+            table::contains(table::borrow(&allocation_manager.encumbered_magnitude, operator), strategy_id)) {
+            *table::borrow(table::borrow(&allocation_manager.encumbered_magnitude, operator), strategy_id)
         } else {
             0
         };
@@ -363,8 +357,8 @@ module deeplayer::allocation_module {
 
         let mut allocation = if (table::contains(&allocation_manager.allocations, operator) &&
             table::contains(table::borrow(&allocation_manager.allocations, operator), operator_set_key(operator_set)) &&
-            table::contains(table::borrow(table::borrow(&allocation_manager.allocations, operator), operator_set_key(operator_set)), strategy_address)) {
-            *table::borrow(table::borrow(table::borrow(&allocation_manager.allocations, operator), operator_set_key(operator_set)), strategy_address)
+            table::contains(table::borrow(table::borrow(&allocation_manager.allocations, operator), operator_set_key(operator_set)), strategy_id)) {
+            *table::borrow(table::borrow(table::borrow(&allocation_manager.allocations, operator), operator_set_key(operator_set)), strategy_id)
         } else {
             Allocation { current_magnitude: 0, pending_diff: 0, effect_block: 0 }
         };
@@ -387,32 +381,32 @@ module deeplayer::allocation_module {
         allocation_manager: &mut AllocationManager,
         operator: address,
         operator_set: OperatorSet,
-        strategy_address: address,
+        strategy_id: string::String,
         info: StrategyInfo,
         allocation: Allocation,
         ctx: &mut TxContext
     ) {
         // Update encumbered magnitude
         if (!table::contains(&allocation_manager.encumbered_magnitude, operator)) {
-            table::add(&mut allocation_manager.encumbered_magnitude, operator, table::new<address, u64>(ctx));
+            table::add(&mut allocation_manager.encumbered_magnitude, operator, table::new<string::String, u64>(ctx));
         };
         let operator_magnitudes = table::borrow_mut(&mut allocation_manager.encumbered_magnitude, operator);
-        table::add(operator_magnitudes, strategy_address, info.encumbered_magnitude);
+        table::add(operator_magnitudes, strategy_id, info.encumbered_magnitude);
 
         // Update allocation
         if (!table::contains(&allocation_manager.allocations, operator)) {
-            table::add(&mut allocation_manager.allocations, operator, table::new<vector<u8>, table::Table<address, Allocation>>(ctx));
+            table::add(&mut allocation_manager.allocations, operator, table::new<vector<u8>, table::Table<string::String, Allocation>>(ctx));
         };
         let operator_allocations = table::borrow_mut(&mut allocation_manager.allocations, operator);
         
         let set_key = operator_set_key(operator_set);
         if (!table::contains(operator_allocations, set_key)) {
-            table::add(operator_allocations, set_key, table::new<address, Allocation>(ctx));
+            table::add(operator_allocations, set_key, table::new<string::String, Allocation>(ctx));
         };
         let set_allocations = table::borrow_mut(operator_allocations, set_key);
-        table::add(set_allocations, strategy_address, allocation);
+        table::add(set_allocations, strategy_id, allocation);
 
-        // Update allocated sets and strategies
+        // Update allocated sets and strategy_ids
         if (allocation.pending_diff != 0) {
             if (!table::contains(&allocation_manager.allocated_sets, operator)) {
                 table::add(&mut allocation_manager.allocated_sets, operator, vector::empty<vector<u8>>());
@@ -423,15 +417,15 @@ module deeplayer::allocation_module {
             };
 
             if (!table::contains(&allocation_manager.allocated_strategies, operator)) {
-                table::add(&mut allocation_manager.allocated_strategies, operator, table::new<vector<u8>, vector<address>>(ctx));
+                table::add(&mut allocation_manager.allocated_strategies, operator, table::new<vector<u8>, vector<string::String>>(ctx));
             };
             let mut allocated_strategies = table::borrow_mut(&mut allocation_manager.allocated_strategies, operator);
             if (!table::contains(allocated_strategies, set_key)) {
-                table::add(allocated_strategies, set_key, vector::empty<address>());
+                table::add(allocated_strategies, set_key, vector::empty<string::String>());
             };
             let mut set_strategies = table::borrow_mut(allocated_strategies, set_key);
-            if (!vector::contains(set_strategies, &strategy_address)) {
-                vector::push_back(set_strategies, strategy_address);
+            if (!vector::contains(set_strategies, &strategy_id)) {
+                vector::push_back(set_strategies, strategy_id);
             };
         } else if (allocation.current_magnitude == 0) {
             if (table::contains(&allocation_manager.allocated_strategies, operator)) {
@@ -442,7 +436,7 @@ module deeplayer::allocation_module {
                         table::remove(allocated_strategies, set_key);
                     } else {
                         // let i = vector::find_index<address>(set_strategies, fn (strategy: &address): bool {
-                        //     strategy == &strategy_address
+                        //     strategy == &strategy_id
                         // });
                         // vector::remove(set_strategies, option::extract(i));
                     };
@@ -464,15 +458,15 @@ module deeplayer::allocation_module {
     fun update_max_magnitude(
         allocation_manager: &mut AllocationManager, 
         operator: address, 
-        strategy_address: address, 
+        strategy_id: string::String, 
         max_magnitude: u64,
         ctx: &mut TxContext
     ) {
         if (!table::contains(&allocation_manager.max_magnitude_snapshots, operator)) {
-            table::add(&mut allocation_manager.max_magnitude_snapshots, operator, table::new<address, vector<Snapshot>>(ctx))
+            table::add(&mut allocation_manager.max_magnitude_snapshots, operator, table::new<string::String, vector<Snapshot>>(ctx))
         };
         let max_magnitude_snapshots = table::borrow_mut(&mut allocation_manager.max_magnitude_snapshots, operator);
-        let max_magnitudes = table::borrow_mut(max_magnitude_snapshots, strategy_address);
+        let max_magnitudes = table::borrow_mut(max_magnitude_snapshots, strategy_id);
         
         let snapshot = Snapshot {
             block_number: tx_context::epoch(ctx),
@@ -491,19 +485,19 @@ module deeplayer::allocation_module {
     public fun get_max_magnitudes(
         allocation_manager: &AllocationManager,
         operator: address,
-        strategies: vector<address>,
+        strategy_ids: vector<string::String>,
         min_block: u64
     ): vector<u64> {
         let mut max_magnitudes = vector::empty<u64>();
 
         let mut i = 0;
-        let len = vector::length(&strategies);
+        let len = vector::length(&strategy_ids);
         while (i < len) {
-            let strategy_address = *vector::borrow(&strategies, i);
+            let strategy_id = *vector::borrow(&strategy_ids, i);
 
             vector::push_back(
                 &mut max_magnitudes,
-                get_max_magnitude(allocation_manager, operator, strategy_address, min_block)
+                get_max_magnitude(allocation_manager, operator, strategy_id, min_block)
             );
 
             i = i + 1;
@@ -515,14 +509,14 @@ module deeplayer::allocation_module {
     public fun get_max_magnitude(
         allocation_manager: &AllocationManager,
         operator: address,
-        strategy_address: address,
+        strategy_id: string::String,
         min_block: u64
     ): u64 {
         if (!table::contains(&allocation_manager.max_magnitude_snapshots, operator) ||
-            !table::contains(table::borrow(&allocation_manager.max_magnitude_snapshots, operator), strategy_address)) {
+            !table::contains(table::borrow(&allocation_manager.max_magnitude_snapshots, operator), strategy_id)) {
             return WAD;
         };
-        let snapshots = table::borrow(table::borrow(&allocation_manager.max_magnitude_snapshots, operator), strategy_address);
+        let snapshots = table::borrow(table::borrow(&allocation_manager.max_magnitude_snapshots, operator), strategy_id);
         if (vector::is_empty(snapshots)) {
             return WAD;
         };

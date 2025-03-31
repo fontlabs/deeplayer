@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::rewards_module {
     use sui::object::{Self, UID}; 
     use sui::clock;
@@ -11,9 +12,11 @@ module deeplayer::rewards_module {
     use sui::bag::{Self, Bag};
     use sui::table;
 
+    use deeplayer::coin_utils_module;
     use deeplayer::strategy_module::{Strategy};
     use deeplayer::delegation_module::{Self, DelegationManager};
     use deeplayer::strategy_manager_module::{Self, StrategyManager};
+    use deeplayer::strategy_factory_module::{Self, StrategyFactory};
 
     // Errors
     const E_PAUSED: u64 = 1;
@@ -72,14 +75,13 @@ module deeplayer::rewards_module {
         rewards_coordinator: &mut RewardsCoordinator,
         delegation_manager: &DelegationManager,
         strategy_manager: &StrategyManager,
-        strategy: &Strategy<COIN>,
         rewards_root: vector<u8>,
         the_clock: &clock::Clock,
         ctx: &mut TxContext
     ) {
         check_not_paused(rewards_coordinator);
 
-        let strategy_address = object::id_to_address(&object::id(strategy));
+        let strategy_id = coin_utils_module::get_strategy_id<COIN>();
 
         let staker = tx_context::sender(ctx);
         let rewards_submission = bag::borrow_mut<vector<u8>, RewardsSubmission<COIN>>(
@@ -93,7 +95,7 @@ module deeplayer::rewards_module {
         // let staker_shares = strategy_manager_module::staker_deposit_shares(
         //     strategy_manager,
         //     staker,
-        //     strategy_address
+        //     strategy_id
         // );
 
     }

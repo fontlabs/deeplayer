@@ -1,13 +1,3 @@
 // SPDX-License-Identifier: MIT
-module deeplayer::ecdsa_stake_registry_module {
-    use std::option;
-    use std::string;
-    use sui::clock;
-    use sui::dynamic_field;
-    use sui::event;
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
-
-   
-}
+#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
+module deeplayer::ecdsa_stake_registry_module {}

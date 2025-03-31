@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::strategy_factory_module {
     use std::option;
     use std::string;
@@ -13,7 +14,6 @@ module deeplayer::strategy_factory_module {
 
     use deeplayer::coin_utils_module;
     use deeplayer::strategy_module::{Self, Strategy};
-    use deeplayer::strategy_manager_module::{Self, StrategyManager};
 
     // Error codes
     const E_BLACKLISTED_TOKEN: u64 = 1;
@@ -32,12 +32,7 @@ module deeplayer::strategy_factory_module {
 
     // Events
     public struct CoinBlacklisted has copy, drop {
-        coin_type: string::String,
-    }
-
-    public struct StrategySetForCoin has copy, drop {
-        coin_type: string::String,
-        strategy_address: address,
+        strategy_id: string::String,
     }
 
     // Initialization
@@ -57,101 +52,96 @@ module deeplayer::strategy_factory_module {
     // Public functions
     public entry fun deploy_new_strategy<COIN>(
         strategy_factory: &mut StrategyFactory,
-        strategy_manager: &mut StrategyManager,
         ctx: &mut TxContext
     ) {
         check_not_paused(strategy_factory);
 
-        let coin_type = coin_utils_module::get_coin_type<COIN>();
+        let strategy_id = coin_utils_module::get_strategy_id<COIN>();
 
-        assert!(!table::contains(&strategy_factory.is_blacklisted, coin_type), E_BLACKLISTED_TOKEN);
-        assert!(!bag::contains(&strategy_factory.deployed_strategies, coin_type), E_STRATEGY_ALREADY_EXISTS);
+        assert!(!table::contains(&strategy_factory.is_blacklisted, strategy_id), E_BLACKLISTED_TOKEN);
+        assert!(!bag::contains(&strategy_factory.deployed_strategies, strategy_id), E_STRATEGY_ALREADY_EXISTS);
 
-        let (strategy, strategy_address) = strategy_module::create<COIN>(ctx);
-        bag::add(&mut strategy_factory.deployed_strategies, coin_type, strategy);
-
-        event::emit(StrategySetForCoin { 
-            coin_type, 
-            strategy_address
-        });
+        let strategy = strategy_module::create<COIN>(ctx);
+        bag::add(&mut strategy_factory.deployed_strategies, strategy_id, strategy);
 
         // Whitelist the strategy
-        let strategies_to_whitelist = vector[strategy_address];
-        strategy_manager_module::add_strategies_to_deposit_whitelist(
-            strategy_manager,
-            strategies_to_whitelist, 
-            ctx
-        );
+        let strategies_to_whitelist = vector[strategy_id];
+        // strategy_manager_module::add_strategies_to_deposit_whitelist(
+        //     strategy_manager,
+        //     strategies_to_whitelist, 
+        //     ctx
+        // );
     }
 
     public entry fun blacklist_coins(
         strategy_factory: &mut StrategyFactory,
-        strategy_manager: &mut StrategyManager,
-        coin_types: vector<string::String>,
+        strategy_ids: vector<string::String>,
         ctx: &mut TxContext
     ) {
-        let strategies_to_remove = vector::empty<address>();
+        let strategies_to_remove = vector::empty<string::String>();
         let mut i = 0;
-        let len = vector::length(&coin_types);
+        let len = vector::length(&strategy_ids);
         while (i < len) {
-            let coin_type = *vector::borrow(&coin_types, i);
-            assert!(!table::contains(&strategy_factory.is_blacklisted, coin_type), E_ALREADY_BLACKLISTED);
+            let strategy_id = *vector::borrow(&strategy_ids, i);
+            assert!(!table::contains(&strategy_factory.is_blacklisted, strategy_id), E_ALREADY_BLACKLISTED);
             
-            table::add(&mut strategy_factory.is_blacklisted, coin_type, true);
+            table::add(&mut strategy_factory.is_blacklisted, strategy_id, true);
           
             event::emit(CoinBlacklisted { 
-                coin_type
+                strategy_id
             });
 
-            if (bag::contains(&strategy_factory.deployed_strategies, coin_type)) {
-                // vector::push_back(&mut strategies_to_remove, strategy_address);
+            if (bag::contains(&strategy_factory.deployed_strategies, strategy_id)) {
+                // vector::push_back(&mut strategies_to_remove, strategy_id);
             };
             i = i + 1;
         };
 
         if (vector::length(&strategies_to_remove) > 0) {
-            strategy_manager_module::remove_strategies_from_deposit_whitelist(
-                strategy_manager,
-                strategies_to_remove, 
-                ctx
-            );
+            // strategy_manager_module::remove_strategies_from_deposit_whitelist(
+            //     strategy_manager,
+            //     strategies_to_remove, 
+            //     ctx
+            // );
         };
     }
 
     public entry fun whitelist_strategies(
-        strategy_manager: &mut StrategyManager,
-        strategies_to_whitelist: vector<address>,
+        strategies_to_whitelist: vector<string::String>,
         ctx: &mut TxContext
     ) {
-        strategy_manager_module::add_strategies_to_deposit_whitelist(
-            strategy_manager,
-            strategies_to_whitelist, 
-            ctx
-        );
+        // strategy_manager_module::add_strategies_to_deposit_whitelist(
+        //     strategy_manager,
+        //     strategies_to_whitelist, 
+        //     ctx
+        // );
     }
 
     public entry fun remove_strategies_from_whitelist(
         strategy_factory: &mut StrategyFactory,
-        strategy_manager: &mut StrategyManager,
-        strategies_to_remove_from_whitelist: vector<address>,
+        strategies_to_remove_from_whitelist: vector<string::String>,
         ctx: &mut TxContext
     ) {
-        strategy_manager_module::remove_strategies_from_deposit_whitelist(
-            strategy_manager,
-            strategies_to_remove_from_whitelist, 
-            ctx
-        );
+        // strategy_manager_module::remove_strategies_from_deposit_whitelist(
+        //     strategy_manager,
+        //     strategies_to_remove_from_whitelist, 
+        //     ctx
+        // );
     }
 
     // View functions
     public fun get_strategy<COIN>(
-        strategy_factory: &mut StrategyFactory,
-        coin_type: string::String
+        strategy_factory: &StrategyFactory
+    ): &Strategy<COIN> {
+        let strategy_id = coin_utils_module::get_strategy_id<COIN>();
+        bag::borrow<string::String, Strategy<COIN>>(&strategy_factory.deployed_strategies, strategy_id)
+    }
+
+    public fun get_strategy_mut<COIN>(
+        strategy_factory: &mut StrategyFactory
     ): &mut Strategy<COIN> {
-        bag::borrow_mut<string::String, Strategy<COIN>>(
-            &mut strategy_factory.deployed_strategies, 
-            coin_type
-        )
+        let strategy_id = coin_utils_module::get_strategy_id<COIN>();
+        bag::borrow_mut<string::String, Strategy<COIN>>(&mut strategy_factory.deployed_strategies, strategy_id)
     }
 
     // Modifier checks

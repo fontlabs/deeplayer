@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::signature_module {
     use sui::clock;
     use sui::address;
@@ -16,7 +17,7 @@ module deeplayer::signature_module {
     public(package) fun salt(
         signature_with_salt_and_expiry: SignatureWithSaltAndExpiry,
     ): vector<u8> {
-        signature_data.salt
+        signature_with_salt_and_expiry.salt
     }
 
     public(package) fun create(
@@ -36,18 +37,18 @@ module deeplayer::signature_module {
         let timestamp = clock::timestamp_ms(the_clock);
 
         // Check if the signature is expired
-        if (signature_data.expiry < timestamp) {
+        if (signature_with_salt_and_expiry.expiry < timestamp) {
             return false;
         };
 
         // Contruct signed message
         let mut msg = vector::empty<u8>();
-        vector::append(&mut msg, signature_data.salt);
-        vector::append(&mut msg, bcs::to_bytes<u64>(&signature_data.expiry));
+        vector::append(&mut msg, signature_with_salt_and_expiry.salt);
+        vector::append(&mut msg, bcs::to_bytes<u64>(&signature_with_salt_and_expiry.expiry));
 
         // verify
         ed25519_verify(
-            &signature_data.signature, 
+            &signature_with_salt_and_expiry.signature, 
             &address::to_bytes(signer), 
             &msg
         )

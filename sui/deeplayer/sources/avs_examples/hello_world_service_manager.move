@@ -142,7 +142,7 @@ module deeplayer::hello_world_service_manager {
         let task_info = get_task_info(service_manager, task_hash);
 
         assert!(
-            tx_context::epoch(ctx) <= task_info.task_created_block + service_manager.max_response_interval_blocks,
+            tx_context::epoch(ctx) <= task_info.task_created_block + get_max_response_interval_blocks(service_manager),
             E_RESPONSE_TIME_EXPIRED
         );
 
@@ -157,8 +157,7 @@ module deeplayer::hello_world_service_manager {
         assert!(verify, E_INVALID_SIGNATURE);
         
         // stake_registry::validate(operator);
-
-        task_info.confirmations = task_info.confirmations + 1;
+        // task_info.confirmations = task_info.confirmations + 1;
 
         let task_response = TaskResponse {
             value: response
@@ -171,7 +170,7 @@ module deeplayer::hello_world_service_manager {
         });
 
         if (task_info.confirmations >= MIN_CONFIRMATIONS) {
-            task_info.responded = true;
+            // task_info.responded = true;
 
             event::emit(TaskResponded {
                 task_hash,
@@ -218,7 +217,7 @@ module deeplayer::hello_world_service_manager {
     }
 
     public fun is_task_responded(
-        service_manager: &mut HelloWorldServiceManager,
+        service_manager: &HelloWorldServiceManager,
         task_hash: vector<u8>
     ): bool {
         let task_info = get_task_info(service_manager, task_hash);
@@ -237,6 +236,13 @@ module deeplayer::hello_world_service_manager {
     }
 
     fun get_task_info(
+        service_manager: &HelloWorldServiceManager,
+        task_hash: vector<u8>
+    ): &TaskInfo {
+        table::borrow(&service_manager.task_infos, task_hash)
+    }
+
+    fun get_task_info_mut(
         service_manager: &mut HelloWorldServiceManager,
         task_hash: vector<u8>
     ): &mut TaskInfo {

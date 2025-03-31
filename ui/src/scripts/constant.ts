@@ -1,6 +1,6 @@
 import type { Strategy, AVS, Operator } from "./types";
 
-const strategies: Strategy[] = [
+const strategy_ids: Strategy[] = [
   {
     address: "0x2",
     coin: {
@@ -231,7 +231,7 @@ const services: AVS[] = [
 ];
 
 const findStrategy = (address: string): Strategy | undefined => {
-  return strategies.find((strategy) => strategy.address == address);
+  return strategy_ids.find((strategy) => strategy.address == address);
 };
 
 const findOperator = (address: string): Operator | undefined => {
@@ -243,7 +243,7 @@ const findService = (address: string): AVS | undefined => {
 };
 
 export {
-  strategies,
+  strategy_ids,
   findStrategy,
   operators,
   findOperator,

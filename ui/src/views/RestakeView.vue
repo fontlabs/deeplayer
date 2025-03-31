@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { strategies } from '@/scripts/constant';
+import { strategy_ids } from '@/scripts/constant';
 import { Converter } from '@/scripts/converter';
 import { onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -11,11 +11,11 @@ const router = useRouter();
 const balanceStore = useBalanceStore();
 const { currentAccount } = useCurrentAccount();
 const search = ref<string | undefined>(undefined);
-const allStrategy = ref<Strategy[]>(strategies);
+const allStrategy = ref<Strategy[]>(strategy_ids);
 const type = ref<'all' | 'sui_lst' | 'others'>('all');
 
 const getStrategies = () => {
-  allStrategy.value = strategies.filter(
+  allStrategy.value = strategy_ids.filter(
     s => {
       if (type.value == 'all') {
         return search.value ? s.coin.name.toLowerCase().includes(search.value.toLowerCase()) :

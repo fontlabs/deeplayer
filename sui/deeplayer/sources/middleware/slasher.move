@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::slasher_module {
     use sui::tx_context::{Self, TxContext};
 
@@ -9,7 +10,6 @@ module deeplayer::slasher_module {
     public(package) fun instant_slash(
         allocation_manager: &mut AllocationManager,
         strategy_manager: &mut StrategyManager,
-        delegation_manager: &mut DelegationManager,
         avs: address,
         params: SlashingParams,
         ctx: &mut TxContext
@@ -17,7 +17,6 @@ module deeplayer::slasher_module {
         allocation_module::slash_operator(
             allocation_manager,
             strategy_manager,
-            delegation_manager,
             avs,
             params,
             ctx
