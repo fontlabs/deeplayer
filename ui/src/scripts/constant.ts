@@ -30,6 +30,12 @@ const strategies: Strategy[] = [
         "AlphaFi Staked SUI (stSUI) is the first liquid staked token (LST) built on the innovative AlphaFi stSUI LST Standard. It offers instant unstaking, enhancing safety by mitigating the risk of depegging. Users can stake their SUI while maintaining full liquidity, allowing them to freely transfer, trade, or use stSUI in DeFi protocols without sacrificing staking rewards. The platform also enables other teams to deploy their own LSTs using the AlphaFi stSUI LST Standard—completely permissionless and at no cost.",
       link: "https://stsui.com",
       isLst: true,
+      faucet: {
+        amount: 5,
+        module: "stsui",
+        object:
+          "0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55",
+      },
     },
   },
   {
@@ -46,6 +52,12 @@ const strategies: Strategy[] = [
         "haSUI stands for Haedal staked SUI, it is minted when you stake SUI via Haedal.This is a yield bearing token which represents your ownership of the SUI staked via Haedal.As the staking pool earns validator rewards for securing the Sui network, the value of haSUI will appreciate vs SUI. haSUI will have all primary utilities of SUI, and is usable across the Sui ecosystem.",
       link: "https://www.haedal.xyz",
       isLst: true,
+      faucet: {
+        amount: 5,
+        module: "hasui",
+        object:
+          "0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55",
+      },
     },
   },
   {
@@ -62,6 +74,12 @@ const strategies: Strategy[] = [
         "AlphaFi Staked SUI (stSUI) is the first liquid staked token (LST) built on the innovative AlphaFi stSUI LST Standard. It offers instant unstaking, enhancing safety by mitigating the risk of depegging. Users can stake their SUI while maintaining full liquidity, allowing them to freely transfer, trade, or use stSUI in DeFi protocols without sacrificing staking rewards. The platform also enables other teams to deploy their own LSTs using the AlphaFi stSUI LST Standard—completely permissionless and at no cost.",
       link: "https://aftermath.finance",
       isLst: true,
+      faucet: {
+        amount: 5,
+        module: "afsui",
+        object:
+          "0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55",
+      },
     },
   },
   {
@@ -77,6 +95,12 @@ const strategies: Strategy[] = [
       about:
         "Wrapped Bitcoin is a coin on the SUI blockchain that represents Bitcoin. Each WBTC is backed 1:1 with Bitcoin. Wrapped Bitcoin allows for Bitcoin transfers to be conducted quicker on the SUI blockchain and opens up the possibility for BTC to be used in the SUI ecosystem. Bitcoin is held in custody by the centralized custodian, BitGo. Bitcoin can be converted to Wrapped Bitcoin and vice versa easily.",
       link: "https://wbtc.network",
+      faucet: {
+        amount: 0.5,
+        module: "wbtc",
+        object:
+          "0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55",
+      },
     },
   },
   {
@@ -93,6 +117,12 @@ const strategies: Strategy[] = [
         "Volo is a liquid staking solution that helps you maximize utility and liquidity for SUI by offering voloSUI.",
       link: "https://www.volosui.com",
       isLst: true,
+      faucet: {
+        amount: 5,
+        module: "vsui",
+        object:
+          "0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55",
+      },
     },
   },
   {
@@ -108,6 +138,12 @@ const strategies: Strategy[] = [
       about:
         "Volo is a liquid staking solution that helps you maximize utility and liquidity for SUI by offering voloSUI.",
       link: "https://pyth.network",
+      faucet: {
+        amount: 20,
+        module: "pyth",
+        object:
+          "0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55",
+      },
     },
   },
 ];

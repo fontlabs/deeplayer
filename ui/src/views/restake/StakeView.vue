@@ -32,6 +32,41 @@ const setAmount = (div: number = 1) => {
     amount.value = bal / div;
 };
 
+const mint = async () => {
+    if (!strategy.value) return;
+    if (!strategy.value.coin.faucet) return;
+
+    if (!currentAccount.value) {
+        return notify.push({
+            title: "Connect your wallet!",
+            description: "Wallet connection error.",
+            category: "error"
+        });
+    }
+
+    try {
+        const value = Converter.toSUI(strategy.value.coin.faucet.amount, strategy.value.coin.decimals);
+        if (!value) return;
+
+        const transactionBlock = await Contract.mintCoin(
+            currentAccount.value.address,
+            strategy.value,
+            value
+        );
+        if (!transactionBlock) return;
+
+        const { digest } = await signAndExecuteTransactionBlock({
+            transactionBlock: transactionBlock as any
+        });
+
+        await Contract.client.waitForTransaction({ digest });
+
+        balanceStore.getCoinBalances();
+    } catch (error) {
+
+    }
+};
+
 const restake = async () => {
     if (!strategy.value) return;
 
@@ -60,13 +95,15 @@ const restake = async () => {
             strategy.value,
             value
         );
+        if (!transactionBlock) return;
 
         const { digest } = await signAndExecuteTransactionBlock({
-            // @ts-ignore
-            transactionBlock
+            transactionBlock: transactionBlock as any
         });
 
+        await Contract.client.waitForTransaction({ digest });
 
+        balanceStore.getBalances();
     } catch (error) {
 
     }
@@ -173,6 +210,20 @@ onMounted(() => {
                             <p>Learn more</p>
                             <OutIcon />
                         </a>
+                    </div>
+
+                    <div class="faucet">
+                        <div class="title">
+                            <h3>Faucet</h3>
+                        </div>
+
+                        <a href="https://faucet.sui.io" target="_blank" v-if="strategy.coin.isNative">
+                            <button class="mint">Request Testnet SUI</button>
+                        </a>
+
+                        <button class="mint" @click="mint" v-else-if="strategy.coin.faucet">
+                            Mint {{ strategy.coin.faucet.amount }} {{ strategy.coin.symbol }}
+                        </button>
                     </div>
                 </div>
             </div>
@@ -366,5 +417,27 @@ onMounted(() => {
 .link p {
     font-size: 11px;
     color: var(--accent-green);
+}
+
+.faucet {
+    margin-top: 20px;
+}
+
+.faucet .title h3 {
+    font-size: 16px;
+    color: var(--tx-dimmed);
+    font-weight: 500;
+}
+
+.mint {
+    margin-top: 20px;
+    width: 100%;
+    height: 45px;
+    border: none;
+    background: var(--accent-red);
+    font-size: 14px;
+    cursor: pointer;
+    color: var(--tx-normal);
+    border-radius: 8px;
 }
 </style>

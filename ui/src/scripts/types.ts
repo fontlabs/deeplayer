@@ -33,6 +33,11 @@ export type Coin = {
   about: string;
   link?: string;
   address: string;
+  faucet?: {
+    amount: number;
+    module: string;
+    object: string;
+  };
   isNative?: boolean;
   isLst?: boolean;
 };

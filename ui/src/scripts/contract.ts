@@ -1,6 +1,7 @@
 import { TransactionBlock } from "sui-dapp-kit-vue";
 import type { Strategy } from "./types";
 import { CoinAPI } from "./coin";
+import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 
 const Contract = {
   deeplayer: "0x",
@@ -11,11 +12,35 @@ const Contract = {
   delegationManager: "0x",
   allocationManager: "0x",
 
+  client: new SuiClient({ url: getFullnodeUrl("testnet") }),
+
+  async mintCoin(
+    sender: string,
+    strategy: Strategy,
+    amount: bigint
+  ): Promise<TransactionBlock | null> {
+    const transaction = new TransactionBlock();
+
+    if (!strategy.coin.faucet) return null;
+
+    transaction.moveCall({
+      target: `${this.deeplayer}::${strategy.coin.faucet.module}::mint`,
+      arguments: [
+        transaction.object(strategy.coin.faucet.object),
+        transaction.pure.u64(amount),
+        transaction.pure.address(sender),
+      ],
+      typeArguments: [strategy.coin.type],
+    });
+
+    return transaction;
+  },
+
   async depositIntoStrategy(
     sender: string,
     strategy: Strategy,
     amount: bigint
-  ): Promise<TransactionBlock> {
+  ): Promise<TransactionBlock | null> {
     const transaction = new TransactionBlock();
 
     const coins = await CoinAPI.getCoins(sender, strategy.coin.type);
