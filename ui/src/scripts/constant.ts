@@ -4,13 +4,12 @@ const strategies: Strategy[] = [
   {
     address: "0x2",
     coin: {
-      address:
-        "0x0000000000000000000000000000000000000000000000000000000000000002",
+      address: "0x2",
       name: "Native SUI",
       symbol: "SUI",
       decimals: 9,
       image: "/images/sui.png",
-      type: "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI",
+      type: "0x2::sui::SUI",
       about:
         "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Pariatur veniam itaque a tempora dicta ipsa perferendis corrupti nobis. Est amet ad omnis ex. Voluptas, similique. Aperiam nihil cupiditate molestiae labore?",
       link: "https://sui.io",
