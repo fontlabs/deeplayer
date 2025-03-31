@@ -14,7 +14,7 @@ module deeplayer::signature_module {
     }
 
     public(package) fun salt(
-        signature_data: SignatureWithSaltAndExpiry,
+        signature_with_salt_and_expiry: SignatureWithSaltAndExpiry,
     ): vector<u8> {
         signature_data.salt
     }
@@ -28,7 +28,7 @@ module deeplayer::signature_module {
     }
 
     public(package) fun verify(
-        signature_data: SignatureWithSaltAndExpiry,
+        signature_with_salt_and_expiry: SignatureWithSaltAndExpiry,
         signer: address,
         the_clock: &clock::Clock,
         ctx: &mut TxContext

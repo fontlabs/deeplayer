@@ -1,0 +1,23 @@
+{
+  "name": "zk-bridge",
+  "version": "1.0.0",
+  "description": "ZK bridge",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "keywords": [
+    "sui"
+  ],
+  "author": "devarogundade",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.13.14",
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "@mysten/sui": "^1.25.0",
+    "dotenv": "^16.4.7",
+    "viem": "^2.24.2"
+  }
+}
