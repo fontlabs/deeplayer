@@ -6,7 +6,7 @@ import { findStrategy } from '@/scripts/constant';
 
 import { Contract } from '@/scripts/contract';
 import { Converter } from '@/scripts/converter';
-import type { Strategy } from '@/scripts/types';
+import type { Coin } from '@/scripts/types';
 import { useBalanceStore } from '@/stores/balance';
 import { useSignAndExecuteTransactionBlock, useCurrentAccount } from 'sui-dapp-kit-vue';
 import { onMounted, ref } from 'vue';
@@ -16,14 +16,14 @@ const route = useRoute();
 const balanceStore = useBalanceStore();
 const { currentAccount } = useCurrentAccount();
 const amount = ref<number | undefined>(undefined);
-const strategy = ref<Strategy | undefined>(undefined);
+const strategy = ref<Coin | undefined>(undefined);
 
 const setAmount = (div: number = 1) => {
     if (!strategy.value) return;
 
     const bal = Converter.fromSUI(
-        balanceStore.restaked_balances[strategy.value.coin.type],
-        strategy.value.coin.decimals
+        balanceStore.restaked_balances[strategy.value.type],
+        strategy.value.decimals
     );
     if (bal === undefined) return;
 
@@ -102,8 +102,8 @@ onMounted(() => {
                             <div class="value">
                                 <p>
                                     {{ Converter.toMoney(
-                                        Converter.fromSUI(balanceStore.restaked_balances[strategy.coin.type],
-                                            strategy.coin.decimals)
+                                        Converter.fromSUI(balanceStore.restaked_balances[strategy.type],
+                                            strategy.decimals)
                                     ) }}
                                 </p>
                                 <span>suBTC</span>
@@ -115,7 +115,7 @@ onMounted(() => {
                             <div class="value">
                                 <p>
                                     {{ Converter.toMoney(
-                                        Converter.fromSUI(balanceStore.balances[strategy.coin.type], strategy.coin.decimals)
+                                        Converter.fromSUI(balanceStore.balances[strategy.type], strategy.decimals)
                                     ) }}
                                 </p>
                             </div>
@@ -126,8 +126,8 @@ onMounted(() => {
                             <div class="value">
                                 <p>
                                     {{ Converter.toMoney(
-                                        Converter.fromSUI(balanceStore.total_value_restaked[strategy.coin.type],
-                                            strategy.coin.decimals)
+                                        Converter.fromSUI(balanceStore.total_value_restaked[strategy.type],
+                                            strategy.decimals)
                                     ) }}
                                 </p>
                             </div>
@@ -140,15 +140,15 @@ onMounted(() => {
                         </div>
 
                         <div class="coin_info">
-                            <img :src="strategy.coin.image" alt="btc">
-                            <p>{{ strategy.coin.name }} <span>{{ strategy.coin.symbol }}</span></p>
+                            <img :src="strategy.image" alt="btc">
+                            <p>{{ strategy.name }} <span>{{ strategy.symbol }}</span></p>
                         </div>
 
                         <div class="description">
-                            {{ strategy.coin.about }}
+                            {{ strategy.about }}
                         </div>
 
-                        <a v-if="strategy.coin.link" :href="strategy.coin.link" target="_blank" class="link">
+                        <a v-if="strategy.link" :href="strategy.link" target="_blank" class="link">
                             <p>Learn more</p>
                             <OutIcon />
                         </a>

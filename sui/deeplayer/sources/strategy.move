@@ -26,9 +26,9 @@ module deeplayer::strategy_module {
     const E_PAUSED: u64 = 6;
 
     // Structs
-    public struct Strategy<phantom COIN> has store {
+    public struct Strategy<phantom CoinType> has store {
         total_shares: u64,
-        balance_underlying: balance::Balance<COIN>, 
+        balance_underlying: balance::Balance<CoinType>, 
         is_paused: bool
     }
 
@@ -39,28 +39,28 @@ module deeplayer::strategy_module {
     }
 
     // Public functions
-    public(package) fun create<COIN>(
+    public(package) fun create<CoinType>(
         ctx: &mut TxContext
-    ): Strategy<COIN> {
+    ): Strategy<CoinType> {
         let strategy = Strategy {
             total_shares: 0,
-            balance_underlying: balance::zero<COIN>(),
+            balance_underlying: balance::zero<CoinType>(),
             is_paused: false
         };       
 
         strategy
     }
 
-    public(package) fun deposit<COIN>(
-        strategy: &mut Strategy<COIN>,
-        coin_deposited: coin::Coin<COIN>,
+    public(package) fun deposit<CoinType>(
+        strategy: &mut Strategy<CoinType>,
+        coin_deposited: coin::Coin<CoinType>,
         ctx: &mut TxContext
     ): u64 {
         check_not_paused(strategy);
 
         let amount = coin::value(&coin_deposited);
 
-        balance::join<COIN>(&mut strategy.balance_underlying, coin::into_balance(coin_deposited));
+        balance::join<CoinType>(&mut strategy.balance_underlying, coin::into_balance(coin_deposited));
 
         let prior_total_shares = strategy.total_shares;
         let virtual_share_amount = prior_total_shares + SHARES_OFFSET;
@@ -73,14 +73,14 @@ module deeplayer::strategy_module {
         strategy.total_shares = prior_total_shares + new_shares;
         assert!(strategy.total_shares <= MAX_TOTAL_SHARES, E_TOTAL_SHARES_EXCEEDS_MAX);
 
-        let strategy_id = coin_utils_module::get_strategy_id<COIN>();
+        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
         emit_exchange_rate(strategy_id, virtual_coin_balance, strategy.total_shares + SHARES_OFFSET);
 
         new_shares
     }
 
-    public(package) fun withdraw<COIN>(
-        strategy: &mut Strategy<COIN>,
+    public(package) fun withdraw<CoinType>(
+        strategy: &mut Strategy<CoinType>,
         recipient: address,
         amount_shares: u64,
         ctx: &mut TxContext
@@ -96,22 +96,22 @@ module deeplayer::strategy_module {
 
         strategy.total_shares = prior_total_shares - amount_shares;
 
-        let strategy_id = coin_utils_module::get_strategy_id<COIN>();
+        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
         emit_exchange_rate(strategy_id, virtual_coin_balance - amount_to_send, strategy.total_shares + SHARES_OFFSET);
 
         after_withdrawal(strategy, recipient, amount_to_send, ctx);
     }
 
     // View functions
-    public fun shares_to_underlying<COIN>(
-        strategy: &Strategy<COIN>,
+    public fun shares_to_underlying<CoinType>(
+        strategy: &Strategy<CoinType>,
         amount_shares: u64
     ): u64 {
         shares_to_underlying_impl(strategy, amount_shares)
     }
 
-    public fun underlying_to_shares<COIN>(
-        strategy: &Strategy<COIN>,
+    public fun underlying_to_shares<CoinType>(
+        strategy: &Strategy<CoinType>,
         amount_underlying: u64
     ): u64 {
         let virtual_total_shares = strategy.total_shares + SHARES_OFFSET;
@@ -120,8 +120,8 @@ module deeplayer::strategy_module {
     }
 
     // Internal functions
-    fun shares_to_underlying_impl<COIN>(
-        strategy: &Strategy<COIN>,
+    fun shares_to_underlying_impl<CoinType>(
+        strategy: &Strategy<CoinType>,
         amount_shares: u64
     ): u64 {
         let virtual_total_shares = strategy.total_shares + SHARES_OFFSET;
@@ -129,8 +129,8 @@ module deeplayer::strategy_module {
         (virtual_coin_balance * amount_shares) / virtual_total_shares
     }
 
-    fun after_withdrawal<COIN>(
-        strategy: &mut Strategy<COIN>,
+    fun after_withdrawal<CoinType>(
+        strategy: &mut Strategy<CoinType>,
         recipient: address,
         amount_to_send: u64,
         ctx: &mut TxContext
@@ -152,8 +152,8 @@ module deeplayer::strategy_module {
     }
 
     // Modifier checks
-    fun check_not_paused<COIN>(
-        strategy: &Strategy<COIN>
+    fun check_not_paused<CoinType>(
+        strategy: &Strategy<CoinType>
     ) {
         assert!(!strategy.is_paused, E_PAUSED);
     }

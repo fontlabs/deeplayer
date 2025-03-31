@@ -82,15 +82,15 @@ module deeplayer::strategy_manager_module {
     }
 
     // Public functions
-    public entry fun deposit_into_strategy<COIN>(   
+    public entry fun deposit_into_strategy<CoinType>(   
         strategy_factory: &mut StrategyFactory,
         strategy_manager: &mut StrategyManager,
-        coin_deposited: coin::Coin<COIN>,
+        coin_deposited: coin::Coin<CoinType>,
         ctx: &mut TxContext
     ) {
         check_not_paused(strategy_manager);
 
-        let strategy = strategy_factory_module::get_strategy_mut<COIN>(strategy_factory);
+        let strategy = strategy_factory_module::get_strategy_mut<CoinType>(strategy_factory);
 
         deposit_into_strategy_impl(
             strategy_manager, 
@@ -101,13 +101,13 @@ module deeplayer::strategy_manager_module {
         );
     }
     
-    public entry fun burn_shares<COIN>(
+    public entry fun burn_shares<CoinType>(
         strategy_factory: &mut StrategyFactory,
         strategy_manager: &mut StrategyManager,
         ctx: &mut TxContext
     ) {        
-        let strategy = strategy_factory_module::get_strategy_mut<COIN>(strategy_factory);
-        let strategy_id = coin_utils_module::get_strategy_id<COIN>();
+        let strategy = strategy_factory_module::get_strategy_mut<CoinType>(strategy_factory);
+        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
 
         let shares_to_burn = if (table::contains(&strategy_manager.burnable_shares, strategy_id)) {
             *table::borrow(&strategy_manager.burnable_shares, strategy_id)
@@ -148,14 +148,14 @@ module deeplayer::strategy_manager_module {
         )
     }
 
-    public(package) fun withdraw_shares_as_coins<COIN>(
+    public(package) fun withdraw_shares_as_coins<CoinType>(
         strategy_factory: &mut StrategyFactory,
         staker: address,
         shares: u64,
         ctx: &mut TxContext
     ) {
-        let strategy = strategy_factory_module::get_strategy_mut<COIN>(strategy_factory);
-        strategy_module::withdraw<COIN>(
+        let strategy = strategy_factory_module::get_strategy_mut<CoinType>(strategy_factory);
+        strategy_module::withdraw<CoinType>(
             strategy,
             staker, 
             shares, 
@@ -268,14 +268,14 @@ module deeplayer::strategy_manager_module {
         (prev_deposit_shares, shares)
     }
 
-    fun deposit_into_strategy_impl<COIN>(
+    fun deposit_into_strategy_impl<CoinType>(
         strategy_manager: &mut StrategyManager,
         staker: address,
-        strategy: &mut Strategy<COIN>,
-        coin_deposited: coin::Coin<COIN>,
+        strategy: &mut Strategy<CoinType>,
+        coin_deposited: coin::Coin<CoinType>,
         ctx: &mut TxContext
     ): u64 {
-        let strategy_id = coin_utils_module::get_strategy_id<COIN>();
+        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
 
         check_strategy_whitelisted_for_deposit(strategy_manager, strategy_id);
 
@@ -285,7 +285,7 @@ module deeplayer::strategy_manager_module {
             E_STRATEGY_NOT_WHITELISTED
         );
 
-        let shares = strategy_module::deposit<COIN>(
+        let shares = strategy_module::deposit<CoinType>(
             strategy, 
             coin_deposited,
             ctx

@@ -6,7 +6,7 @@ import { findStrategy } from '@/scripts/constant';
 
 import { Contract } from '@/scripts/contract';
 import { Converter } from '@/scripts/converter';
-import type { Strategy } from '@/scripts/types';
+import type { Coin } from '@/scripts/types';
 import { useBalanceStore } from '@/stores/balance';
 import { useSignAndExecuteTransactionBlock, useCurrentAccount } from 'sui-dapp-kit-vue';
 import { onMounted, ref } from 'vue';
@@ -16,7 +16,7 @@ const route = useRoute();
 const balanceStore = useBalanceStore();
 const { currentAccount } = useCurrentAccount();
 const amount = ref<number | undefined>(undefined);
-const strategy = ref<Strategy | undefined>(undefined);
+const strategy = ref<Coin | undefined>(undefined);
 
 const { signAndExecuteTransactionBlock } = useSignAndExecuteTransactionBlock();
 
@@ -24,8 +24,8 @@ const setAmount = (div: number = 1) => {
     if (!strategy.value) return;
 
     const bal = Converter.fromSUI(
-        balanceStore.balances[strategy.value.coin.type],
-        strategy.value.coin.decimals
+        balanceStore.balances[strategy.value.type],
+        strategy.value.decimals
     );
     if (bal === undefined) return;
 
@@ -34,7 +34,7 @@ const setAmount = (div: number = 1) => {
 
 const mint = async () => {
     if (!strategy.value) return;
-    if (!strategy.value.coin.faucet) return;
+    if (!strategy.value.faucet) return;
 
     if (!currentAccount.value) {
         return notify.push({
@@ -45,7 +45,7 @@ const mint = async () => {
     }
 
     try {
-        const value = Converter.toSUI(strategy.value.coin.faucet.amount, strategy.value.coin.decimals);
+        const value = Converter.toSUI(strategy.value.faucet.amount, strategy.value.decimals);
         if (!value) return;
 
         const transactionBlock = await Contract.mintCoin(
@@ -87,7 +87,7 @@ const restake = async () => {
     }
 
     try {
-        const value = Converter.toSUI(amount.value, strategy.value.coin.decimals);
+        const value = Converter.toSUI(amount.value, strategy.value.decimals);
         if (!value) return;
 
         const transactionBlock = await Contract.depositIntoStrategy(
@@ -140,7 +140,7 @@ onMounted(() => {
                         <div class="input">
                             <input type="number" v-model="amount" placeholder="0.00">
                             <div class="helper">
-                                <p>0 {{ strategy.coin.symbol }}</p>
+                                <p>0 {{ strategy.symbol }}</p>
                                 <div class="buttons">
                                     <button @click="setAmount(4)">25%</button>
                                     <button @click="setAmount(2)">50%</button>
@@ -160,10 +160,10 @@ onMounted(() => {
                             <div class="value">
                                 <p>
                                     {{ Converter.toMoney(
-                                        Converter.fromSUI(balanceStore.balances[strategy.coin.type], strategy.coin.decimals)
+                                        Converter.fromSUI(balanceStore.balances[strategy.type], strategy.decimals)
                                     ) }}
                                 </p>
-                                <span>{{ strategy.coin.symbol }}</span>
+                                <span>{{ strategy.symbol }}</span>
                             </div>
                         </div>
 
@@ -172,8 +172,8 @@ onMounted(() => {
                             <div class="value">
                                 <p>
                                     {{ Converter.toMoney(
-                                        Converter.fromSUI(balanceStore.restaked_balances[strategy.coin.type],
-                                            strategy.coin.decimals)
+                                        Converter.fromSUI(balanceStore.restaked_balances[strategy.type],
+                                            strategy.decimals)
                                     ) }}
                                 </p>
                             </div>
@@ -184,8 +184,8 @@ onMounted(() => {
                             <div class="value">
                                 <p>
                                     {{ Converter.toMoney(
-                                        Converter.fromSUI(balanceStore.total_value_restaked[strategy.coin.type],
-                                            strategy.coin.decimals)
+                                        Converter.fromSUI(balanceStore.total_value_restaked[strategy.type],
+                                            strategy.decimals)
                                     ) }}
                                 </p>
                             </div>
@@ -198,15 +198,15 @@ onMounted(() => {
                         </div>
 
                         <div class="coin_info">
-                            <img :src="strategy.coin.image" alt="btc">
-                            <p>{{ strategy.coin.name }} <span>{{ strategy.coin.symbol }}</span></p>
+                            <img :src="strategy.image" alt="btc">
+                            <p>{{ strategy.name }} <span>{{ strategy.symbol }}</span></p>
                         </div>
 
                         <div class="description">
-                            {{ strategy.coin.about }}
+                            {{ strategy.about }}
                         </div>
 
-                        <a v-if="strategy.coin.link" :href="strategy.coin.link" target="_blank" class="link">
+                        <a v-if="strategy.link" :href="strategy.link" target="_blank" class="link">
                             <p>Learn more</p>
                             <OutIcon />
                         </a>
@@ -217,12 +217,12 @@ onMounted(() => {
                             <h3>Faucet</h3>
                         </div>
 
-                        <a href="https://faucet.sui.io" target="_blank" v-if="strategy.coin.isNative">
+                        <a href="https://faucet.sui.io" target="_blank" v-if="strategy.isNative">
                             <button class="mint">Request Testnet SUI</button>
                         </a>
 
-                        <button class="mint" @click="mint" v-else-if="strategy.coin.faucet">
-                            Mint {{ strategy.coin.faucet.amount }} {{ strategy.coin.symbol }}
+                        <button class="mint" @click="mint" v-else-if="strategy.faucet">
+                            Mint {{ strategy.faucet.amount }} {{ strategy.symbol }}
                         </button>
                     </div>
                 </div>

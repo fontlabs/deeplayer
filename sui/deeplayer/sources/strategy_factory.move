@@ -50,18 +50,18 @@ module deeplayer::strategy_factory_module {
     }
 
     // Public functions
-    public entry fun deploy_new_strategy<COIN>(
+    public entry fun deploy_new_strategy<CoinType>(
         strategy_factory: &mut StrategyFactory,
         ctx: &mut TxContext
     ) {
         check_not_paused(strategy_factory);
 
-        let strategy_id = coin_utils_module::get_strategy_id<COIN>();
+        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
 
         assert!(!table::contains(&strategy_factory.is_blacklisted, strategy_id), E_BLACKLISTED_TOKEN);
         assert!(!bag::contains(&strategy_factory.deployed_strategies, strategy_id), E_STRATEGY_ALREADY_EXISTS);
 
-        let strategy = strategy_module::create<COIN>(ctx);
+        let strategy = strategy_module::create<CoinType>(ctx);
         bag::add(&mut strategy_factory.deployed_strategies, strategy_id, strategy);
 
         // Whitelist the strategy
@@ -130,18 +130,18 @@ module deeplayer::strategy_factory_module {
     }
 
     // View functions
-    public fun get_strategy<COIN>(
+    public fun get_strategy<CoinType>(
         strategy_factory: &StrategyFactory
-    ): &Strategy<COIN> {
-        let strategy_id = coin_utils_module::get_strategy_id<COIN>();
-        bag::borrow<string::String, Strategy<COIN>>(&strategy_factory.deployed_strategies, strategy_id)
+    ): &Strategy<CoinType> {
+        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+        bag::borrow<string::String, Strategy<CoinType>>(&strategy_factory.deployed_strategies, strategy_id)
     }
 
-    public fun get_strategy_mut<COIN>(
+    public fun get_strategy_mut<CoinType>(
         strategy_factory: &mut StrategyFactory
-    ): &mut Strategy<COIN> {
-        let strategy_id = coin_utils_module::get_strategy_id<COIN>();
-        bag::borrow_mut<string::String, Strategy<COIN>>(&mut strategy_factory.deployed_strategies, strategy_id)
+    ): &mut Strategy<CoinType> {
+        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+        bag::borrow_mut<string::String, Strategy<CoinType>>(&mut strategy_factory.deployed_strategies, strategy_id)
     }
 
     // Modifier checks

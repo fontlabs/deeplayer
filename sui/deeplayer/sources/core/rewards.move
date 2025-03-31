@@ -21,8 +21,8 @@ module deeplayer::rewards_module {
     // Errors
     const E_PAUSED: u64 = 1;
    
-    public struct RewardsSubmission<phantom COIN> has store {
-        unclaimed: balance::Balance<COIN>,
+    public struct RewardsSubmission<phantom CoinType> has store {
+        unclaimed: balance::Balance<CoinType>,
         claimed: u64,
         start_timestamp: u64,
         duration: u64,
@@ -49,11 +49,11 @@ module deeplayer::rewards_module {
     }
 
     // Public functions
-    public entry fun create_avs_rewards_submission<COIN>(
+    public entry fun create_avs_rewards_submission<CoinType>(
         rewards_coordinator: &mut RewardsCoordinator,
         avs: address,
         duration: u64,
-        coin_rewards: coin::Coin<COIN>,
+        coin_rewards: coin::Coin<CoinType>,
         the_clock: &clock::Clock,
         ctx: &mut TxContext
     ) {
@@ -66,12 +66,12 @@ module deeplayer::rewards_module {
             duration: duration
         };
 
-        let rewards_root = calc_rewards_root<COIN>(&rewards_submission, avs);
+        let rewards_root = calc_rewards_root<CoinType>(&rewards_submission, avs);
 
         bag::add(&mut rewards_coordinator.rewards_submissions, rewards_root, rewards_submission);
     }
 
-    public entry fun claim_rewards<COIN>(
+    public entry fun claim_rewards<CoinType>(
         rewards_coordinator: &mut RewardsCoordinator,
         delegation_manager: &DelegationManager,
         strategy_manager: &StrategyManager,
@@ -81,10 +81,10 @@ module deeplayer::rewards_module {
     ) {
         check_not_paused(rewards_coordinator);
 
-        let strategy_id = coin_utils_module::get_strategy_id<COIN>();
+        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
 
         let staker = tx_context::sender(ctx);
-        let rewards_submission = bag::borrow_mut<vector<u8>, RewardsSubmission<COIN>>(
+        let rewards_submission = bag::borrow_mut<vector<u8>, RewardsSubmission<CoinType>>(
             &mut rewards_coordinator.rewards_submissions, 
             rewards_root
         );
@@ -100,8 +100,8 @@ module deeplayer::rewards_module {
 
     }
 
-    fun calc_rewards_root<COIN>(
-        rewards_submission: &RewardsSubmission<COIN>,
+    fun calc_rewards_root<CoinType>(
+        rewards_submission: &RewardsSubmission<CoinType>,
         avs: address
     ): vector<u8> {
         let mut root = vector::empty<u8>();

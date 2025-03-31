@@ -19,11 +19,6 @@ export type Operator = {
   active: boolean;
 };
 
-export type Strategy = {
-  address: string;
-  coin: Coin;
-};
-
 export type Coin = {
   name: string;
   image: string;

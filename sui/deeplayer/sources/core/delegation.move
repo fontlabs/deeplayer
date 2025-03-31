@@ -293,7 +293,7 @@ module deeplayer::delegation_module {
         );
     }
 
-    public entry fun complete_queued_withdrawal<COIN>(
+    public entry fun complete_queued_withdrawal<CoinType>(
         delegation_manager: &mut DelegationManager,
         allocation_manager: &AllocationManager,
         strategy_factory: &mut StrategyFactory,
@@ -381,7 +381,7 @@ module deeplayer::delegation_module {
             };
 
             if (receive_as_coins) {
-                strategy_manager_module::withdraw_shares_as_coins<COIN>(
+                strategy_manager_module::withdraw_shares_as_coins<CoinType>(
                     strategy_factory,
                     withdrawal.staker,
                     shares_to_withdraw,

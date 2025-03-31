@@ -4,31 +4,31 @@ import { Converter } from '@/scripts/converter';
 import { onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCurrentAccount } from 'sui-dapp-kit-vue';
-import type { Strategy } from '@/scripts/types';
+import type { Coin } from '@/scripts/types';
 import { useBalanceStore } from '@/stores/balance';
 
 const router = useRouter();
 const balanceStore = useBalanceStore();
 const { currentAccount } = useCurrentAccount();
 const search = ref<string | undefined>(undefined);
-const allStrategy = ref<Strategy[]>(strategy_ids);
+const allStrategy = ref<Coin[]>(strategy_ids);
 const type = ref<'all' | 'sui_lst' | 'others'>('all');
 
 const getStrategies = () => {
   allStrategy.value = strategy_ids.filter(
     s => {
       if (type.value == 'all') {
-        return search.value ? s.coin.name.toLowerCase().includes(search.value.toLowerCase()) :
+        return search.value ? s.name.toLowerCase().includes(search.value.toLowerCase()) :
           true;
       }
       else if (type.value == 'sui_lst') {
         return search.value ?
-          s.coin.name.toLowerCase().includes(search.value.toLowerCase()) && (s.coin.isLst || s.coin.isNative) :
-          (s.coin.isLst || s.coin.isNative);
+          s.name.toLowerCase().includes(search.value.toLowerCase()) && (s.isLst || s.isNative) :
+          (s.isLst || s.isNative);
       } else {
         return search.value ?
-          s.coin.name.toLowerCase().includes(search.value.toLowerCase()) && !(s.coin.isLst || s.coin.isNative) :
-          !(s.coin.isLst || s.coin.isNative);
+          s.name.toLowerCase().includes(search.value.toLowerCase()) && !(s.isLst || s.isNative) :
+          !(s.isLst || s.isNative);
       }
     }
   );
@@ -112,23 +112,23 @@ onMounted(() => {
                 <tr v-for="strategy in allStrategy" :key="strategy.address">
                   <td @click="router.push(`/restake/${strategy.address}`)">
                     <div class="coin_info">
-                      <img :src="strategy.coin.image" alt="btc">
-                      <p>{{ strategy.coin.name }} <span>{{ strategy.coin.symbol }}</span></p>
+                      <img :src="strategy.image" alt="btc">
+                      <p>{{ strategy.name }} <span>{{ strategy.symbol }}</span></p>
                     </div>
                   </td>
                   <td>
-                    {{ Converter.toMoney(Converter.fromSUI(balanceStore.balances[strategy.coin.type],
-                      strategy.coin.decimals))
+                    {{ Converter.toMoney(Converter.fromSUI(balanceStore.balances[strategy.type],
+                      strategy.decimals))
                     }}
                   </td>
                   <td>
-                    {{ Converter.toMoney(Converter.fromSUI(balanceStore.restaked_balances[strategy.coin.type],
-                      strategy.coin.decimals))
+                    {{ Converter.toMoney(Converter.fromSUI(balanceStore.restaked_balances[strategy.type],
+                      strategy.decimals))
                     }}
                   </td>
                   <td>
-                    {{ Converter.toMoney(Converter.fromSUI(balanceStore.total_value_restaked[strategy.coin.type],
-                      strategy.coin.decimals))
+                    {{ Converter.toMoney(Converter.fromSUI(balanceStore.total_value_restaked[strategy.type],
+                      strategy.decimals))
                     }}
                   </td>
                   <td>

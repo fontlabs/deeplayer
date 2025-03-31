@@ -29,15 +29,15 @@ module deeplayer::ecdsa_service_manager_module {
         )
     }
 
-    public entry fun create_avs_rewards_submission<COIN>(
+    public entry fun create_avs_rewards_submission<CoinType>(
         rewards_coordinator: &mut RewardsCoordinator,
         avs: address,
         duration: u64,
-        coin_rewards: coin::Coin<COIN>,
+        coin_rewards: coin::Coin<CoinType>,
         the_clock: &clock::Clock,
         ctx: &mut TxContext
     ) {
-        rewards_module::create_avs_rewards_submission<COIN>(
+        rewards_module::create_avs_rewards_submission<CoinType>(
             rewards_coordinator,
             avs,
             duration,
