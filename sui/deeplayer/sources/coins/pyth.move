@@ -14,10 +14,11 @@ module deeplayer::pyth {
     }
 
     fun init(
+        witness: PYTH,
         ctx: &mut TxContext
     ) {
         let (treasury, metadata) = coin::create_currency(
-            PYTH {}, 
+            witness, 
             9, 
             b"PYTH", 
             b"Pyth Network", 

@@ -14,10 +14,11 @@ module deeplayer::cert {
     }
 
     fun init(
+        witness: CERT,
         ctx: &mut TxContext
     ) {
         let (treasury, metadata) = coin::create_currency(
-            CERT {}, 
+            witness, 
             9, 
             b"vSUI", 
             b"Volo SUI", 

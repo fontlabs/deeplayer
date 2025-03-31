@@ -14,10 +14,11 @@ module deeplayer::wbtc {
     }
 
     fun init(
+        witness: WBTC,
         ctx: &mut TxContext
     ) {
         let (treasury, metadata) = coin::create_currency(
-            WBTC {}, 
+            witness, 
             9, 
             b"WBTC", 
             b"Wrapped BTC", 

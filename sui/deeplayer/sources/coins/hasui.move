@@ -14,10 +14,11 @@ module deeplayer::hasui {
     }
 
     fun init(
+        witness: HASUI,
         ctx: &mut TxContext
     ) {
         let (treasury, metadata) = coin::create_currency(
-            HASUI {}, 
+            witness, 
             9, 
             b"afSUI", 
             b"Aftermath SUI", 

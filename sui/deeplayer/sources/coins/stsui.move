@@ -14,10 +14,11 @@ module deeplayer::stsui {
     }
 
     fun init(
+        witness: STSUI,
         ctx: &mut TxContext
     ) {
         let (treasury, metadata) = coin::create_currency(
-            STSUI {}, 
+            witness, 
             9, 
             b"stSUI", 
             b"AlphaFi Staked SUI", 
