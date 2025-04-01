@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::strategy_factory_module {
     use std::option;
     use std::string;
@@ -21,6 +22,9 @@ module deeplayer::strategy_factory_module {
     const E_ONLY_OWNER: u64 = 4;
     const E_PAUSED: u64 = 5;
 
+    // Constants
+    const DEFAULT_BURN_ADDRESS: address = @0x0;
+
     // Structs
     public struct StrategyFactory has key {
         id: UID,
@@ -29,9 +33,9 @@ module deeplayer::strategy_factory_module {
         is_paused: bool
     }
 
-    // Events
-    public struct CoinBlacklisted has copy, drop {
+    public struct BurnableSharesDecreased has copy, drop {
         strategy_id: string::String,
+        shares_burned: u64,
     }
 
     // Initialization
@@ -62,73 +66,72 @@ module deeplayer::strategy_factory_module {
 
         let strategy = strategy_module::create<CoinType>(ctx);
         bag::add(&mut strategy_factory.deployed_strategies, strategy_id, strategy);
-
-        // Whitelist the strategy
-        let strategies_to_whitelist = vector[strategy_id];
-        // strategy_manager_module::add_strategies_to_deposit_whitelist(
-        //     strategy_manager,
-        //     strategies_to_whitelist, 
-        //     ctx
-        // );
     }
 
-    public entry fun blacklist_coins(
+    public entry fun burn_shares<CoinType>(
         strategy_factory: &mut StrategyFactory,
-        strategy_ids: vector<string::String>,
         ctx: &mut TxContext
-    ) {
-        let strategies_to_remove = vector::empty<string::String>();
-        let mut i = 0;
-        let len = vector::length(&strategy_ids);
-        while (i < len) {
-            let strategy_id = *vector::borrow(&strategy_ids, i);
-            assert!(!table::contains(&strategy_factory.is_blacklisted, strategy_id), E_ALREADY_BLACKLISTED);
-            
-            table::add(&mut strategy_factory.is_blacklisted, strategy_id, true);
-          
-            event::emit(CoinBlacklisted { 
-                strategy_id
-            });
+    ) {        
+        let strategy = get_strategy_mut<CoinType>(strategy_factory);
+        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
 
-            if (bag::contains(&strategy_factory.deployed_strategies, strategy_id)) {
-                // vector::push_back(&mut strategies_to_remove, strategy_id);
-            };
-            i = i + 1;
-        };
+        let shares_burned = strategy_module::burn_shares(strategy);
 
-        if (vector::length(&strategies_to_remove) > 0) {
-            // strategy_manager_module::remove_strategies_from_deposit_whitelist(
-            //     strategy_manager,
-            //     strategies_to_remove, 
-            //     ctx
-            // );
-        };
-    }
+        event::emit(BurnableSharesDecreased {
+            strategy_id,
+            shares_burned,
+        });
 
-    public entry fun whitelist_strategies(
-        strategies_to_whitelist: vector<string::String>,
-        ctx: &mut TxContext
-    ) {
-        // strategy_manager_module::add_strategies_to_deposit_whitelist(
-        //     strategy_manager,
-        //     strategies_to_whitelist, 
-        //     ctx
-        // );
-    }
-
-    public entry fun remove_strategies_from_whitelist(
-        strategy_factory: &mut StrategyFactory,
-        strategies_to_remove_from_whitelist: vector<string::String>,
-        ctx: &mut TxContext
-    ) {
-        // strategy_manager_module::remove_strategies_from_deposit_whitelist(
-        //     strategy_manager,
-        //     strategies_to_remove_from_whitelist, 
-        //     ctx
-        // );
+        if (shares_burned != 0) {
+            strategy_module::withdraw(
+                strategy,
+                DEFAULT_BURN_ADDRESS, 
+                shares_burned,
+                ctx
+            );
+        }
     }
 
     // View functions
+    public fun get_total_shares<CoinType>(
+        strategy_factory: &StrategyFactory
+    ): u64 {
+        let strategy = get_strategy<CoinType>(strategy_factory);
+        strategy_module::total_shares(strategy)   
+    }
+
+    public fun get_total_shares_as_underlying<CoinType>(
+        strategy_factory: &StrategyFactory
+    ): u64 {
+        let strategy = get_strategy<CoinType>(strategy_factory);
+        let shares = strategy_module::total_shares(strategy);  
+        strategy_module::shares_to_underlying(strategy, shares)
+    }
+
+    public fun get_staker_deposit_shares<CoinType>(
+        strategy_factory: &StrategyFactory,
+        staker: address
+    ): u64 {
+        let strategy = get_strategy<CoinType>(strategy_factory);
+        strategy_module::staker_shares(strategy, staker)
+    }
+
+    public fun get_staker_deposit_shares_as_underlying<CoinType>(
+        strategy_factory: &StrategyFactory,
+        staker: address
+    ): u64 {
+        let strategy = get_strategy<CoinType>(strategy_factory);
+        let shares = strategy_module::staker_shares(strategy, staker);
+        strategy_module::shares_to_underlying(strategy, shares)
+    }
+
+    public fun get_burnable_shares<CoinType>(        
+        strategy_factory: &StrategyFactory
+    ): u64 {        
+        let strategy = get_strategy<CoinType>(strategy_factory);
+        strategy_module::burnable_shares(strategy)
+    }
+
     public fun get_strategy<CoinType>(
         strategy_factory: &StrategyFactory
     ): &Strategy<CoinType> {

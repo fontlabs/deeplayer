@@ -14,8 +14,6 @@ const Contract = {
   delegationManager: "0x",
   allocationManager: "0x",
 
-  client: new SuiClient({ url: getFullnodeUrl("testnet") }),
-
   async mintCoin(
     sender: string,
     strategy: Coin,
@@ -43,7 +41,7 @@ const Contract = {
     strategy: Coin,
     amount: bigint
   ): Promise<TransactionBlock | null> {
-    const transaction = new TransactionBlock();
+    const transactionBlock = new TransactionBlock();
 
     const coins = await CoinAPI.getCoins(sender, strategy.type);
     const coinsObject = coins.data.map((coin) => coin.coinObjectId);
@@ -52,25 +50,68 @@ const Contract = {
 
     if (coinsObject.length > 1) {
       const [, ...otherInCoins] = coinsObject;
-      transaction.mergeCoins(destinationInCoin, otherInCoins);
+      transactionBlock.mergeCoins(destinationInCoin, otherInCoins);
     }
 
-    const [coinDesposited] = transaction.splitCoins(destinationInCoin, [
-      transaction.pure.u64(amount),
+    const [coinDesposited] = transactionBlock.splitCoins(destinationInCoin, [
+      transactionBlock.pure.u64(amount),
     ]);
 
-    transaction.moveCall({
-      target: `${this.deeplayer}::strategy_manager_module::deposit_into_strategy`,
+    transactionBlock.moveCall({
+      target: `${this.deeplayer}::delegation_module::deposit_into_strategy`,
       arguments: [
-        transaction.object(this.strategyManager),
-        transaction.object(this.delegationManager),
-        transaction.object(strategy.address),
-        transaction.object(coinDesposited),
+        transactionBlock.object(this.strategyFactory),
+        transactionBlock.object(this.strategyManager),
+        transactionBlock.object(this.allocationManager),
+        transactionBlock.object(this.delegationManager),
+        transactionBlock.object(coinDesposited),
       ],
       typeArguments: [strategy.type],
     });
 
-    return transaction;
+    return transactionBlock;
+  },
+
+  async getStakerDepositShares(
+    sender: string
+  ): Promise<TransactionBlock | null> {
+    try {
+      const transactionBlock = new TransactionBlock();
+
+      transactionBlock.moveCall({
+        target: `${this.deeplayer}::strategy_manager_module::staker_deposit_shares`,
+        arguments: [
+          transactionBlock.object(this.strategyManager),
+          transactionBlock.pure.address(sender),
+        ],
+      });
+
+      return transactionBlock;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  async getDepositShares(
+    strategyIds: string[]
+  ): Promise<TransactionBlock | null> {
+    try {
+      const transactionBlock = new TransactionBlock();
+
+      strategyIds.forEach((strategyId) => {
+        transactionBlock.moveCall({
+          target: `${this.deeplayer}::strategy_manager_module::deposit_shares`,
+          arguments: [
+            transactionBlock.object(this.strategyManager),
+            transactionBlock.pure.string(strategyId),
+          ],
+        });
+      });
+
+      return transactionBlock;
+    } catch (error) {
+      return null;
+    }
   },
 };
 

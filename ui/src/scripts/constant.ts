@@ -2,10 +2,10 @@ import { Contract } from "./contract";
 import type { Coin, AVS, Operator } from "./types";
 
 const findStrategy = (coinType: string): Coin | undefined => {
-  return strategy_ids.find((strategy) => strategy.type == coinType);
+  return strategies.find((strategy) => strategy.type == coinType);
 };
 
-const strategy_ids: Coin[] = [
+const strategies: Coin[] = [
   {
     name: "Native SUI",
     symbol: "SUI",
@@ -186,7 +186,7 @@ const findService = (address: string): AVS | undefined => {
 };
 
 export {
-  strategy_ids,
+  strategies,
   findStrategy,
   operators,
   findOperator,

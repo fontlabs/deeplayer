@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
+#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::strategy_module {
     use std::option;
     use std::string;
     use sui::balance::{Self, Balance};
     use sui::coin;
+    use sui::table;
     use sui::event;
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
@@ -26,7 +28,9 @@ module deeplayer::strategy_module {
 
     // Structs
     public struct Strategy<phantom CoinType> has store {
-        total_shares: u64,
+        total_shares: u64,       
+        burnable_shares: u64,
+        staker_shares: table::Table<address, u64>,
         balance_underlying: balance::Balance<CoinType>, 
         is_paused: bool
     }
@@ -43,6 +47,8 @@ module deeplayer::strategy_module {
     ): Strategy<CoinType> {
         let strategy = Strategy {
             total_shares: 0,
+            burnable_shares: 0,
+            staker_shares: table::new<address, u64>(ctx),
             balance_underlying: balance::zero<CoinType>(),
             is_paused: false
         };       
@@ -75,6 +81,13 @@ module deeplayer::strategy_module {
         let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
         emit_exchange_rate(strategy_id, virtual_coin_balance, strategy.total_shares + SHARES_OFFSET);
 
+        let staker = tx_context::sender(ctx);
+        if (!table::contains(&strategy.staker_shares, staker)) {
+            table::add(&mut strategy.staker_shares, staker, 0);
+        };
+        let mut staker_shares = *table::borrow_mut(&mut strategy.staker_shares, staker);
+        staker_shares = staker_shares + new_shares;
+
         new_shares
     }
 
@@ -98,18 +111,81 @@ module deeplayer::strategy_module {
         let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
         emit_exchange_rate(strategy_id, virtual_coin_balance - amount_to_send, strategy.total_shares + SHARES_OFFSET);
 
+        let staker = tx_context::sender(ctx);
+        let mut staker_shares = *table::borrow_mut(&mut strategy.staker_shares, staker);
+        staker_shares = staker_shares - amount_shares;
+
         after_withdrawal(strategy, recipient, amount_to_send, ctx);
     }
 
+    public(package) fun add_shares<CoinType>(
+        strategy: &mut Strategy<CoinType>,
+        staker: address,
+        shares: u64
+    ): u64 {
+        strategy.total_shares = strategy.total_shares + shares;
+        if (!table::contains(&strategy.staker_shares, staker)) {
+            table::add(&mut strategy.staker_shares, staker, 0);
+        };
+        let mut staker_shares = *table::borrow_mut(&mut strategy.staker_shares, staker);
+        staker_shares = staker_shares + shares;
+        staker_shares
+    }
+
+    public(package) fun remove_shares<CoinType>(
+        strategy: &mut Strategy<CoinType>,
+        staker: address,
+        shares: u64
+    ): u64 {
+        strategy.total_shares = strategy.total_shares - shares;
+        let mut staker_shares = *table::borrow_mut(&mut strategy.staker_shares, staker);
+        staker_shares = staker_shares - shares;
+        staker_shares
+    }
+
+    public(package) fun increase_burnable_shares<CoinType>(
+        strategy: &mut Strategy<CoinType>,
+        shares_to_burn: u64
+    ) {
+        strategy.burnable_shares = strategy.burnable_shares + shares_to_burn;
+    }
+
+    public(package) fun burn_shares<CoinType>(
+        strategy: &mut Strategy<CoinType>
+    ): u64 {
+        let shares_burned = strategy.burnable_shares;
+        strategy.burnable_shares = 0;
+        shares_burned
+    }
+
     // View functions
-    public fun shares_to_underlying<CoinType>(
+    public(package) fun total_shares<CoinType>(
+        strategy: &Strategy<CoinType>
+    ): u64 {
+        strategy.total_shares
+    }
+
+    public(package) fun burnable_shares<CoinType>(
+        strategy: &Strategy<CoinType>
+    ): u64 {
+        strategy.burnable_shares
+    }
+
+    public(package) fun staker_shares<CoinType>(
+        strategy: &Strategy<CoinType>,
+        staker: address
+    ): u64 {
+        *table::borrow(&strategy.staker_shares, staker)
+    }
+
+    public(package) fun shares_to_underlying<CoinType>(
         strategy: &Strategy<CoinType>,
         amount_shares: u64
     ): u64 {
         shares_to_underlying_impl(strategy, amount_shares)
     }
 
-    public fun underlying_to_shares<CoinType>(
+    public(package) fun underlying_to_shares<CoinType>(
         strategy: &Strategy<CoinType>,
         amount_underlying: u64
     ): u64 {

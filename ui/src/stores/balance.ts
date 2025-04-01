@@ -1,5 +1,7 @@
 import { CoinAPI } from "@/scripts/coin";
-import { strategy_ids } from "@/scripts/constant";
+import { strategies } from "@/scripts/constant";
+import { Contract } from "@/scripts/contract";
+import { Clients } from "@/scripts/sui";
 import { defineStore } from "pinia";
 
 export const useBalanceStore = defineStore("balance", {
@@ -21,22 +23,72 @@ export const useBalanceStore = defineStore("balance", {
     total_num_stakers: {} as { [key: string]: number },
   }),
   actions: {
-    async getBalances(owner?: string) {
+    getBalances(owner?: string) {
       this.getCoinBalances(owner);
+      this.getRestakedBalances(owner);
+      this.getTotalValueRestaked();
     },
+
+    getOperatorBalances(owner?: string) {
+      this.getTotalRestakedSUI();
+      this.getYourShares();
+      this.getTotalShares();
+      this.getAVSSecured();
+    },
+
+    getAVSBalance(owner?: string) {
+      this.getSUIStaked();
+      this.getTotalNumOperators();
+      this.getTotalNumStakers();
+    },
+
     async getCoinBalances(owner?: string) {
       if (!owner) return;
 
-      const result = await CoinAPI.getCoinsBalance(
+      this.balances = await CoinAPI.getCoinsBalance(
         owner,
-        strategy_ids.map((strategy) => strategy.coin.type)
+        strategies.map((strategy) => strategy.type)
       );
-
-      this.balances = result;
     },
+
     async getRestakedBalances(owner?: string) {
       if (!owner) return;
+
+      const transactionBlock = await Contract.getStakerDepositShares(owner);
+      if (!transactionBlock) return;
+
+      const {} = await Clients.suiClient.dryRunTransactionBlock({
+        transactionBlock: transactionBlock as any,
+      });
+
+      this.restaked_balances = {};
     },
-    async getTotalValueRestaked() {},
+
+    async getTotalValueRestaked() {
+      const transactionBlock = await Contract.getDepositShares(
+        strategies.map((strategy) => strategy.type)
+      );
+      if (!transactionBlock) return;
+
+      const {} = await Clients.suiClient.dryRunTransactionBlock({
+        transactionBlock: transactionBlock as any,
+      });
+
+      this.total_value_restaked = {};
+    },
+
+    async getTotalRestakedSUI() {},
+
+    async getYourShares() {},
+
+    async getTotalShares() {},
+
+    async getAVSSecured() {},
+
+    async getSUIStaked() {},
+
+    async getTotalNumOperators() {},
+
+    async getTotalNumStakers() {},
   },
 });

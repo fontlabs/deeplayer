@@ -6,6 +6,7 @@ import { findStrategy } from '@/scripts/constant';
 
 import { Contract } from '@/scripts/contract';
 import { Converter } from '@/scripts/converter';
+import { Clients } from '@/scripts/sui';
 import type { Coin } from '@/scripts/types';
 import { useBalanceStore } from '@/stores/balance';
 import { useSignAndExecuteTransactionBlock, useCurrentAccount } from 'sui-dapp-kit-vue';
@@ -59,7 +60,7 @@ const mint = async () => {
             transactionBlock: transactionBlock as any
         });
 
-        await Contract.client.waitForTransaction({ digest });
+        await Clients.suiClient.waitForTransaction({ digest });
 
         balanceStore.getCoinBalances();
     } catch (error) {
@@ -101,7 +102,7 @@ const restake = async () => {
             transactionBlock: transactionBlock as any
         });
 
-        await Contract.client.waitForTransaction({ digest });
+        await Clients.suiClient.waitForTransaction({ digest });
 
         balanceStore.getBalances();
     } catch (error) {
