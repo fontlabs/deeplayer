@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::strategy_manager_module {
     use std::option;
     use std::string;
@@ -82,23 +81,39 @@ module deeplayer::strategy_manager_module {
     }
 
     // Public functions
-    public entry fun deposit_into_strategy<CoinType>(   
-        strategy_factory: &mut StrategyFactory,
+    public(package) fun deposit_into_strategy<CoinType>(   
         strategy_manager: &mut StrategyManager,
+        strategy: &mut Strategy<CoinType>,
         coin_deposited: coin::Coin<CoinType>,
         ctx: &mut TxContext
-    ) {
+    ): (address, string::String, u64, u64) {
         check_not_paused(strategy_manager);
 
-        let strategy = strategy_factory_module::get_strategy_mut<CoinType>(strategy_factory);
+        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+        check_strategy_whitelisted_for_deposit(strategy_manager, strategy_id);
 
-        deposit_into_strategy_impl(
-            strategy_manager, 
-            tx_context::sender(ctx), 
-            strategy,
-            coin_deposited, 
+        assert!(
+            table::contains(&strategy_manager.strategy_is_whitelisted, strategy_id) &&
+            *table::borrow(&strategy_manager.strategy_is_whitelisted, strategy_id),
+            E_STRATEGY_NOT_WHITELISTED
+        );
+
+        let shares = strategy_module::deposit<CoinType>(
+            strategy, 
+            coin_deposited,
             ctx
         );
+
+        let staker = tx_context::sender(ctx);
+        let (prev_deposit_shares, added_shares) = add_shares_impl(
+            strategy_manager,
+            staker, 
+            strategy_id, 
+            shares,
+            ctx
+        );
+
+        (staker, strategy_id, prev_deposit_shares, added_shares)
     }
     
     public entry fun burn_shares<CoinType>(
@@ -266,50 +281,6 @@ module deeplayer::strategy_manager_module {
         });
 
         (prev_deposit_shares, shares)
-    }
-
-    fun deposit_into_strategy_impl<CoinType>(
-        strategy_manager: &mut StrategyManager,
-        staker: address,
-        strategy: &mut Strategy<CoinType>,
-        coin_deposited: coin::Coin<CoinType>,
-        ctx: &mut TxContext
-    ): u64 {
-        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
-
-        check_strategy_whitelisted_for_deposit(strategy_manager, strategy_id);
-
-        assert!(
-            table::contains(&strategy_manager.strategy_is_whitelisted, strategy_id) &&
-            *table::borrow(&strategy_manager.strategy_is_whitelisted, strategy_id),
-            E_STRATEGY_NOT_WHITELISTED
-        );
-
-        let shares = strategy_module::deposit<CoinType>(
-            strategy, 
-            coin_deposited,
-            ctx
-        );
-
-        let (prev_deposit_shares, added_shares) = add_shares_impl(
-            strategy_manager,
-            staker, 
-            strategy_id, 
-            shares,
-            ctx
-        );
-
-        // delegation_module::increase_delegated_shares(
-        //     delegation_manager,
-        //     allocation_manager,
-        //     staker, 
-        //     strategy_id, 
-        //     prev_deposit_shares, 
-        //     added_shares, 
-        //     ctx
-        // );
-
-        shares
     }
 
     public(package) fun remove_deposit_shares(

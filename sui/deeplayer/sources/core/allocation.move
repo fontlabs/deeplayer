@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::allocation_module {
     use std::option;
     use std::string;
@@ -75,8 +74,8 @@ module deeplayer::allocation_module {
     public struct SlashingParams has copy, drop, store {
         operator: address,
         operator_set_id: u64,
-        strategy_ids: vector<string::String>,
-        wads_to_slash: vector<u64>,
+        strategy_id: string::String,
+        wad_to_slash: u64,
         description: string::String,
     }
 
@@ -121,7 +120,7 @@ module deeplayer::allocation_module {
     public struct OperatorSlashed has copy, drop {
         operator: address,
         operator_set: OperatorSet,
-        strategy_ids: vector<string::String>,
+        strategy_id: string::String,
         wad_slashed: vector<u64>,
         description: string::String,
     }
@@ -202,107 +201,72 @@ module deeplayer::allocation_module {
     }
 
     // Package functions
-    public(package) fun slash_operator(
-        allocation_manager: &mut AllocationManager,
+    public(package) fun slash_operator_shares(
         strategy_manager: &mut StrategyManager,
+        allocation_manager: &mut AllocationManager,
         avs: address,
         params: SlashingParams,
         ctx: &mut TxContext
-    ) {
+    ): (u64, u64) {
         check_not_paused(allocation_manager);
 
         let operator_set = OperatorSet { avs, id: params.operator_set_id };
-        assert!(vector::length(&params.strategy_ids) == vector::length(&params.wads_to_slash), E_INPUT_ARRAY_LENGTH_MISMATCH);
         assert!(operator_set_exists(allocation_manager, operator_set), E_INVALID_OPERATOR_SET);
         assert!(is_operator_slashable(allocation_manager, params.operator, operator_set, ctx), E_OPERATOR_NOT_SLASHABLE);
 
         let mut wad_slashed = vector::empty<u64>();
 
-        let mut i = 0;
-        let len = vector::length(&params.strategy_ids);
-        while (i < len) {
-            let strategy_id = *vector::borrow(&params.strategy_ids, i);
-            let wad_to_slash = *vector::borrow(&params.wads_to_slash, i);
+        assert!(0 < params.wad_to_slash && params.wad_to_slash <= WAD, E_INVALID_WAD_TO_SLASH);
+        assert!(operator_set_contains_strategy(allocation_manager, operator_set, params.strategy_id), E_STRATEGY_NOT_IN_OPERATOR_SET);
 
-            assert!(0 < wad_to_slash && wad_to_slash <= WAD, E_INVALID_WAD_TO_SLASH);
-            assert!(operator_set_contains_strategy(allocation_manager, operator_set, strategy_id), E_STRATEGY_NOT_IN_OPERATOR_SET);
+        let (mut info, mut allocation) = get_updated_allocation(
+            allocation_manager,
+            params.operator,
+            operator_set,
+            params.strategy_id,
+            ctx
+        );
 
-            let (mut info, mut allocation) = get_updated_allocation(
-                allocation_manager,
-                params.operator,
-                operator_set,
-                strategy_id,
-                ctx
-            );
-
-            if (allocation.current_magnitude == 0) {
-                vector::push_back(&mut wad_slashed, 0);
-                i = i + 1;
-                continue;
-            };
-
-            let slashed_magnitude = allocation.current_magnitude * wad_to_slash / WAD;
-            let prev_max_magnitude = info.max_magnitude;
-            let wad_slash = slashed_magnitude * WAD / info.max_magnitude;
-            vector::push_back(&mut wad_slashed, wad_slash);
-
-            allocation.current_magnitude = allocation.current_magnitude - slashed_magnitude;
-            info.max_magnitude = info.max_magnitude - slashed_magnitude;
-            info.encumbered_magnitude = info.encumbered_magnitude - slashed_magnitude;
-
-            if (allocation.pending_diff < 0) {
-                let slashed_pending = allocation.pending_diff * wad_to_slash / WAD;
-                allocation.pending_diff = allocation.pending_diff - slashed_pending;
-
-                // emit_allocation_updated(
-                //     params.operator,
-                //     operator_set,
-                //     strategy_id,
-                //     allocation.current_magnitude + allocation.pending_diff,
-                //     allocation.effect_block
-                // );
-            };
-
-            update_allocation_info(
-                allocation_manager,
-                params.operator,
-                operator_set,
-                strategy_id,
-                info,
-                allocation,
-                ctx
-            );
-
-            // emit_allocation_updated(
-            //     params.operator,
-            //     operator_set,
-            //     strategy_id,
-            //     allocation.current_magnitude,
-            //     tx_context::epoch(ctx)
-            // );
-
-            update_max_magnitude(allocation_manager, params.operator, strategy_id, info.max_magnitude, ctx);
-
-            // delegation_module::slash_operator_shares(
-            //     delegation_manager,
-            //     strategy_manager,
-            //     params.operator,
-            //     strategy_id,
-            //     prev_max_magnitude,
-            //     info.max_magnitude,
-            //     ctx
-            // );
-
-            i = i + 1;
+        if (allocation.current_magnitude == 0) {
+            vector::push_back(&mut wad_slashed, 0);
+            return (0, info.max_magnitude);
         };
+
+        let slashed_magnitude = allocation.current_magnitude * params.wad_to_slash / WAD;
+        let prev_max_magnitude = info.max_magnitude;
+        let wad_slash = slashed_magnitude * WAD / info.max_magnitude;
+        vector::push_back(&mut wad_slashed, wad_slash);
+
+        allocation.current_magnitude = allocation.current_magnitude - slashed_magnitude;
+        info.max_magnitude = info.max_magnitude - slashed_magnitude;
+        info.encumbered_magnitude = info.encumbered_magnitude - slashed_magnitude;
+
+        if (allocation.pending_diff < 0) {
+            let slashed_pending = allocation.pending_diff * params.wad_to_slash / WAD;
+            allocation.pending_diff = allocation.pending_diff - slashed_pending;
+        };
+
+        update_allocation_info(
+            allocation_manager,
+            params.operator,
+            operator_set,
+            params.strategy_id,
+            info,
+            allocation,
+            ctx
+        );
+
+        update_max_magnitude(allocation_manager, params.operator, params.strategy_id, info.max_magnitude, ctx);
 
         event::emit(OperatorSlashed {
             operator: params.operator,
             operator_set,
-            strategy_ids: params.strategy_ids,
+            strategy_id: params.strategy_id,
             wad_slashed,
             description: params.description,
         });
+
+        (prev_max_magnitude, info.max_magnitude)
     }
 
     // Internal helper functions
@@ -435,10 +399,8 @@ module deeplayer::allocation_module {
                     if (vector::is_empty(set_strategies)) {
                         table::remove(allocated_strategies, set_key);
                     } else {
-                        // let i = vector::find_index<address>(set_strategies, fn (strategy: &address): bool {
-                        //     strategy == &strategy_id
-                        // });
-                        // vector::remove(set_strategies, option::extract(i));
+                        let i = vector::find_index!(set_strategies, |id| id == &strategy_id);
+                        vector::remove(set_strategies, *option::borrow(&i));
                     };
                 };
             };
@@ -446,10 +408,8 @@ module deeplayer::allocation_module {
             if (table::contains(&allocation_manager.allocated_sets, operator)) {
                 let mut allocated_sets = table::borrow_mut(&mut allocation_manager.allocated_sets, operator);
                 if (!vector::is_empty(allocated_sets)) {
-                    // let i = vector::find_index<vector<u8>>(allocated_sets, fn (key: &vector<u8>): bool {
-                    //     key == &set_key 
-                    // });
-                    // vector::remove(allocated_sets, option::extract(i));
+                    let i = vector::find_index!(allocated_sets, |key| key == &set_key);
+                    vector::remove(allocated_sets, *option::borrow(&i));
                 };
             };
         };
@@ -569,5 +529,11 @@ module deeplayer::allocation_module {
         };
 
         (is_set, delay)
+    }
+
+    public fun params_to_operator_and_strategy_id(
+        params: SlashingParams
+    ): (address, string::String) {
+        (params.operator, params.strategy_id)
     }
 }

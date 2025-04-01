@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::delegation_module {
     use std::option;
     use std::string;
     use std::vector;
     use sui::clock;
+    use sui::coin;
     use sui::balance;
     use sui::event;
     use sui::object::{Self, UID};
@@ -13,7 +13,7 @@ module deeplayer::delegation_module {
     use sui::tx_context::{Self, TxContext};
     use sui::bcs;
 
-    use deeplayer::strategy_factory_module::{StrategyFactory};
+    use deeplayer::strategy_factory_module::{Self, StrategyFactory};
     use deeplayer::allocation_module::{Self, AllocationManager};
     use deeplayer::strategy_manager_module::{Self, StrategyManager};
 
@@ -152,6 +152,37 @@ module deeplayer::delegation_module {
         };
 
         transfer::share_object(delegation_manager);
+    }
+
+    // Public functions
+    public entry fun deposit_into_strategy<CoinType>(   
+        strategy_factory: &mut StrategyFactory,
+        strategy_manager: &mut StrategyManager,
+        allocation_manager: &AllocationManager,
+        delegation_manager: &mut DelegationManager,
+        coin_deposited: coin::Coin<CoinType>,
+        ctx: &mut TxContext
+    ) {
+        check_not_paused(delegation_manager);
+
+        let strategy = strategy_factory_module::get_strategy_mut<CoinType>(strategy_factory);
+
+        let (staker, strategy_id, prev_deposit_shares, added_shares) = strategy_manager_module::deposit_into_strategy<CoinType>(
+            strategy_manager, 
+            strategy,
+            coin_deposited, 
+            ctx
+        );
+
+        increase_delegated_shares(
+            allocation_manager,
+            delegation_manager,
+            staker, 
+            strategy_id, 
+            prev_deposit_shares, 
+            added_shares, 
+            ctx
+        );
     }
 
     // Public functions
@@ -414,8 +445,8 @@ module deeplayer::delegation_module {
 
     // Package functions
     public(package) fun increase_delegated_shares(
-        delegation_manager: &mut DelegationManager,
         allocation_manager: &AllocationManager,
+        delegation_manager: &mut DelegationManager,
         staker: address,
         strategy_id: string::String,
         prev_deposit_shares: u64,
@@ -445,8 +476,8 @@ module deeplayer::delegation_module {
     }
 
     public(package) fun slash_operator_shares(
-        delegation_manager: &mut DelegationManager,
         strategy_manager: &mut StrategyManager,
+        delegation_manager: &mut DelegationManager,
         operator: address,
         strategy_id: string::String,
         prev_max_magnitude: u64,
