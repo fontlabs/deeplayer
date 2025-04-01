@@ -27,7 +27,6 @@ export type Coin = {
   type: CoinType;
   about: string;
   link?: string;
-  address: string;
   faucet?: {
     amount: number;
     module: string;

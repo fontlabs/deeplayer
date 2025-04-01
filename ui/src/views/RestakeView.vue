@@ -109,8 +109,8 @@ onMounted(() => {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="strategy in allStrategy" :key="strategy.address">
-                  <td @click="router.push(`/restake/${strategy.address}`)">
+                <tr v-for="strategy in allStrategy" :key="strategy.type">
+                  <td @click="router.push(`/restake/${strategy.type}`)">
                     <div class="coin_info">
                       <img :src="strategy.image" alt="btc">
                       <p>{{ strategy.name }} <span>{{ strategy.symbol }}</span></p>
@@ -133,10 +133,10 @@ onMounted(() => {
                   </td>
                   <td>
                     <div class="actions">
-                      <RouterLink :to="`/restake/${strategy.address}`">
+                      <RouterLink :to="`/restake/${strategy.type}`">
                         <button>Restake</button>
                       </RouterLink>
-                      <RouterLink :to="`/restake/${strategy.address}/unstake`">
+                      <RouterLink :to="`/restake/${strategy.type}/unstake`">
                         <button>Unstake</button>
                       </RouterLink>
                     </div>

@@ -51,8 +51,8 @@ const unstake = async () => {
 
 };
 
-const getStrategy = (address: string) => {
-    strategy.value = findStrategy(address);
+const getStrategy = (type: string) => {
+    strategy.value = findStrategy(type);
 };
 
 onMounted(() => {

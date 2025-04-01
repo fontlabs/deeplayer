@@ -4,9 +4,11 @@ import { CoinAPI } from "./coin";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 
 const Contract = {
-  deeplayer: "0x",
+  deeplayer:
+    "0x61a6d51871eedde7f727323d16d0a5419c42e85276147978b5c5ce05e79ccaf0",
   avsDirectory: "0x",
-  strategyFactory: "0x",
+  strategyFactory:
+    "0x0292ed215f2daa67e526827b89804084457c5521732e922adb41c0bbcc744b3f",
   strategyManager: "0x",
   rewardsCondinator: "0x",
   delegationManager: "0x",
