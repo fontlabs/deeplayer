@@ -419,13 +419,13 @@ module deeplayer::delegation_module {
             if (receive_as_coins) {
                 strategy_manager_module::withdraw_shares_as_coins<CoinType>(
                     strategy,
+                    strategy_manager,
                     withdrawal.staker,
                     shares_to_withdraw,
                     ctx
                 );
             } else {
                 let (prev_deposit_shares, added_shares) = strategy_manager_module::add_shares<CoinType>(
-                    strategy,
                     strategy_manager,
                     withdrawal.staker,
                     shares_to_withdraw,
@@ -523,6 +523,7 @@ module deeplayer::delegation_module {
 
         // Increase burnable shares in strategy manager
         strategy_manager_module::increase_burnable_shares<CoinType>(
+            strategy_manager,
             strategy, 
             total_deposit_shares_to_burn
         );
@@ -540,7 +541,7 @@ module deeplayer::delegation_module {
         check_not_paused(delegation_manager);
         
         // Get staker's deposited strategy_ids and shares
-        let (strategy_ids, withdrawable_shares) = get_deposited_shares(strategy_manager, staker);
+        let (strategy_ids, withdrawable_shares) = strategy_manager_module::get_deposits(strategy_manager, staker);
         
         // Get slashing factors
         let slashing_factors = get_slashing_factors(
@@ -595,7 +596,7 @@ module deeplayer::delegation_module {
         });
 
         // Get all staker's deposited strategy_ids/shares
-        let (strategy_ids, deposited_shares) = get_deposited_shares(strategy_manager, staker);
+        let (strategy_ids, deposited_shares) = strategy_manager_module::get_deposits(strategy_manager, staker);
         if (vector::is_empty(&strategy_ids)) {
             return;
         };
@@ -686,16 +687,16 @@ module deeplayer::delegation_module {
             };
 
             // Remove deposit shares from strategy manager
-            // let (_, shares_after) = strategy_manager_module::remove_deposit_shares<CoinType>(
-            //     strategy, 
-            //     strategy_manager,
-            //     staker, 
-            //     deposit_shares
-            // );
+            let (_, shares_after) = strategy_manager_module::remove_deposit_shares(
+                strategy_manager,
+                strategy_id, 
+                staker, 
+                deposit_shares
+            );
 
-            // if (shares_after == 0) {
-            //     reset_deposit_scaling_factor(delegation_manager, staker, strategy_id);
-            // };
+            if (shares_after == 0) {
+                reset_deposit_scaling_factor(delegation_manager, staker, strategy_id);
+            };
 
             i = i + 1;
         };
@@ -880,28 +881,21 @@ module deeplayer::delegation_module {
         let mut i = 0;
         let len = vector::length(&strategy_ids);
         while (i < len) {
-            // let strategy_id = *vector::borrow(&strategy_ids, i);
-            // let shares = strategy_manager_module::staker_deposit_shares(
-            //     strategy_manager,
-            //     staker,
-            //     strategy_id
-            // );
-            // vector::push_back(&mut deposit_shares, shares);
+            let strategy_id = *vector::borrow(&strategy_ids, i);
+            let shares = strategy_manager_module::get_staker_shares(
+                strategy_manager,
+                strategy_id,
+                staker
+            );
+            vector::push_back(&mut deposit_shares, shares);
 
-            // let dsf = get_deposit_scaling_factor(delegation_manager, staker, strategy_id, ctx);
-            // let withdrawable = calc_withdrawable(dsf, shares, *vector::borrow(&slashing_factors, i));
-            // vector::push_back(&mut withdrawable_shares, withdrawable);
+            let dsf = get_deposit_scaling_factor(delegation_manager, staker, strategy_id, ctx);
+            let withdrawable = calc_withdrawable(dsf, shares, *vector::borrow(&slashing_factors, i));
+            vector::push_back(&mut withdrawable_shares, withdrawable);
             i = i + 1;
         };
 
         (withdrawable_shares, deposit_shares)
-    }
-
-    public fun get_deposited_shares(
-        strategy_manager: &StrategyManager,
-        staker: address
-    ): (vector<string::String>, vector<u64>) {
-        strategy_manager_module::get_deposits(strategy_manager, staker)
     }
 
     public fun queued_withdrawals(

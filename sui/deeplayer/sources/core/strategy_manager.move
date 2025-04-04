@@ -13,10 +13,13 @@ module deeplayer::strategy_manager_module {
     use sui::tx_context::{Self, TxContext};
 
     use deeplayer::coin_utils_module;
+    use deeplayer::deeplayer_module::{DeepLayerCap};
     use deeplayer::strategy_module::{Self, Strategy};
+    use deeplayer::strategy_factory_module::{Self, StrategyFactory};
 
     // Constants
     const MAX_STAKER_STRATEGY_LIST_LENGTH: u64 = 32;
+    const DEFAULT_BURN_ADDRESS: address = @0x0;
 
     // Error codes
     const E_STRATEGY_NOT_WHITELISTED: u64 = 2;
@@ -32,6 +35,9 @@ module deeplayer::strategy_manager_module {
         id: UID,
         is_paused: bool,
         staker_strategy_list: table::Table<address, vector<string::String>>,
+        total_shares: table::Table<string::String, u64>,
+        burnable_shares: table::Table<string::String, u64>,
+        staker_shares: table::Table<address, table::Table<string::String, u64>>,
         nonces: table::Table<address, u64>,
     }
 
@@ -42,6 +48,11 @@ module deeplayer::strategy_manager_module {
 
     public struct StrategyRemovedFromDepositWhitelist has copy, drop {
         strategy_id: string::String,
+    }
+
+    public struct BurnableSharesDecreased has copy, drop {
+        strategy_id: string::String,
+        shares_burned: u64,
     }
 
     public struct Deposit has copy, drop {
@@ -62,6 +73,9 @@ module deeplayer::strategy_manager_module {
             id: object::new(ctx),
             is_paused: false,
             staker_strategy_list: table::new<address, vector<string::String>>(ctx),
+            total_shares: table::new<string::String, u64>(ctx),
+            burnable_shares: table::new<string::String, u64>(ctx),
+            staker_shares: table::new<address, table::Table<string::String, u64>>(ctx),
             nonces: table::new<address, u64>(ctx),
         };
 
@@ -69,6 +83,40 @@ module deeplayer::strategy_manager_module {
     } 
 
     // Public functions
+    public entry fun burn_shares<CoinType>(
+        cap: &DeepLayerCap,
+        strategy_factory: &mut StrategyFactory,
+        strategy_manager: &mut StrategyManager,
+        ctx: &mut TxContext
+    ) {        
+        let strategy = strategy_factory_module::get_strategy_mut<CoinType>(strategy_factory);
+        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+
+        let shares_burned = burn_shares_impl(strategy_manager, strategy_id);
+
+        event::emit(BurnableSharesDecreased {
+            strategy_id,
+            shares_burned,
+        });
+
+        let prior_total_shares = if (table::contains(&strategy_manager.total_shares, strategy_id)) {
+            *table::borrow(&strategy_manager.total_shares, strategy_id)
+        } else {
+            0
+        };
+
+        if (shares_burned != 0) {
+            strategy_module::withdraw(
+                strategy,
+                DEFAULT_BURN_ADDRESS, 
+                prior_total_shares,
+                shares_burned,
+                ctx
+            );
+        }
+    }
+
+    // Package functions
     public(package) fun deposit_into_strategy<CoinType>(   
         strategy: &mut Strategy<CoinType>,
         strategy_manager: &mut StrategyManager,
@@ -79,18 +127,35 @@ module deeplayer::strategy_manager_module {
 
         let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
 
-        let shares = strategy_module::deposit<CoinType>(
+        let prior_total_shares = if (table::contains(&strategy_manager.total_shares, strategy_id)) {
+            *table::borrow(&strategy_manager.total_shares, strategy_id)
+        } else {
+            0
+        };
+
+        let (new_shares, _) = strategy_module::deposit<CoinType>(
             strategy, 
+            prior_total_shares,
             coin_deposited,
             ctx
         );
 
         let staker = tx_context::sender(ctx);
-        let (prev_deposit_shares, added_shares) = add_shares_impl<CoinType>(
-            strategy,
+        if (!table::contains(&strategy_manager.staker_shares, staker)) {
+            table::add(&mut strategy_manager.staker_shares, staker, table::new<string::String, u64>(ctx));
+        };
+        let mut staker_shares = table::borrow_mut(&mut strategy_manager.staker_shares, staker);
+        if (!table::contains(staker_shares, strategy_id)) {
+            table::add(staker_shares, strategy_id, 0);
+        };
+        let mut staker_shares_in_strategy = *table::borrow_mut(staker_shares, strategy_id);
+        staker_shares_in_strategy = staker_shares_in_strategy + new_shares;
+
+        let (prev_deposit_shares, added_shares) = add_shares_impl(
             strategy_manager,
+            strategy_id,
             staker, 
-            shares,
+            new_shares,
             ctx
         );
 
@@ -98,15 +163,16 @@ module deeplayer::strategy_manager_module {
     }
 
     public(package) fun add_shares<CoinType>(
-        strategy: &mut Strategy<CoinType>,
         strategy_manager: &mut StrategyManager,
         staker: address,
         shares: u64,
         ctx: &mut TxContext
     ): (u64, u64) {
+        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+
         add_shares_impl(
-            strategy,
             strategy_manager, 
+            strategy_id,
             staker, 
             shares,
             ctx
@@ -115,24 +181,45 @@ module deeplayer::strategy_manager_module {
 
     public(package) fun withdraw_shares_as_coins<CoinType>(
         strategy: &mut Strategy<CoinType>,
+        strategy_manager: &mut StrategyManager,
         staker: address,
         shares: u64,
         ctx: &mut TxContext
     ) {
+        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+
+        let prior_total_shares = if (table::contains(&strategy_manager.total_shares, strategy_id)) {
+            *table::borrow(&strategy_manager.total_shares, strategy_id)
+        } else {
+            0
+        };
+
         strategy_module::withdraw<CoinType>(
             strategy,
             staker, 
+            prior_total_shares,
             shares, 
             ctx
         );
+
+        decrease_total_shares(strategy_manager, strategy_id, shares);
+
+        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+        let staker = tx_context::sender(ctx);
+
+        let mut staker_shares = table::borrow_mut(&mut strategy_manager.staker_shares, staker);
+        let mut staker_shares_in_strategy = *table::borrow_mut(staker_shares, strategy_id);
+        staker_shares_in_strategy = staker_shares_in_strategy - shares;
     }
 
     public(package) fun increase_burnable_shares<CoinType>(
+        strategy_manager: &mut StrategyManager,
         strategy: &mut Strategy<CoinType>,
         added_shares_to_burn: u64
     ) {
         let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
-        strategy_module::increase_burnable_shares(strategy, added_shares_to_burn);
+        
+        increase_burnable_shares_impl(strategy_manager, strategy_id, added_shares_to_burn);
 
         event::emit(BurnableSharesIncreased {
             strategy_id,
@@ -140,10 +227,92 @@ module deeplayer::strategy_manager_module {
         });
     }
 
-    // Internal functions
-    fun add_shares_impl<CoinType>(
-        strategy: &mut Strategy<CoinType>,
+    public(package) fun remove_deposit_shares(
         strategy_manager: &mut StrategyManager,
+        strategy_id: string::String,
+        staker: address,
+        deposit_shares_to_remove: u64
+    ): (bool, u64) {
+        assert!(deposit_shares_to_remove != 0, E_SHARES_AMOUNT_ZERO);
+
+        decrease_total_shares(strategy_manager, strategy_id, deposit_shares_to_remove);
+
+        let mut staker_shares = table::borrow_mut(&mut strategy_manager.staker_shares, staker);
+        let mut staker_shares_in_strategy = *table::borrow_mut(staker_shares, strategy_id);
+        staker_shares_in_strategy = staker_shares_in_strategy - deposit_shares_to_remove;
+
+        if (staker_shares_in_strategy == 0) {
+            remove_strategy_from_staker_strategy_list(
+                strategy_manager, 
+                staker, 
+                strategy_id
+            );
+
+            return (true, staker_shares_in_strategy);
+        };
+
+        (false, staker_shares_in_strategy)
+    }
+
+    public(package) fun increase_burnable_shares_impl(
+        strategy_manager: &mut StrategyManager,
+        strategy_id: string::String,
+        shares_to_burn: u64
+    ) {
+        let mut burnable_shares = *table::borrow_mut(&mut strategy_manager.burnable_shares, strategy_id);
+        burnable_shares = burnable_shares + shares_to_burn;
+    }
+
+    public(package) fun burn_shares_impl(
+        strategy_manager: &mut StrategyManager,
+        strategy_id: string::String
+    ): u64 {
+        let prev_burnable_shares = get_burnable_shares(strategy_manager, strategy_id);
+        let mut burnable_shares = *table::borrow_mut(&mut strategy_manager.burnable_shares, strategy_id);
+        burnable_shares = 0;
+        prev_burnable_shares
+    }
+
+    public(package) fun burn_staker_shares(
+        strategy_manager: &mut StrategyManager,
+        strategy_id: string::String,
+        staker: address
+    ): u64 {
+        let mut staker_shares = table::borrow_mut(&mut strategy_manager.staker_shares, staker);
+        let mut staker_shares_burned = *table::borrow_mut(staker_shares, strategy_id);
+        staker_shares_burned = 0;
+
+        increase_burnable_shares_impl(strategy_manager, strategy_id, staker_shares_burned);
+        staker_shares_burned
+    }
+
+    public(package) fun increase_total_shares(
+        strategy_manager: &mut StrategyManager,
+        strategy_id: string::String,
+        shares: u64
+    ): u64 {
+        if (!table::contains(&strategy_manager.total_shares, strategy_id)) {
+            table::add(&mut strategy_manager.total_shares, strategy_id, 0);
+        };
+        let mut total_shares = *table::borrow_mut(&mut strategy_manager.total_shares, strategy_id);
+        total_shares = total_shares + shares;
+        total_shares
+    }
+
+    public(package) fun decrease_total_shares(
+        strategy_manager: &mut StrategyManager,
+        strategy_id: string::String,
+        shares: u64
+    ): u64 {
+        let mut total_shares = *table::borrow_mut(&mut strategy_manager.total_shares, strategy_id);
+        total_shares = total_shares - shares;
+        total_shares
+    }
+
+    // Internal functions
+    fun add_shares_impl(
+        strategy_manager: &mut StrategyManager,
+        strategy_id: string::String,
         staker: address,
         shares: u64,
         ctx: &mut TxContext
@@ -151,11 +320,20 @@ module deeplayer::strategy_manager_module {
         assert!(staker != @0x0, E_STAKER_ADDRESS_ZERO);
         assert!(shares != 0, E_SHARES_AMOUNT_ZERO);
 
-        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+        increase_total_shares(strategy_manager, strategy_id, shares);
 
         // Deposit shares
-        let prev_staker_shares = strategy_module::staker_shares(strategy, staker);
-        strategy_module::add_shares(strategy, staker, shares);
+        let prev_staker_shares = get_staker_shares(strategy_manager, strategy_id, staker);
+
+        if (!table::contains(&strategy_manager.staker_shares, staker)) {
+            table::add(&mut strategy_manager.staker_shares, staker, table::new<string::String, u64>(ctx));
+        };
+        let mut staker_shares = table::borrow_mut(&mut strategy_manager.staker_shares, staker);
+        if (!table::contains(staker_shares, strategy_id)) {
+            table::add(staker_shares, strategy_id, 0);
+        };
+        let mut staker_shares_in_strategy = *table::borrow_mut(staker_shares, strategy_id);
+        staker_shares_in_strategy = staker_shares_in_strategy + shares;
 
         // Strategy list
         if (!table::contains(&strategy_manager.staker_strategy_list, staker)) {
@@ -172,30 +350,6 @@ module deeplayer::strategy_manager_module {
         });
 
         (prev_staker_shares, shares)
-    }
-
-    public(package) fun remove_deposit_shares<CoinType>(
-        strategy: &mut Strategy<CoinType>,
-        strategy_manager: &mut StrategyManager,
-        staker: address,
-        deposit_shares_to_remove: u64
-    ): (bool, u64) {
-        assert!(deposit_shares_to_remove != 0, E_SHARES_AMOUNT_ZERO);
-
-        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
-        let shares_after = strategy_module::remove_shares(strategy, staker, deposit_shares_to_remove);
-
-        if (shares_after == 0) {
-            remove_strategy_from_staker_strategy_list(
-                strategy_manager, 
-                staker, 
-                strategy_id
-            );
-
-            return (true, shares_after);
-        };
-
-        (false, shares_after)
     }
 
     fun remove_strategy_from_staker_strategy_list(
@@ -233,13 +387,24 @@ module deeplayer::strategy_manager_module {
         
         let mut i = 0;
         while (i < len) {
-            // let strategy_id = *vector::borrow(strategy_ids, i);
-            // let shares = strategy_module::staker_shares_with_id(strategy_id, staker);            
-            // vector::push_back(&mut deposited_shares, shares);
+            let strategy_id = *vector::borrow(strategy_ids, i);
+            let staker_shares = table::borrow(&strategy_manager.staker_shares, staker);
+            let staker_shares_in_strategy = *table::borrow(staker_shares, strategy_id);            
+            vector::push_back(&mut deposited_shares, staker_shares_in_strategy);
             i = i + 1;
         };
 
         (*strategy_ids, deposited_shares)
+    }
+
+    public fun get_staker_deposit_shares_as_underlying<CoinType>(
+        strategy: &Strategy<CoinType>,
+        strategy_manager: &StrategyManager,
+        strategy_id: string::String,
+        staker: address
+    ): u64 {
+        let staker_shares_in_strategy = get_staker_shares(strategy_manager, strategy_id, staker);
+        strategy_module::shares_to_underlying(strategy, staker_shares_in_strategy)
     }
 
     public fun get_staker_strategy_list(
@@ -247,6 +412,22 @@ module deeplayer::strategy_manager_module {
         staker: address
     ): vector<string::String> {
         *table::borrow(&strategy_manager.staker_strategy_list, staker)
+    }
+
+    public fun get_staker_shares(
+        strategy_manager: &StrategyManager,
+        strategy_id: string::String,
+        staker: address
+    ): u64 {
+        let staker_shares = table::borrow(&strategy_manager.staker_shares, staker);
+        *table::borrow(staker_shares, strategy_id)
+    }
+
+    public fun get_burnable_shares(
+        strategy_manager: &StrategyManager,
+        strategy_id: string::String
+    ): u64 {
+        *table::borrow(&strategy_manager.burnable_shares, strategy_id)
     }
 
     // Modifier checks 

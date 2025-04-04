@@ -22,20 +22,12 @@ module deeplayer::strategy_factory_module {
     const E_ONLY_OWNER: u64 = 4;
     const E_PAUSED: u64 = 5;
 
-    // Constants
-    const DEFAULT_BURN_ADDRESS: address = @0x0;
-
     // Structs
     public struct StrategyFactory has key {
         id: UID,
         deployed_strategies: Bag,
         is_blacklisted: table::Table<string::String, bool>,
         is_paused: bool
-    }
-
-    public struct BurnableSharesDecreased has copy, drop {
-        strategy_id: string::String,
-        shares_burned: u64,
     }
 
     // Initialization
@@ -68,70 +60,7 @@ module deeplayer::strategy_factory_module {
         bag::add(&mut strategy_factory.deployed_strategies, strategy_id, strategy);
     }
 
-    public entry fun burn_shares<CoinType>(
-        strategy_factory: &mut StrategyFactory,
-        ctx: &mut TxContext
-    ) {        
-        let strategy = get_strategy_mut<CoinType>(strategy_factory);
-        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
-
-        let shares_burned = strategy_module::burn_shares(strategy);
-
-        event::emit(BurnableSharesDecreased {
-            strategy_id,
-            shares_burned,
-        });
-
-        if (shares_burned != 0) {
-            strategy_module::withdraw(
-                strategy,
-                DEFAULT_BURN_ADDRESS, 
-                shares_burned,
-                ctx
-            );
-        }
-    }
-
-    // View functions
-    public fun get_total_shares<CoinType>(
-        strategy_factory: &StrategyFactory
-    ): u64 {
-        let strategy = get_strategy<CoinType>(strategy_factory);
-        strategy_module::total_shares(strategy)   
-    }
-
-    public fun get_total_shares_as_underlying<CoinType>(
-        strategy_factory: &StrategyFactory
-    ): u64 {
-        let strategy = get_strategy<CoinType>(strategy_factory);
-        let shares = strategy_module::total_shares(strategy);  
-        strategy_module::shares_to_underlying(strategy, shares)
-    }
-
-    public fun get_staker_deposit_shares<CoinType>(
-        strategy_factory: &StrategyFactory,
-        staker: address
-    ): u64 {
-        let strategy = get_strategy<CoinType>(strategy_factory);
-        strategy_module::staker_shares(strategy, staker)
-    }
-
-    public fun get_staker_deposit_shares_as_underlying<CoinType>(
-        strategy_factory: &StrategyFactory,
-        staker: address
-    ): u64 {
-        let strategy = get_strategy<CoinType>(strategy_factory);
-        let shares = strategy_module::staker_shares(strategy, staker);
-        strategy_module::shares_to_underlying(strategy, shares)
-    }
-
-    public fun get_burnable_shares<CoinType>(        
-        strategy_factory: &StrategyFactory
-    ): u64 {        
-        let strategy = get_strategy<CoinType>(strategy_factory);
-        strategy_module::burnable_shares(strategy)
-    }
-
+    // Public View functions
     public fun get_strategy<CoinType>(
         strategy_factory: &StrategyFactory
     ): &Strategy<CoinType> {
