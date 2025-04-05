@@ -5,14 +5,18 @@ import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 
 const Contract = {
   deeplayer:
-    "0x61a6d51871eedde7f727323d16d0a5419c42e85276147978b5c5ce05e79ccaf0",
-  avsDirectory: "0x",
+    "0x43d20dbffe39e23263ac2f3e5c1d0222b6ba23dfa0855960638db8f81283fb08",
+  avsDirectory:
+    "0x8a9025ce03a3622f5b65ac3db581942f1c82e95b9dcad1811ab2d5a5dad29eed",
   strategyFactory:
-    "0x0292ed215f2daa67e526827b89804084457c5521732e922adb41c0bbcc744b3f",
-  strategyManager: "0x",
+    "0x1b8c4dc84618e8e2a9c16927586d7103ec60be9433b21f7f38a34481919ae87f",
+  strategyManager:
+    "0x938488fd5822bcf09ac4c5893fef2c1bea79309b14017821e38b64039046335e",
   rewardsCondinator: "0x",
-  delegationManager: "0x",
-  allocationManager: "0x",
+  delegationManager:
+    "0x08acd45115e553de930f6a4ef979c90214101168d44d0338f321490e9b2be3df",
+  allocationManager:
+    "0x0118a11fa89531de7bd09658d913ae79ad97d726bc1df884bcbedb56bcd7eea5",
 
   async mintCoin(
     sender: string,
@@ -45,14 +49,11 @@ const Contract = {
 
     const coins = await CoinAPI.getCoins(sender, strategy.type);
     const coinsObject = coins.data.map((coin) => coin.coinObjectId);
-
     const destinationInCoin = coinsObject[0];
-
     if (coinsObject.length > 1) {
       const [, ...otherInCoins] = coinsObject;
       transactionBlock.mergeCoins(destinationInCoin, otherInCoins);
     }
-
     const [coinDesposited] = transactionBlock.splitCoins(destinationInCoin, [
       transactionBlock.pure.u64(amount),
     ]);
@@ -68,20 +69,21 @@ const Contract = {
       ],
       typeArguments: [strategy.type],
     });
-
     return transactionBlock;
   },
 
-  async getStakerDepositShares(
+  async getStakerShares(
+    strategyId: string,
     sender: string
   ): Promise<TransactionBlock | null> {
     try {
       const transactionBlock = new TransactionBlock();
 
       transactionBlock.moveCall({
-        target: `${this.deeplayer}::strategy_manager_module::staker_deposit_shares`,
+        target: `${this.deeplayer}::strategy_manager_module::get_staker_shares`,
         arguments: [
           transactionBlock.object(this.strategyManager),
+          transactionBlock.pure.string(strategyId),
           transactionBlock.pure.address(sender),
         ],
       });

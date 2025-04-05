@@ -1,9 +1,10 @@
 {
-  "name": "scripts",
+  "name": "deeplayer scripts",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "coins": "npx tsx coins.ts",
+    "strategies": "npx tsx strategies.ts"
   },
   "keywords": [],
   "author": "",

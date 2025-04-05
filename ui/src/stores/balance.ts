@@ -1,3 +1,4 @@
+import { SUI_TYPE_ARG } from "./../../../sui/scripts/node_modules/@mysten/sui/src/utils/constants";
 import { CoinAPI } from "@/scripts/coin";
 import { strategies } from "@/scripts/constant";
 import { Contract } from "@/scripts/contract";
@@ -54,28 +55,23 @@ export const useBalanceStore = defineStore("balance", {
     async getRestakedBalances(owner?: string) {
       if (!owner) return;
 
-      const transactionBlock = await Contract.getStakerDepositShares(owner);
+      const transactionBlock = await Contract.getStakerShares(
+        SUI_TYPE_ARG,
+        owner
+      );
       if (!transactionBlock) return;
 
-      const {} = await Clients.suiClient.dryRunTransactionBlock({
+      const result = await Clients.suiClient.devInspectTransactionBlock({
+        sender: owner,
         transactionBlock: transactionBlock as any,
       });
+
+      console.log("result", result);
 
       this.restaked_balances = {};
     },
 
-    async getTotalValueRestaked() {
-      const transactionBlock = await Contract.getDepositShares(
-        strategies.map((strategy) => strategy.type)
-      );
-      if (!transactionBlock) return;
-
-      const {} = await Clients.suiClient.dryRunTransactionBlock({
-        transactionBlock: transactionBlock as any,
-      });
-
-      this.total_value_restaked = {};
-    },
+    async getTotalValueRestaked() {},
 
     async getTotalRestakedSUI() {},
 

@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::strategy_module {
     use std::option;
     use std::string;
@@ -10,6 +9,7 @@ module deeplayer::strategy_module {
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
 
+    use deeplayer::math_module;
     use deeplayer::coin_utils_module;
 
     // Constants
@@ -65,7 +65,7 @@ module deeplayer::strategy_module {
         let virtual_share_amount = prior_total_shares + SHARES_OFFSET;
         let virtual_coin_balance = balance::value(&strategy.balance_underlying) + BALANCE_OFFSET;
         let virtual_prior_coin_balance = virtual_coin_balance - amount;
-        let new_shares = (amount * virtual_share_amount) / virtual_prior_coin_balance;
+        let new_shares = math_module::mul_div(virtual_share_amount, amount, virtual_prior_coin_balance);
 
         assert!(new_shares != 0, E_NEW_SHARES_ZERO);
 
@@ -91,7 +91,7 @@ module deeplayer::strategy_module {
 
         let virtual_prior_total_shares = prior_total_shares + SHARES_OFFSET;
         let virtual_coin_balance = balance::value(&strategy.balance_underlying) + BALANCE_OFFSET;
-        let amount_to_send = (virtual_coin_balance * amount_shares) / virtual_prior_total_shares;
+        let amount_to_send = math_module::mul_div(virtual_coin_balance, amount_shares, virtual_prior_total_shares);
 
         let total_shares = prior_total_shares - amount_shares;
 
@@ -123,7 +123,7 @@ module deeplayer::strategy_module {
     ): u64 {
         let virtual_total_shares = strategy.total_shares + SHARES_OFFSET;
         let virtual_coin_balance = balance::value(&strategy.balance_underlying) + BALANCE_OFFSET;
-        (amount_underlying * virtual_total_shares) / virtual_coin_balance
+        math_module::mul_div(amount_underlying, virtual_total_shares, virtual_coin_balance)
     }
 
     // Internal functions
@@ -133,7 +133,7 @@ module deeplayer::strategy_module {
     ): u64 {
         let virtual_total_shares = strategy.total_shares + SHARES_OFFSET;
         let virtual_coin_balance = balance::value(&strategy.balance_underlying) + BALANCE_OFFSET;
-        (virtual_coin_balance * amount_shares) / virtual_total_shares
+        math_module::mul_div(virtual_coin_balance, amount_shares, virtual_total_shares)
     }
 
     fun after_withdrawal<CoinType>(
@@ -154,7 +154,7 @@ module deeplayer::strategy_module {
     ) {
         event::emit(ExchangeRateEmitted {
             strategy_id,
-            rate: (WAD * virtual_coin_balance) / virtual_total_shares,
+            rate: math_module::mul_div(WAD, virtual_coin_balance, virtual_total_shares)
         });
     }
 

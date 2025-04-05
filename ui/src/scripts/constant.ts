@@ -1,3 +1,4 @@
+import { SUI_TYPE_ARG } from "@mysten/sui/utils";
 import { Contract } from "./contract";
 import type { Coin, AVS, Operator } from "./types";
 
@@ -11,7 +12,7 @@ const strategies: Coin[] = [
     symbol: "SUI",
     decimals: 9,
     image: "/images/sui.png",
-    type: "0x2::sui::SUI",
+    type: SUI_TYPE_ARG,
     about:
       "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Pariatur veniam itaque a tempora dicta ipsa perferendis corrupti nobis. Est amet ad omnis ex. Voluptas, similique. Aperiam nihil cupiditate molestiae labore?",
     link: "https://sui.io",
@@ -22,7 +23,7 @@ const strategies: Coin[] = [
     symbol: "stSUI",
     decimals: 9,
     image: "/images/alpha_stsui.png",
-    type: "${Contract.deeplayer}::stsui::STSUI",
+    type: `${Contract.deeplayer}::stsui::STSUI`,
     about:
       "AlphaFi Staked SUI (stSUI) is the first liquid staked token (LST) built on the innovative AlphaFi stSUI LST Standard. It offers instant unstaking, enhancing safety by mitigating the risk of depegging. Users can stake their SUI while maintaining full liquidity, allowing them to freely transfer, trade, or use stSUI in DeFi protocols without sacrificing staking rewards. The platform also enables other teams to deploy their own LSTs using the AlphaFi stSUI LST Standard—completely permissionless and at no cost.",
     link: "https://stsui.com",
@@ -31,7 +32,7 @@ const strategies: Coin[] = [
       amount: 5,
       module: "stsui",
       object:
-        "0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55",
+        "0xfbed9b76a297b625e95a09023083d301d93c2dc53a718157d6d511e04fb1adcb",
     },
   },
   {
@@ -48,7 +49,7 @@ const strategies: Coin[] = [
       amount: 5,
       module: "hasui",
       object:
-        "0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55",
+        "0x410aa2661941f0ee2bba8d690db3aa0fee348da5f172b78509aef9d4280be120",
     },
   },
   {
@@ -65,7 +66,7 @@ const strategies: Coin[] = [
       amount: 5,
       module: "afsui",
       object:
-        "0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55",
+        "0x1fa7bcb766364ef9730265d9b5f8765d99a5ac063fb110de03e2b9b7a33b8c0d",
     },
   },
   {
@@ -81,7 +82,7 @@ const strategies: Coin[] = [
       amount: 0.5,
       module: "wbtc",
       object:
-        "0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55",
+        "0xc00af52335d203478910167855dac6bdc78a52d8580bb64c7fcd707e51535424",
     },
   },
   {
@@ -96,9 +97,9 @@ const strategies: Coin[] = [
     isLst: true,
     faucet: {
       amount: 5,
-      module: "vsui",
+      module: "cert",
       object:
-        "0x50b16a00498bf70a1334d539896b95d1f7295558afa06c1cc50cb5eafb4786ac",
+        "0xf31dc24f09435bc186362689cd51efdd15133e84acb93f233dba813d1acfecfa",
     },
   },
   {
@@ -114,7 +115,7 @@ const strategies: Coin[] = [
       amount: 20,
       module: "pyth",
       object:
-        "0x15a5f028b561300bb724876856801354426b58445d7476b970288845172fbcb1",
+        "0x0f46a1a36223c27a3f7b61a7372103b6626c5dc8d13fc67d5b25bf4a349a7c37",
     },
   },
 ];
@@ -161,7 +162,7 @@ const services: AVS[] = [
       "Lorem ipsum dolor sit amet consectetur adipisicing elit. Enim placeat harum ex rem minima error illo magni repellat excepturi rerum, voluptatibus, possimus maiores accusamus, atque totam voluptatem vitae qui sint!",
     link: "https://sui-randomizer.netlify.app",
     image: "/images/colors.png",
-    reward_coin: findStrategy("0x2::sui::SUI")!,
+    reward_coin: findStrategy(SUI_TYPE_ARG)!,
     weekly_rewards: 9432930,
   },
   {
@@ -172,7 +173,7 @@ const services: AVS[] = [
       "Lorem ipsum dolor sit amet consectetur adipisicing elit. Enim placeat harum ex rem minima error illo magni repellat excepturi rerum, voluptatibus, possimus maiores accusamus, atque totam voluptatem vitae qui sint!",
     link: "https://sui-zkbridge.netlify.app",
     image: "/images/colors.png",
-    reward_coin: findStrategy("0x2::sui::SUI")!,
+    reward_coin: findStrategy(SUI_TYPE_ARG)!,
     weekly_rewards: 12291230,
   },
 ];

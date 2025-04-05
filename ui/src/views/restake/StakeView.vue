@@ -63,8 +63,20 @@ const mint = async () => {
         await Clients.suiClient.waitForTransaction({ digest });
 
         balanceStore.getCoinBalances();
-    } catch (error) {
 
+        notify.push({
+            title: "Minting successful!",
+            description: `You have minted ${strategy.value.faucet.amount} ${strategy.value.symbol}`,
+            category: "success",
+            linkTitle: "View on Sui Explorer",
+            linkUrl: `https://suiscan.xyz/testnet/tx/${digest}?network=testnet`,
+        });
+    } catch (error) {
+        notify.push({
+            title: "Minting failed!",
+            description: "Transaction error.",
+            category: "error"
+        });
     }
 };
 

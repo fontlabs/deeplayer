@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::strategy_manager_module {
     use std::option;
     use std::string;
@@ -419,8 +418,43 @@ module deeplayer::strategy_manager_module {
         strategy_id: string::String,
         staker: address
     ): u64 {
-        let staker_shares = table::borrow(&strategy_manager.staker_shares, staker);
-        *table::borrow(staker_shares, strategy_id)
+        let staker_shares = if (table::contains(&strategy_manager.staker_shares, staker)) {
+            let staker_shares = table::borrow(&strategy_manager.staker_shares, staker);
+            if (table::contains(staker_shares, strategy_id)) {
+                *table::borrow(staker_shares, strategy_id)
+            } else {
+                0
+            }
+        } else {
+            0
+        };
+        staker_shares
+    }
+
+    public fun get_all_staker_shares(
+        strategy_manager: &StrategyManager,
+        strategy_ids: vector<string::String>,
+        staker: address
+    ): vector<u64> {
+        let mut shares = vector::empty<u64>();
+        let mut i = 0;
+        let len = vector::length(&strategy_ids);
+        while (i < len) {
+            let strategy_id = *vector::borrow(&strategy_ids, i);
+            if (table::contains(&strategy_manager.staker_shares, staker)) {
+                let staker_shares = table::borrow(&strategy_manager.staker_shares, staker);
+                if (table::contains(staker_shares, strategy_id)) {
+                    let staker_shares_in_strategy = *table::borrow(staker_shares, strategy_id);
+                    vector::push_back(&mut shares, staker_shares_in_strategy);
+                } else {
+                    vector::push_back(&mut shares, 0);
+                };
+            } else {
+                vector::push_back(&mut shares, 0);
+            };
+            i = i + 1;
+        };
+        shares
     }
 
     public fun get_burnable_shares(

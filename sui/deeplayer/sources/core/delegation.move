@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::delegation_module {
     use std::option;
     use std::string;
@@ -14,6 +13,7 @@ module deeplayer::delegation_module {
     use sui::tx_context::{Self, TxContext};
     use sui::bcs;
 
+    use deeplayer::math_module;
     use deeplayer::coin_utils_module;
     use deeplayer::strategy_module::{Strategy};
     use deeplayer::strategy_factory_module::{Self, StrategyFactory};
@@ -1149,7 +1149,7 @@ module deeplayer::delegation_module {
         deposit_shares: u64,
         slashing_factor: u64
     ): u64 {
-        deposit_shares * dsf.scaling_factor * slashing_factor / (WAD * WAD)
+        math_module::div_u128((deposit_shares * dsf.scaling_factor * slashing_factor) as u128, (WAD * WAD) as u128)
     }
 
     fun calc_deposit_shares(
@@ -1157,21 +1157,21 @@ module deeplayer::delegation_module {
         withdrawable_shares: u64,
         slashing_factor: u64
     ): u64 {
-        withdrawable_shares * WAD * WAD / (dsf.scaling_factor * slashing_factor)
+        math_module::div_u128((withdrawable_shares * WAD * WAD) as u128, (dsf.scaling_factor * slashing_factor) as u128)
     }
 
     fun scale_for_queue_withdrawal(
         dsf: &DepositScalingFactor,
         deposit_shares: u64
     ): u64 {
-        deposit_shares * WAD / dsf.scaling_factor
+        math_module::mul_div(deposit_shares, WAD, dsf.scaling_factor)
     }
 
     fun scale_for_complete_withdrawal(
         scaled_shares: u64,
         slashing_factor: u64
     ): u64 {
-        scaled_shares * slashing_factor / WAD
+        math_module::mul_div(scaled_shares, slashing_factor, WAD)
     }
 
     fun calc_slashed_amount(
@@ -1179,7 +1179,7 @@ module deeplayer::delegation_module {
         prev_max_magnitude: u64,
         new_max_magnitude: u64
     ): u64 {
-        operator_shares * (prev_max_magnitude - new_max_magnitude) / prev_max_magnitude
+        math_module::mul_div(operator_shares, (prev_max_magnitude - new_max_magnitude), prev_max_magnitude)
     }
 
     fun get_operator_shares_impl(

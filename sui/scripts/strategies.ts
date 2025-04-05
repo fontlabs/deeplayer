@@ -1,17 +1,13 @@
+import { CoinType } from "./../../ui/src/scripts/types";
 import { Transaction } from "@mysten/sui/transactions";
 import { Addresses, client, Coins, signer } from "./shared";
 
-async function initSupply(
-  module: string,
-  coinType: string,
-  treasuryCap: string,
-  faucet: string
-) {
+async function deployStrategy(coinType: string) {
   const transaction = new Transaction();
   transaction.moveCall({
-    target: `${Addresses.DeepLayer}::${module}::init_supply`,
-    arguments: [transaction.object(treasuryCap), transaction.object(faucet)],
-    typeArguments: [`${Addresses.DeepLayer}::${module}::${coinType}`],
+    target: `${Addresses.DeepLayer}::strategy_factory_module::deploy_new_strategy`,
+    arguments: [transaction.object(Addresses.StrategyFactory)],
+    typeArguments: [coinType],
   });
   transaction.setGasBudget(5_000_000);
   const { digest } = await client.signAndExecuteTransaction({
@@ -23,7 +19,9 @@ async function initSupply(
 
 async function main() {
   for (const coin of Coins) {
-    await initSupply(coin.module, coin.coinType, coin.treasuryCap, coin.faucet);
+    await deployStrategy(
+      `${Addresses.DeepLayer}::${coin.module}::${coin.coinType}`
+    );
   }
 }
 

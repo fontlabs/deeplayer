@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-#[allow(unused_use,unused_const,unused_variable,duplicate_alias,unused_type_parameter,unused_function)]
 module deeplayer::allocation_module {
     use std::option;
     use std::string;
@@ -13,6 +12,7 @@ module deeplayer::allocation_module {
     use sui::bcs;
     use sui::tx_context::{Self, TxContext};
 
+    use deeplayer::math_module;
     use deeplayer::strategy_manager_module::{StrategyManager};
 
     // Constants
@@ -233,9 +233,9 @@ module deeplayer::allocation_module {
             return (0, info.max_magnitude);
         };
 
-        let slashed_magnitude = allocation.current_magnitude * params.wad_to_slash / WAD;
+        let slashed_magnitude = math_module::mul_div(allocation.current_magnitude, params.wad_to_slash, WAD);
         let prev_max_magnitude = info.max_magnitude;
-        let wad_slash = slashed_magnitude * WAD / info.max_magnitude;
+        let wad_slash = math_module::mul_div(slashed_magnitude, WAD, info.max_magnitude);
         vector::push_back(&mut wad_slashed, wad_slash);
 
         allocation.current_magnitude = allocation.current_magnitude - slashed_magnitude;
@@ -243,7 +243,7 @@ module deeplayer::allocation_module {
         info.encumbered_magnitude = info.encumbered_magnitude - slashed_magnitude;
 
         if (allocation.pending_diff < 0) {
-            let slashed_pending = allocation.pending_diff * params.wad_to_slash / WAD;
+            let slashed_pending = math_module::mul_div(allocation.pending_diff, params.wad_to_slash, WAD);
             allocation.pending_diff = allocation.pending_diff - slashed_pending;
         };
 
