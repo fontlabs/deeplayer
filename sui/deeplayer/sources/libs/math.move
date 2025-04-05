@@ -6,8 +6,8 @@ module deeplayer::math_module {
     // Public functions
     public fun mul_div(a: u64, b: u64, c: u64): u64 {
         assert!(c != 0, E_ONLY_UNDERLYING_COIN);
-        let numerator:u128 = (a as u128) * (b as u128);
-        let denominator:u128 = c as u128;
+        let numerator: u128 = (a as u128) * (b as u128);
+        let denominator: u128 = c as u128;
         (numerator / denominator) as u64
     }
 
