@@ -1,17 +1,5 @@
 // SPDX-License-Identifier: MIT
 module deeplayer::math_module {
-    use sui::balance::{Self, Balance};
-    use sui::coin;
-    use sui::tx_context::{Self, TxContext};
-    use sui::event;
-    use sui::transfer;
-    use sui::table;
-    use std::string;
-    use std::option;
-
-    // Constants
-    const WAD: u64 = 1_000_000_000;
-
     // Error codes
     const E_ONLY_UNDERLYING_COIN: u64 = 1;
 
