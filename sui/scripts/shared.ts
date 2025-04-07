@@ -6,9 +6,12 @@ dotenv.config();
 
 const Addresses = {
   DeepLayer:
-    "0x43d20dbffe39e23263ac2f3e5c1d0222b6ba23dfa0855960638db8f81283fb08",
+    "0x2f0b1dd354dd818e3173c104d7e6f8a682fc8908c0920d85caf9bfb9a220dfba",
   StrategyFactory:
-    "0x1b8c4dc84618e8e2a9c16927586d7103ec60be9433b21f7f38a34481919ae87f",
+    "0xce7cda2fe94a759e88aa873317704186e29addbf78f6784cdbe422b7031a17fb",
+  StrategyManager: "",
+  AllocationManager: "",
+  DelegationManager: "",
 };
 
 const client = new SuiClient({
@@ -22,50 +25,63 @@ const Coins = [
     module: "afsui",
     coinType: "AFSUI",
     treasuryCap:
-      "0x09e6c3e83732634162b9d6a9cb49b8295ae9e28b30ddc49673743331ccfdb89f",
+      "0x28b308bd67a7bd35f11374f02eb12dcfc59dd91f65e7128a71177e40d1ce9614",
     faucet:
-      "0x1fa7bcb766364ef9730265d9b5f8765d99a5ac063fb110de03e2b9b7a33b8c0d",
+      "0x3bacfda6dec8aea1458772ea14069572df2f76ebfca70d22f4a88fe721c5ab47",
   },
   {
     module: "hasui",
     coinType: "HASUI",
     treasuryCap:
-      "0x2ddd9dfa115c6b2ab67e25566ae6a2f4c453ce79fa621b2d31e69b1a80dc1c40",
+      "0xaf08578e111c6481b0737e5971ce30abaac8c476c309f20343f279e90fc9d81c",
     faucet:
-      "0x410aa2661941f0ee2bba8d690db3aa0fee348da5f172b78509aef9d4280be120",
+      "0xeedd96b45aeca6967b96b33fc0e6cee4ac358c6855c6d247a7bb33516b2926e8",
   },
   {
     module: "pyth",
     coinType: "PYTH",
     treasuryCap:
-      "0x117f70ffd22c867a8fe98bd7acc25f74bc7a762838070bf8f91fe2b754e56577",
+      "0x6d8c143ece4980b2cd38e94e1e6a220dd6a31dc0599ad36a66f7b5217af9ba6b",
     faucet:
-      "0x0f46a1a36223c27a3f7b61a7372103b6626c5dc8d13fc67d5b25bf4a349a7c37",
+      "0x9e3a8c3af83fde8c203e7424a87caf406960bcfa3193cf30cc2521754b33bc1b",
   },
   {
     module: "stsui",
     coinType: "STSUI",
     treasuryCap:
-      "0xfe8f65e9ad78553a9aef4cbb0d023bfbbede0bb9ae3868c7199e9b9d1370fa6d",
+      "0x13aa27c6c41a893f33109af777dea6f8f975167b1cd925a86e8a2276a8399852",
     faucet:
-      "0xfbed9b76a297b625e95a09023083d301d93c2dc53a718157d6d511e04fb1adcb",
+      "0x4782f2ad736ae090bf9842b683dab08c802a2d5de8179d16e52fe1a29fd4936b",
   },
   {
     module: "cert",
     coinType: "CERT",
     treasuryCap:
-      "0x3493ed5273c1a27582470d760ba3248cbec4391b07e2d36117a968733fd65f7e",
+      "0xc863f69843818a288aecb83237d515b73d51d879e74409f2f9d736b80c887413",
     faucet:
-      "0xf31dc24f09435bc186362689cd51efdd15133e84acb93f233dba813d1acfecfa",
+      "0x47e2274e8d5bbc77d3a37b6f818c0ed8bdfcfc2ec36a64a393b1b2e22bc65134",
   },
   {
     module: "wbtc",
     coinType: "WBTC",
     treasuryCap:
-      "0x8a302524b924d1cb7ef451229122f3f43b274cada0a7c6ca3c9027c73b3ce31a",
+      "0x739a7a845dce8c661ac74e778f5671105d16d0396e72fdbf49f11f4ab6241733",
     faucet:
-      "0xc00af52335d203478910167855dac6bdc78a52d8580bb64c7fcd707e51535424",
+      "0xacde9528df8bc0666493bd4d0f5d90c671754d9bc897782423e837eaba2031c3",
   },
 ];
 
-export { Addresses, client, signer, Coins };
+const Operators = [
+  {
+    key: process.env.SECRET_KEY_OP_1,
+    metdata_uri: JSON.stringify({
+      name: "Mysten Labs (Unofficial)",
+      about:
+        "At Mysten, we are building a company that aims to address these problems (and many others) by laying the foundations for a decentralized web stack suitable for mass adoption. The drive to unlock everything that web3 enables is our north star.",
+      website: "https://mystenlabs.com",
+      image: "https://mystenlabs.com",
+    }),
+  },
+];
+
+export { Addresses, client, signer, Coins, Operators };

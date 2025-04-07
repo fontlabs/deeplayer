@@ -16,6 +16,11 @@ module deeplayer::math_module {
         ((a * b) / c) as u64
     }
 
+    public fun mul_div_u128_u128(a: u128, b: u128, c: u128): u128 {
+        assert!(c != 0, E_ONLY_UNDERLYING_COIN);
+        ((a * b) / c)
+    }
+
     public fun div(a: u128, b: u64): u64 {
         assert!(b != 0, E_ONLY_UNDERLYING_COIN);
         (a / (b as u128)) as u64

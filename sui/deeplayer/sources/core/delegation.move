@@ -46,7 +46,7 @@ module deeplayer::delegation_module {
         metadata_uri: string::String,
     }
 
-    public struct DepositScalingFactor has store {
+    public struct DepositScalingFactor has store, copy, drop {
         scaling_factor: u64,
         last_update_block: u64,
     }
@@ -158,55 +158,24 @@ module deeplayer::delegation_module {
     }
 
     // Public functions
-    public entry fun deposit_into_strategy<CoinType>(   
-        strategy_factory: &mut StrategyFactory,
-        strategy_manager: &mut StrategyManager,
-        allocation_manager: &AllocationManager,
-        delegation_manager: &mut DelegationManager,
-        coin_deposited: coin::Coin<CoinType>,
-        ctx: &mut TxContext
-    ) {
-        check_not_paused(delegation_manager);
-
-        let strategy = strategy_factory_module::get_strategy_mut<CoinType>(strategy_factory);
-
-        let (staker, strategy_id, prev_deposit_shares, added_shares) = strategy_manager_module::deposit_into_strategy<CoinType>(
-            strategy,
-            strategy_manager, 
-            coin_deposited, 
-            ctx
-        );
-
-        increase_delegated_shares(
-            allocation_manager,
-            delegation_manager,
-            staker, 
-            strategy_id, 
-            prev_deposit_shares, 
-            added_shares, 
-            ctx
-        );
-    }
-
-    // Public functions
     public entry fun register_as_operator(
-        delegation_manager: &mut DelegationManager,
         strategy_manager: &StrategyManager,
         allocation_manager: &AllocationManager,
-        metadata_uri: vector<u8>,
+        delegation_manager: &mut DelegationManager,
+        metadata_uri: string::String,
         ctx: &mut TxContext
     ) {
         let sender = tx_context::sender(ctx);
         assert!(!is_delegated(delegation_manager, sender), E_ACTIVELY_DELEGATED);
 
         let operator_details = OperatorDetails {
-            metadata_uri: string::utf8(metadata_uri),
+            metadata_uri: metadata_uri,
         };
 
         table::add(&mut delegation_manager.operator_details, sender, operator_details);
 
         // Delegate from the operator to themselves
-        delegate(delegation_manager, strategy_manager, allocation_manager, sender, sender, ctx);
+        delegate_impl(strategy_manager, allocation_manager, delegation_manager, sender, sender, ctx);
 
         event::emit(OperatorRegistered {
             operator: sender,
@@ -214,7 +183,7 @@ module deeplayer::delegation_module {
 
         event::emit(OperatorMetadataURIUpdated {
             operator: sender,
-            metadata_uri: string::utf8(metadata_uri),
+            metadata_uri: metadata_uri,
         });
     }
 
@@ -235,10 +204,10 @@ module deeplayer::delegation_module {
         });
     }
 
-    public entry fun delegate_to(
-        delegation_manager: &mut DelegationManager,
+    public entry fun delegate(
         strategy_manager: &StrategyManager,
         allocation_manager: &AllocationManager,
+        delegation_manager: &mut DelegationManager,
         operator: address,
         the_clock: &clock::Clock,
         ctx: &mut TxContext
@@ -249,13 +218,13 @@ module deeplayer::delegation_module {
         assert!(is_operator(delegation_manager, operator), E_OPERATOR_NOT_REGISTERED);
 
         // Delegate sender to the operator
-        delegate(delegation_manager, strategy_manager, allocation_manager, sender, operator, ctx);
+        delegate_impl(strategy_manager, allocation_manager, delegation_manager, sender, operator, ctx);
     }
 
     public entry fun undelegate(
-        delegation_manager: &mut DelegationManager,
         strategy_manager: &mut StrategyManager,
         allocation_manager: &AllocationManager,
+        delegation_manager: &mut DelegationManager,
         staker: address,
         ctx: &mut TxContext
     ) {
@@ -266,7 +235,7 @@ module deeplayer::delegation_module {
 
         if (sender != staker) {
             let operator = *table::borrow(&delegation_manager.delegated_to, staker);
-            assert!(check_can_call(operator, ctx),E_CALLER_CANNOT_UNDELEGATE);
+            assert!(check_can_call(operator, ctx), E_CALLER_CANNOT_UNDELEGATE);
 
             event::emit(StakerForceUndelegated {
                 staker,
@@ -274,25 +243,25 @@ module deeplayer::delegation_module {
             });
         };
 
-        undelegate_impl(delegation_manager, strategy_manager, allocation_manager, staker, ctx);
+        undelegate_impl(strategy_manager, allocation_manager, delegation_manager, staker, ctx);
     }
 
     public entry fun redelegate(
-        delegation_manager: &mut DelegationManager,
         strategy_manager: &mut StrategyManager,
         allocation_manager: &AllocationManager,
+        delegation_manager: &mut DelegationManager,
         new_operator: address,
         the_clock: &clock::Clock,
         ctx: &mut TxContext
     ) {
-        undelegate_impl(delegation_manager, strategy_manager, allocation_manager, tx_context::sender(ctx), ctx);
-        delegate_to(delegation_manager, strategy_manager, allocation_manager, new_operator, the_clock, ctx);
+        undelegate(strategy_manager, allocation_manager, delegation_manager, tx_context::sender(ctx), ctx);
+        delegate(strategy_manager, allocation_manager, delegation_manager, new_operator, the_clock, ctx);
     }
 
     public entry fun queue_withdrawals(
-        delegation_manager: &mut DelegationManager,
         strategy_manager: &mut StrategyManager,
         allocation_manager: &AllocationManager,
+        delegation_manager: &mut DelegationManager,
         strategy_ids: vector<string::String>,
         deposit_shares: vector<u64>,
         ctx: &mut TxContext
@@ -503,37 +472,27 @@ module deeplayer::delegation_module {
             new_max_magnitude
         );
 
-        let scaled_shares_slashed_from_queue = get_slashable_shares_in_queue_impl(
-            delegation_manager,
-            operator,
-            strategy_id,
-            prev_max_magnitude,
-            new_max_magnitude
-        );
-
-        let total_deposit_shares_to_burn = operator_shares_slashed + scaled_shares_slashed_from_queue;
-
         decrease_delegation(delegation_manager, operator, @0x0, strategy_id, operator_shares_slashed, ctx);
 
         event::emit(OperatorSharesSlashed {
             operator,
             strategy_id,
-            total_deposit_shares_to_burn,
+            total_deposit_shares_to_burn: operator_shares_slashed,
         });
 
         // Increase burnable shares in strategy manager
         strategy_manager_module::increase_burnable_shares<CoinType>(
             strategy_manager,
             strategy, 
-            total_deposit_shares_to_burn
+            operator_shares_slashed
         );
     }
 
     // Internal functions
-    fun delegate(
-        delegation_manager: &mut DelegationManager,
+    fun delegate_impl(
         strategy_manager: &StrategyManager,
         allocation_manager: &AllocationManager,
+        delegation_manager: &mut DelegationManager,
         staker: address,
         operator: address,
         ctx: &mut TxContext
@@ -563,6 +522,11 @@ module deeplayer::delegation_module {
         let len = vector::length(&strategy_ids);
         while (i < len) {
             let strategy_id  = *vector::borrow(&strategy_ids, i);
+            let prev_deposit_shares = strategy_manager_module::get_staker_shares(
+                strategy_manager,
+                strategy_id,
+                staker
+            );
             let mut shares = *vector::borrow(&withdrawable_shares, i);
 
             increase_delegation(
@@ -570,7 +534,7 @@ module deeplayer::delegation_module {
                 operator,
                 staker,
                 strategy_id ,
-                0, // prev_deposit_shares
+                prev_deposit_shares,
                 shares,
                 *vector::borrow(&slashing_factors, i),
                 ctx
@@ -581,9 +545,9 @@ module deeplayer::delegation_module {
     }
 
     fun undelegate_impl(
-        delegation_manager: &mut DelegationManager,
         strategy_manager: &mut StrategyManager,
         allocation_manager: &AllocationManager,
+        delegation_manager: &mut DelegationManager,
         staker: address,
         ctx: &mut TxContext
     ) {
@@ -656,7 +620,7 @@ module deeplayer::delegation_module {
             let deposit_shares = *vector::borrow(&deposit_shares_to_withdraw, i);
             let slashing_factor = *vector::borrow(&slashing_factors, i);
 
-            let dsf = get_deposit_scaling_factor(
+            let dsf = &get_deposit_scaling_factor(
                 delegation_manager, 
                 staker, 
                 strategy_id,
@@ -669,13 +633,6 @@ module deeplayer::delegation_module {
             vector::push_back(&mut scaled_shares, scaled);
 
             if (operator != @0x0) {
-                add_queued_slashable_shares(
-                    delegation_manager,
-                    operator,
-                    strategy_id,
-                    scaled
-                );
-
                 decrease_delegation(
                     delegation_manager,
                     operator,
@@ -752,16 +709,22 @@ module deeplayer::delegation_module {
         };
 
         // Update deposit scaling factor
-        let dsf = get_deposit_scaling_factor(
+        let dsf = &get_deposit_scaling_factor(
             delegation_manager,
             staker, 
             strategy_id,
             ctx
         );
 
-        // dsf.scaling_factor = (prev_deposit_shares * dsf.scaling_factor + added_shares * WAD) / 
-        //                     (prev_deposit_shares + added_shares);
-        // dsf.last_update_block = tx_context::epoch(ctx);
+        update_deposit_scaling_factor(
+            delegation_manager,
+            staker,
+            strategy_id,
+            prev_deposit_shares,
+            added_shares,
+            slashing_factor,
+            ctx
+        );
 
         event::emit(DepositScalingFactorUpdated {
             staker,
@@ -779,6 +742,7 @@ module deeplayer::delegation_module {
                 operator_strategy_shares + added_shares,
                 ctx
             );
+
             event::emit(OperatorSharesIncreased {
                 operator,
                 staker,
@@ -829,7 +793,7 @@ module deeplayer::delegation_module {
         strategy_id: string::String,
         ctx: &mut TxContext
     ): u64 {
-        let dsf = get_deposit_scaling_factor(
+        let dsf = &get_deposit_scaling_factor(
             delegation_manager, 
             staker, 
             strategy_id,
@@ -847,21 +811,28 @@ module deeplayer::delegation_module {
         let mut i = 0;
         let len = vector::length(&strategy_ids);
         while (i < len) {
-            let strategy_id  = *vector::borrow(&strategy_ids, i);
+            let strategy_id = *vector::borrow(&strategy_ids, i);
             vector::push_back(&mut shares, get_operator_shares_impl(delegation_manager, operator, strategy_id));
             i = i + 1;
         };
         shares
     }
 
-    public fun get_slashable_shares_in_queue(
+    public fun get_all_operator_shares(
         delegation_manager: &DelegationManager,
-        allocation_manager: &AllocationManager,
-        operator: address,
-        strategy_id: string::String
-    ): u64 {
-        let max_magnitude = allocation_module::get_max_magnitude(allocation_manager, operator, strategy_id, 0);
-        get_slashable_shares_in_queue_impl(delegation_manager, operator, strategy_id, max_magnitude, 0)
+        operators: vector<address>,
+        strategy_ids: vector<string::String>
+    ): vector<vector<u64>> {
+        let mut shares = vector::empty<vector<u64>>();
+        let mut i = 0;
+        let len = vector::length(&operators);
+        while (i < len) {
+            let operator = *vector::borrow(&operators, i);
+            let operator_shares = get_operator_shares(delegation_manager, operator, strategy_ids);
+            vector::push_back(&mut shares, operator_shares);
+            i = i + 1;
+        };
+        shares
     }
 
     public fun get_withdrawable_shares(
@@ -872,6 +843,15 @@ module deeplayer::delegation_module {
         strategy_ids: vector<string::String>,
         ctx: &mut TxContext
     ): (vector<u64>, vector<u64>) {
+        if (!table::contains(&delegation_manager.delegated_to, staker)) {
+            let shares = strategy_manager_module::get_all_staker_shares(
+                strategy_manager,
+                strategy_ids,
+                staker
+            );
+            return (shares, shares);
+        };
+
         let mut withdrawable_shares = vector::empty<u64>();
         let mut deposit_shares = vector::empty<u64>();
 
@@ -889,7 +869,7 @@ module deeplayer::delegation_module {
             );
             vector::push_back(&mut deposit_shares, shares);
 
-            let dsf = get_deposit_scaling_factor(delegation_manager, staker, strategy_id, ctx);
+            let dsf = &get_deposit_scaling_factor(delegation_manager, staker, strategy_id, ctx);
             let withdrawable = calc_withdrawable(dsf, shares, *vector::borrow(&slashing_factors, i));
             vector::push_back(&mut withdrawable_shares, withdrawable);
             i = i + 1;
@@ -962,7 +942,7 @@ module deeplayer::delegation_module {
         let len = vector::length(&strategy_ids);
         while (i < len) {
             let strategy_id = *vector::borrow(&strategy_ids, i);
-            let dsf = get_deposit_scaling_factor( delegation_manager, staker, strategy_id, ctx);
+            let dsf = &get_deposit_scaling_factor( delegation_manager, staker, strategy_id, ctx);
             let deposit = calc_deposit_shares(
                 dsf,
                 *vector::borrow(&withdrawable_shares, i),
@@ -1045,28 +1025,6 @@ module deeplayer::delegation_module {
         slashing_factors
     }
 
-    fun get_slashable_shares_in_queue_impl(
-        delegation_manager: &DelegationManager,
-        operator: address,
-        strategy_id: string::String,
-        prev_max_magnitude: u64,
-        new_max_magnitude: u64
-    ): u64 {
-        // In Sui Move, we'd need to implement the cumulative shares history tracking
-        // This is a simplified version
-        0 // Placeholder
-    }
-
-    fun add_queued_slashable_shares(
-        delegation_manager: &mut DelegationManager,
-        operator: address,
-        strategy_id: string::String,
-        scaled_shares: u64
-    ) {
-        // In Sui Move, we'd need to update the cumulative shares history
-        // This is a simplified version
-    }
-
     fun get_shares_by_withdrawal_root(
         delegation_manager: &DelegationManager,
         allocation_manager: &AllocationManager,
@@ -1111,22 +1069,41 @@ module deeplayer::delegation_module {
     }
 
     fun get_deposit_scaling_factor(
-        delegation_manager: &mut DelegationManager,
+        delegation_manager: &DelegationManager,
         staker: address,
         strategy_id: string::String,
         ctx: &mut TxContext
-    ): &mut DepositScalingFactor {
+    ): DepositScalingFactor {
+        if (!table::contains(&delegation_manager.deposit_scaling_factors, staker)) {
+            return DepositScalingFactor { scaling_factor: WAD, last_update_block: 0 };
+        };
+        let staker_factors = table::borrow(&delegation_manager.deposit_scaling_factors, staker);
+        if (!table::contains(staker_factors, strategy_id)) {
+            return DepositScalingFactor { scaling_factor: WAD, last_update_block: 0 };
+        };
+        *table::borrow(staker_factors, strategy_id)
+    }
+
+    fun update_deposit_scaling_factor(
+        delegation_manager: &mut DelegationManager,
+        staker: address,
+        strategy_id: string::String,
+        prev_deposit_shares: u64,
+        added_shares: u64,
+        slashing_factor: u64,
+        ctx: &mut TxContext
+    ) {
         if (!table::contains(&delegation_manager.deposit_scaling_factors, staker)) {
             table::add(&mut delegation_manager.deposit_scaling_factors, staker, table::new<string::String, DepositScalingFactor>(ctx));
         };
         let staker_factors = table::borrow_mut(&mut delegation_manager.deposit_scaling_factors, staker);
         if (!table::contains(staker_factors, strategy_id)) {
-            table::add(staker_factors, strategy_id, DepositScalingFactor {
-                scaling_factor: WAD,
-                last_update_block: 0,
-            });
+            table::add(staker_factors, strategy_id, DepositScalingFactor { scaling_factor: WAD, last_update_block: 0 });
         };
-        table::borrow_mut(staker_factors, strategy_id)
+        let mut dsf = table::borrow_mut(staker_factors, strategy_id);
+        dsf.scaling_factor = (prev_deposit_shares * dsf.scaling_factor + added_shares * WAD) / 
+            (prev_deposit_shares + added_shares);
+        dsf.last_update_block = tx_context::epoch(ctx);
     }
 
     fun reset_deposit_scaling_factor(
@@ -1208,7 +1185,11 @@ module deeplayer::delegation_module {
             table::add(&mut delegation_manager.operator_shares, operator, table::new<string::String, u64>(ctx));
         };
         let operator_strategies = table::borrow_mut(&mut delegation_manager.operator_shares, operator);
-        table::add(operator_strategies, strategy_id, shares);
+        if (!table::contains(operator_strategies, strategy_id)) {
+            table::add(operator_strategies, strategy_id, 0);
+        };
+        let prev_shares = table::borrow_mut(operator_strategies, strategy_id);
+        *prev_shares = shares;
     }
 
     fun check_can_call(

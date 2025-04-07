@@ -42,13 +42,8 @@ module deeplayer::afsui {
         faucet: &mut Faucet<AFSUI>, 
         ctx: &mut TxContext,
     ) {
-        let mut coin_minted = coin::mint(treasury_cap, 1_000_000_000_000_000, ctx);
-        let coin_faucet = coin_minted.split(50_000_000_000, ctx);
-
-        let balance_faucet = coin_faucet.into_balance<AFSUI>();
-        balance::join<AFSUI>(&mut faucet.balance, balance_faucet);
-
-        transfer::public_transfer(coin_minted, tx_context::sender(ctx))
+        let coin_minted = coin::mint(treasury_cap, 1_000_000_000_000_000, ctx);
+        balance::join<AFSUI>(&mut faucet.balance, coin_minted.into_balance<AFSUI>());
     }
 
     public entry fun mint<AFSUI>(

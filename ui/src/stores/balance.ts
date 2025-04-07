@@ -1,8 +1,10 @@
-import { SUI_TYPE_ARG } from "./../../../sui/scripts/node_modules/@mysten/sui/src/utils/constants";
 import { CoinAPI } from "@/scripts/coin";
 import { strategies } from "@/scripts/constant";
 import { Contract } from "@/scripts/contract";
 import { Clients } from "@/scripts/sui";
+import { bcs } from "@mysten/sui/bcs";
+import type { SuiMoveObject } from "@mysten/sui/client";
+import { SUI_TYPE_ARG } from "@mysten/sui/utils";
 import { defineStore } from "pinia";
 
 export const useBalanceStore = defineStore("balance", {
@@ -55,20 +57,35 @@ export const useBalanceStore = defineStore("balance", {
     async getRestakedBalances(owner?: string) {
       if (!owner) return;
 
-      const transactionBlock = await Contract.getStakerShares(
-        SUI_TYPE_ARG,
+      const transaction = await Contract.getAllStakerShares(
+        strategies.map((strategy) =>
+          strategy.type
+            .replace(
+              SUI_TYPE_ARG,
+              "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI"
+            )
+            .replace("0x", "")
+        ),
         owner
       );
-      if (!transactionBlock) return;
+      if (!transaction) return;
 
-      const result = await Clients.suiClient.devInspectTransactionBlock({
+      const { results } = await Clients.suiClient.devInspectTransactionBlock({
+        transactionBlock: transaction,
         sender: owner,
-        transactionBlock: transactionBlock as any,
       });
+      if (!results) return;
+      if (!results[0].returnValues) return;
 
-      console.log("result", result);
+      const restaked_balances = bcs
+        .vector(bcs.U64)
+        .parse(Uint8Array.from(results[0].returnValues[0][0]));
 
-      this.restaked_balances = {};
+      strategies.forEach((strategy, index) => {
+        this.restaked_balances[strategy.type] = BigInt(
+          restaked_balances[index]
+        );
+      });
     },
 
     async getTotalValueRestaked() {},

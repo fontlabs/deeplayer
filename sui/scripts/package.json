@@ -13,5 +13,8 @@
   "dependencies": {
     "@mysten/sui": "^1.26.1",
     "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0"
   }
 }

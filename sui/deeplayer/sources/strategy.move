@@ -16,7 +16,7 @@ module deeplayer::strategy_module {
     const WAD: u64 = 1_000_000_000;
     const SHARES_OFFSET: u64 = 1_000; 
     const BALANCE_OFFSET: u64 = 1_000; 
-    const MAX_TOTAL_SHARES: u64 = 1_000_000_000_000_000_000 - 1;
+    const MAX_TOTAL_SHARES: u64 = 1_000_000_000_000_000_000;
 
     // Error codes
     const E_ONLY_STRATEGY_MANAGER: u64 = 1;
@@ -28,7 +28,6 @@ module deeplayer::strategy_module {
 
     // Structs
     public struct Strategy<phantom CoinType> has store {
-        total_shares: u64,       
         balance_underlying: balance::Balance<CoinType>, 
         is_paused: bool
     }
@@ -39,12 +38,11 @@ module deeplayer::strategy_module {
         rate: u64,
     }
 
-    // Public functions
+    // Package functions
     public(package) fun create<CoinType>(
         ctx: &mut TxContext
     ): Strategy<CoinType> {
         Strategy {
-            total_shares: 0,
             balance_underlying: balance::zero<CoinType>(),
             is_paused: false
         }
@@ -55,7 +53,7 @@ module deeplayer::strategy_module {
         prior_total_shares: u64,
         coin_deposited: coin::Coin<CoinType>,
         ctx: &mut TxContext
-    ): (u64, u64) {
+    ): u64 {
         check_not_paused(strategy);
 
         let amount = coin::value(&coin_deposited);
@@ -75,16 +73,17 @@ module deeplayer::strategy_module {
         let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
         emit_exchange_rate(strategy_id, virtual_coin_balance, total_shares + SHARES_OFFSET);
 
-        (new_shares, total_shares)
+        new_shares
     }
 
     public(package) fun withdraw<CoinType>(
         strategy: &mut Strategy<CoinType>,
         recipient: address,
         prior_total_shares: u64,
+        total_shares: u64,
         amount_shares: u64,
         ctx: &mut TxContext
-    ): u64 {
+    ) {
         check_not_paused(strategy);
 
         assert!(amount_shares <= prior_total_shares, E_WITHDRAWAL_AMOUNT_EXCEEDS_TOTAL);
@@ -93,35 +92,26 @@ module deeplayer::strategy_module {
         let virtual_coin_balance = balance::value(&strategy.balance_underlying) + BALANCE_OFFSET;
         let amount_to_send = math_module::mul_div(virtual_coin_balance, amount_shares, virtual_prior_total_shares);
 
-        let total_shares = prior_total_shares - amount_shares;
-
         let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
         emit_exchange_rate(strategy_id, virtual_coin_balance - amount_to_send, total_shares + SHARES_OFFSET);
 
         after_withdrawal(strategy, recipient, amount_to_send, ctx);
-
-        total_shares
     }
 
-    // Public View functions
-    public fun get_total_shares<CoinType>(
-        strategy: &Strategy<CoinType>
-    ): u64 {
-        strategy.total_shares
-    }
-
-    public fun shares_to_underlying<CoinType>(
+    public(package) fun shares_to_underlying<CoinType>(
         strategy: &Strategy<CoinType>,
+        total_shares: u64,
         amount_shares: u64
     ): u64 {
-        shares_to_underlying_impl(strategy, amount_shares)
+        shares_to_underlying_impl(strategy, total_shares, amount_shares)
     }
 
-    public fun underlying_to_shares<CoinType>(
+    public(package) fun underlying_to_shares<CoinType>(
         strategy: &Strategy<CoinType>,
+        total_shares: u64,
         amount_underlying: u64
     ): u64 {
-        let virtual_total_shares = strategy.total_shares + SHARES_OFFSET;
+        let virtual_total_shares = total_shares + SHARES_OFFSET;
         let virtual_coin_balance = balance::value(&strategy.balance_underlying) + BALANCE_OFFSET;
         math_module::mul_div(amount_underlying, virtual_total_shares, virtual_coin_balance)
     }
@@ -129,9 +119,10 @@ module deeplayer::strategy_module {
     // Internal functions
     fun shares_to_underlying_impl<CoinType>(
         strategy: &Strategy<CoinType>,
+        total_shares: u64,
         amount_shares: u64
     ): u64 {
-        let virtual_total_shares = strategy.total_shares + SHARES_OFFSET;
+        let virtual_total_shares = total_shares + SHARES_OFFSET;
         let virtual_coin_balance = balance::value(&strategy.balance_underlying) + BALANCE_OFFSET;
         math_module::mul_div(virtual_coin_balance, amount_shares, virtual_total_shares)
     }

@@ -1,8 +1,4 @@
-import {
-  getFullnodeUrl,
-  SuiClient,
-  type PaginatedCoins,
-} from "@mysten/sui/client";
+import { type PaginatedCoins } from "@mysten/sui/client";
 import { Clients } from "./sui";
 
 const CoinAPI = {

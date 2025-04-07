@@ -82,7 +82,10 @@ onMounted(() => {
                         <div class="input">
                             <input type="number" v-model="amount" placeholder="0.00">
                             <div class="helper">
-                                <p>0 suBTC</p>
+                                <p> {{ Converter.toMoney(
+                                    Converter.fromSUI(balanceStore.restaked_balances[strategy.type],
+                                        strategy.decimals)
+                                ) }} {{ strategy.symbol }}</p>
                                 <div class="buttons">
                                     <button @click="setAmount(4)">25%</button>
                                     <button @click="setAmount(2)">50%</button>
@@ -106,7 +109,7 @@ onMounted(() => {
                                             strategy.decimals)
                                     ) }}
                                 </p>
-                                <span>suBTC</span>
+                                <span>{{ strategy.symbol }}</span>
                             </div>
                         </div>
 

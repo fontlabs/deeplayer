@@ -23,7 +23,7 @@ const strategies: Coin[] = [
     symbol: "stSUI",
     decimals: 9,
     image: "/images/alpha_stsui.png",
-    type: `${Contract.deeplayer}::stsui::STSUI`,
+    type: `${Contract.DeepLayer}::stsui::STSUI`,
     about:
       "AlphaFi Staked SUI (stSUI) is the first liquid staked token (LST) built on the innovative AlphaFi stSUI LST Standard. It offers instant unstaking, enhancing safety by mitigating the risk of depegging. Users can stake their SUI while maintaining full liquidity, allowing them to freely transfer, trade, or use stSUI in DeFi protocols without sacrificing staking rewards. The platform also enables other teams to deploy their own LSTs using the AlphaFi stSUI LST Standard—completely permissionless and at no cost.",
     link: "https://stsui.com",
@@ -32,7 +32,7 @@ const strategies: Coin[] = [
       amount: 5,
       module: "stsui",
       object:
-        "0xfbed9b76a297b625e95a09023083d301d93c2dc53a718157d6d511e04fb1adcb",
+        "0x4782f2ad736ae090bf9842b683dab08c802a2d5de8179d16e52fe1a29fd4936b",
     },
   },
   {
@@ -40,7 +40,7 @@ const strategies: Coin[] = [
     symbol: "haSUI",
     decimals: 9,
     image: "/images/ha_sui.png",
-    type: `${Contract.deeplayer}::hasui::HASUI`,
+    type: `${Contract.DeepLayer}::hasui::HASUI`,
     about:
       "haSUI stands for Haedal staked SUI, it is minted when you stake SUI via Haedal.This is a yield bearing token which represents your ownership of the SUI staked via Haedal.As the staking pool earns validator rewards for securing the Sui network, the value of haSUI will appreciate vs SUI. haSUI will have all primary utilities of SUI, and is usable across the Sui ecosystem.",
     link: "https://www.haedal.xyz",
@@ -49,7 +49,7 @@ const strategies: Coin[] = [
       amount: 5,
       module: "hasui",
       object:
-        "0x410aa2661941f0ee2bba8d690db3aa0fee348da5f172b78509aef9d4280be120",
+        "0xeedd96b45aeca6967b96b33fc0e6cee4ac358c6855c6d247a7bb33516b2926e8",
     },
   },
   {
@@ -57,7 +57,7 @@ const strategies: Coin[] = [
     symbol: "afSUI",
     decimals: 9,
     image: "/images/af_sui.png",
-    type: `${Contract.deeplayer}::afsui::AFSUI`,
+    type: `${Contract.DeepLayer}::afsui::AFSUI`,
     about:
       "AlphaFi Staked SUI (stSUI) is the first liquid staked token (LST) built on the innovative AlphaFi stSUI LST Standard. It offers instant unstaking, enhancing safety by mitigating the risk of depegging. Users can stake their SUI while maintaining full liquidity, allowing them to freely transfer, trade, or use stSUI in DeFi protocols without sacrificing staking rewards. The platform also enables other teams to deploy their own LSTs using the AlphaFi stSUI LST Standard—completely permissionless and at no cost.",
     link: "https://aftermath.finance",
@@ -66,7 +66,7 @@ const strategies: Coin[] = [
       amount: 5,
       module: "afsui",
       object:
-        "0x1fa7bcb766364ef9730265d9b5f8765d99a5ac063fb110de03e2b9b7a33b8c0d",
+        "0x3bacfda6dec8aea1458772ea14069572df2f76ebfca70d22f4a88fe721c5ab47",
     },
   },
   {
@@ -74,7 +74,7 @@ const strategies: Coin[] = [
     symbol: "WBTC",
     decimals: 9,
     image: "/images/wbtc.png",
-    type: `${Contract.deeplayer}::wbtc::WBTC`,
+    type: `${Contract.DeepLayer}::wbtc::WBTC`,
     about:
       "Wrapped Bitcoin is a coin on the SUI blockchain that represents Bitcoin. Each WBTC is backed 1:1 with Bitcoin. Wrapped Bitcoin allows for Bitcoin transfers to be conducted quicker on the SUI blockchain and opens up the possibility for BTC to be used in the SUI ecosystem. Bitcoin is held in custody by the centralized custodian, BitGo. Bitcoin can be converted to Wrapped Bitcoin and vice versa easily.",
     link: "https://wbtc.network",
@@ -82,7 +82,7 @@ const strategies: Coin[] = [
       amount: 0.5,
       module: "wbtc",
       object:
-        "0xc00af52335d203478910167855dac6bdc78a52d8580bb64c7fcd707e51535424",
+        "0xacde9528df8bc0666493bd4d0f5d90c671754d9bc897782423e837eaba2031c3",
     },
   },
   {
@@ -90,7 +90,7 @@ const strategies: Coin[] = [
     symbol: "vSUI",
     decimals: 9,
     image: "/images/v_sui.png",
-    type: `${Contract.deeplayer}::cert::CERT`,
+    type: `${Contract.DeepLayer}::cert::CERT`,
     about:
       "Volo is a liquid staking solution that helps you maximize utility and liquidity for SUI by offering voloSUI.",
     link: "https://www.volosui.com",
@@ -99,7 +99,7 @@ const strategies: Coin[] = [
       amount: 5,
       module: "cert",
       object:
-        "0xf31dc24f09435bc186362689cd51efdd15133e84acb93f233dba813d1acfecfa",
+        "0x47e2274e8d5bbc77d3a37b6f818c0ed8bdfcfc2ec36a64a393b1b2e22bc65134",
     },
   },
   {
@@ -107,7 +107,7 @@ const strategies: Coin[] = [
     symbol: "PYTH",
     decimals: 9,
     image: "/images/pyth.png",
-    type: `${Contract.deeplayer}::pyth::PYTH`,
+    type: `${Contract.DeepLayer}::pyth::PYTH`,
     about:
       "Volo is a liquid staking solution that helps you maximize utility and liquidity for SUI by offering voloSUI.",
     link: "https://pyth.network",
@@ -115,7 +115,7 @@ const strategies: Coin[] = [
       amount: 20,
       module: "pyth",
       object:
-        "0x0f46a1a36223c27a3f7b61a7372103b6626c5dc8d13fc67d5b25bf4a349a7c37",
+        "0x9e3a8c3af83fde8c203e7424a87caf406960bcfa3193cf30cc2521754b33bc1b",
     },
   },
 ];

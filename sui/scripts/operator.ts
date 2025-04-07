@@ -1,0 +1,23 @@
+import { Transaction } from "@mysten/sui/transactions";
+import { Addresses, client } from "./shared";
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+
+async function registerAsOperator(key: string, metdata_uri: string) {
+  const transaction = new Transaction();
+  transaction.moveCall({
+    target: `${Addresses.DeepLayer}::delegation_module::register_as_operator`,
+    arguments: [
+      transaction.object(Addresses.StrategyManager),
+      transaction.object(Addresses.AllocationManager),
+      transaction.object(Addresses.DelegationManager),
+      transaction.pure.string(metdata_uri),
+    ],
+  });
+  transaction.setGasBudget(5_000_000);
+  const signer = Ed25519Keypair.fromSecretKey(key);
+  const { digest } = await client.signAndExecuteTransaction({
+    transaction,
+    signer,
+  });
+  console.log("Transaction digest:", digest);
+}

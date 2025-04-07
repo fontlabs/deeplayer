@@ -42,13 +42,8 @@ module deeplayer::pyth {
         faucet: &mut Faucet<PYTH>, 
         ctx: &mut TxContext,
     ) {
-        let mut coin_minted = coin::mint(treasury_cap, 1_000_000_000_000_000, ctx);
-        let coin_faucet = coin_minted.split(50_000_000_000, ctx);
-
-        let balance_faucet = coin_faucet.into_balance<PYTH>();
-        balance::join<PYTH>(&mut faucet.balance, balance_faucet);
-
-        transfer::public_transfer(coin_minted, tx_context::sender(ctx))
+        let coin_minted = coin::mint(treasury_cap, 1_000_000_000_000_000, ctx);
+        balance::join<PYTH>(&mut faucet.balance, coin_minted.into_balance<PYTH>());
     }
 
     public entry fun mint<PYTH>(

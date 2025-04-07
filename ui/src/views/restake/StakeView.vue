@@ -2,7 +2,7 @@
 import ChevronLeftIcon from '@/components/icons/ChevronLeftIcon.vue';
 import OutIcon from '@/components/icons/OutIcon.vue';
 import { notify } from '@/reactives/notify';
-import { findStrategy } from '@/scripts/constant';
+import { findStrategy, operators } from '@/scripts/constant';
 
 import { Contract } from '@/scripts/contract';
 import { Converter } from '@/scripts/converter';
@@ -18,6 +18,7 @@ const balanceStore = useBalanceStore();
 const { currentAccount } = useCurrentAccount();
 const amount = ref<number | undefined>(undefined);
 const strategy = ref<Coin | undefined>(undefined);
+const isDelegated = ref<boolean>(false);
 
 const { signAndExecuteTransactionBlock } = useSignAndExecuteTransactionBlock();
 
@@ -117,8 +118,22 @@ const restake = async () => {
         await Clients.suiClient.waitForTransaction({ digest });
 
         balanceStore.getBalances();
-    } catch (error) {
 
+        notify.push({
+            title: "Restaking successful!",
+            description: `You have restaked ${Converter.toMoney(amount.value)} ${strategy.value.symbol}`,
+            category: "success",
+            linkTitle: "View on Sui Explorer",
+            linkUrl: `https://suiscan.xyz/testnet/tx/${digest}?network=testnet`,
+        });
+
+        amount.value = undefined;
+    } catch (error) {
+        notify.push({
+            title: "Restaking failed!",
+            description: "Transaction error.",
+            category: "error"
+        });
     }
 };
 
@@ -153,7 +168,9 @@ onMounted(() => {
                         <div class="input">
                             <input type="number" v-model="amount" placeholder="0.00">
                             <div class="helper">
-                                <p>0 {{ strategy.symbol }}</p>
+                                <p>{{ Converter.toMoney(
+                                    Converter.fromSUI(balanceStore.balances[strategy.type], strategy.decimals)
+                                ) }} {{ strategy.symbol }}</p>
                                 <div class="buttons">
                                     <button @click="setAmount(4)">25%</button>
                                     <button @click="setAmount(2)">50%</button>
@@ -161,6 +178,14 @@ onMounted(() => {
                                 </div>
                             </div>
                         </div>
+
+                        <div class="label" v-if="!isDelegated">Select an operator</div>
+
+                        <select v-if="!isDelegated">
+                            <option v-for="operator in operators" :value="operator.address">
+                                {{ operator.name }}
+                            </option>
+                        </select>
 
                         <button class="restake" @click="restake">Restake</button>
                     </div>
@@ -299,6 +324,20 @@ onMounted(() => {
     outline: none;
     border: none;
     color: var(--tx-normal);
+}
+
+select {
+    width: 100%;
+    margin-top: 10px;
+    padding: 0 10px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    color: var(--tx-semi);
+    cursor: pointer;
+    background: var(--bg-lighter);
 }
 
 .helper {

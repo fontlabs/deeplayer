@@ -5,7 +5,7 @@ const Converter = {
     return Intl.NumberFormat("en-US", {
       notation: "compact",
       compactDisplay: "short",
-      maximumFractionDigits: 2,
+      maximumFractionDigits: 6,
     }).format(val);
   },
 

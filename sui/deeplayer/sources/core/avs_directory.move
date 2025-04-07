@@ -67,8 +67,8 @@ module deeplayer::avs_directory_module {
         if (!table::contains(operator_salt, salt)) {
             table::add(operator_salt, salt, true);
         } else {
-            let mut is_spent = *table::borrow_mut(operator_salt, salt);
-            is_spent = true;
+            let mut is_spent = table::borrow_mut(operator_salt, salt);
+            *is_spent = true;
         };
     }
 
