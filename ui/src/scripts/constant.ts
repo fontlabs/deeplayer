@@ -128,7 +128,7 @@ const operators: Operator[] = [
       "At Mysten, we are building a company that aims to address these problems (and many others) by laying the foundations for a decentralized web stack suitable for mass adoption. The drive to unlock everything that web3 enables is our north star.",
     active: true,
     address:
-      "0x0000000000000000000000000000000000000000000000000000000000000001",
+      "0x9e1b49043efc0bead9d0381713fa0c4348b05f59450cbb90961b6b98a67adb23",
     link: "https://mystenlabs.com",
   },
   {
@@ -138,7 +138,7 @@ const operators: Operator[] = [
       "Pyth is a protocol that allows market participants to publish pricing information on-chain for others to use.",
     active: true,
     address:
-      "0x0000000000000000000000000000000000000000000000000000000000000002",
+      "0x43988c5c280487483d05c4d5e1aba8d206f82c4c5d8493e85205f9ac393bcc61",
     link: "https://pyth.network",
   },
   {
@@ -148,7 +148,7 @@ const operators: Operator[] = [
       "Our Web3 team at Google Cloud is dedicated to empowering the next generation of decentralized applications and services by providing developers and businesses with the essential tools, infrastructure, and knowledge to build and scale in the Web3 space.",
     active: true,
     address:
-      "0x0000000000000000000000000000000000000000000000000000000000000003",
+      "0x237fab2f9f5afc3eacec176fe1721534032cf85590f0e5a36dc6d7c668dbf897",
     link: "https://google.com",
   },
 ];

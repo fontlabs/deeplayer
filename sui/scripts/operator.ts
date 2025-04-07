@@ -1,5 +1,5 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { Addresses, client } from "./shared";
+import { Addresses, client, Operators } from "./shared";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 
 async function registerAsOperator(key: string, metdata_uri: string) {
@@ -20,4 +20,10 @@ async function registerAsOperator(key: string, metdata_uri: string) {
     signer,
   });
   console.log("Transaction digest:", digest);
+}
+
+async function main() {
+  for (const operator of Operators) {
+    await registerAsOperator(operator.key!, operator.metdata_uri);
+  }
 }
