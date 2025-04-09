@@ -6,19 +6,19 @@ import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 
 const Contract = {
   DeepLayer:
-    "0x2f0b1dd354dd818e3173c104d7e6f8a682fc8908c0920d85caf9bfb9a220dfba",
+    "0xf52e10b4ceb96a57686e6df13661e1873e1b02ad566e560c106ad70ff2c4bdfe",
   AVSDirectory:
-    "0x34fd078388478dd6767c4c0bf2c94a902a29a918d527065311ac08753f767f2d",
+    "0x6c657abead0a727adb3b95e8b27dc66e6c774041f2ae1fb1f95a30c8a0fd8e32",
   StrategyFactory:
-    "0xce7cda2fe94a759e88aa873317704186e29addbf78f6784cdbe422b7031a17fb",
+    "0xcc628e6a4e73cbe20974dfd6d66d778e3521f39f805ac03a63b59302aa469703",
   StrategyManager:
-    "0xc7e24fa965bf58943438f581e3ac2bb140e0d64676f41562fa4b856ab633923b",
+    "0x66164e4c4d7aa32c9ce81e02a5c335c21160f850890b929b77e84786f711d986",
   RewardsCoordinator:
-    "0x336dff21853ce350580d25a82f60d5eeb401bfeb18b51ea1ae157a9083e754bf",
+    "0xea669ed0d6ebb63a64da296dd1253d32056d2addab322d407edc29099cfaf573",
   AllocationManager:
-    "0xf7a6f3220a95a5ad5f0736fbd1a91be78a8721ad3406d211429ff0b138de4600",
+    "0x026a05d8070e624cb815e48235b51b389e5d25912d6cc4027acd3c37e77fa7f6",
   DelegationManager:
-    "0x539715ec47e209b4d0264da8f3f5be41982ff21ed3bd90d9751ea8cd0dedde31",
+    "0x0a54afc3604e4c22a9127b0e687d3860df93eeb3723461d5be247acfdcfd0719",
 
   async mintCoin(
     sender: string,

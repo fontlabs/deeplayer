@@ -1,15 +1,15 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { Addresses, client, Operators } from "./shared";
+import { Contract, client, Operators } from "./shared";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 
 async function registerAsOperator(key: string, metdata_uri: string) {
   const transaction = new Transaction();
   transaction.moveCall({
-    target: `${Addresses.DeepLayer}::delegation_module::register_as_operator`,
+    target: `${Contract.DeepLayer}::delegation_module::register_as_operator`,
     arguments: [
-      transaction.object(Addresses.StrategyManager),
-      transaction.object(Addresses.AllocationManager),
-      transaction.object(Addresses.DelegationManager),
+      transaction.object(Contract.StrategyManager),
+      transaction.object(Contract.AllocationManager),
+      transaction.object(Contract.DelegationManager),
       transaction.pure.string(metdata_uri),
     ],
   });

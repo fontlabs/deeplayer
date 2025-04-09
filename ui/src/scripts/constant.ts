@@ -32,7 +32,7 @@ const strategies: Coin[] = [
       amount: 5,
       module: "stsui",
       object:
-        "0x4782f2ad736ae090bf9842b683dab08c802a2d5de8179d16e52fe1a29fd4936b",
+        "0x0ac606d8fa57bccedc0432efcff4fa0f85132c0d02256ab92f2cd18680f2cb1c",
     },
   },
   {
@@ -49,7 +49,7 @@ const strategies: Coin[] = [
       amount: 0.5,
       module: "lbtc",
       object:
-        "0xacde9528df8bc0666493bd4d0f5d90c671754d9bc897782423e837eaba2031c3",
+        "0x5277cfdd4efe8cfe637aeec0a1c267a4c73d243b463181c1c39e2b5679d066b6",
     },
   },
   {
@@ -66,7 +66,7 @@ const strategies: Coin[] = [
       amount: 5,
       module: "hasui",
       object:
-        "0xeedd96b45aeca6967b96b33fc0e6cee4ac358c6855c6d247a7bb33516b2926e8",
+        "0x7293ab304154fdf860486d59a9836891b22af2cd09dc4a7e72af143b338e6f5d",
     },
   },
   {
@@ -83,7 +83,7 @@ const strategies: Coin[] = [
       amount: 5,
       module: "afsui",
       object:
-        "0x3bacfda6dec8aea1458772ea14069572df2f76ebfca70d22f4a88fe721c5ab47",
+        "0xdd88bd2e6da7cf2d9d8439325e5ee5d91fdbe906a6cdd7bcbd071e3efc7e55ba",
     },
   },
   {
@@ -100,7 +100,7 @@ const strategies: Coin[] = [
       amount: 5,
       module: "cert",
       object:
-        "0x47e2274e8d5bbc77d3a37b6f818c0ed8bdfcfc2ec36a64a393b1b2e22bc65134",
+        "0x8b2f4fc6fda2f1bae5bdc2428713d562307207073eac66378599d953e7d545d5",
     },
   },
   {
@@ -116,7 +116,7 @@ const strategies: Coin[] = [
       amount: 20,
       module: "pyth",
       object:
-        "0x9e3a8c3af83fde8c203e7424a87caf406960bcfa3193cf30cc2521754b33bc1b",
+        "0x85db0862f42860ee97a50c89988d5b49842fd94e6c5761d5d0a74cbe98badaac",
     },
   },
 ];

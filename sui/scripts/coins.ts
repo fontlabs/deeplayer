@@ -1,5 +1,5 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { Addresses, client, Coins, signer } from "./shared";
+import { Contract, client, Coins, signer } from "./shared";
 
 async function initSupply(
   module: string,
@@ -9,9 +9,9 @@ async function initSupply(
 ) {
   const transaction = new Transaction();
   transaction.moveCall({
-    target: `${Addresses.DeepLayer}::${module}::init_supply`,
+    target: `${Contract.DeepLayer}::${module}::init_supply`,
     arguments: [transaction.object(treasuryCap), transaction.object(faucet)],
-    typeArguments: [`${Addresses.DeepLayer}::${module}::${coinType}`],
+    typeArguments: [`${Contract.DeepLayer}::${module}::${coinType}`],
   });
   transaction.setGasBudget(5_000_000);
   const { digest } = await client.signAndExecuteTransaction({

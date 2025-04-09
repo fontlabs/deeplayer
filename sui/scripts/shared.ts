@@ -4,14 +4,21 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 
 dotenv.config();
 
-const Addresses = {
+const Contract = {
   DeepLayer:
-    "0x2f0b1dd354dd818e3173c104d7e6f8a682fc8908c0920d85caf9bfb9a220dfba",
+    "0xf52e10b4ceb96a57686e6df13661e1873e1b02ad566e560c106ad70ff2c4bdfe",
+  AVSDirectory:
+    "0x6c657abead0a727adb3b95e8b27dc66e6c774041f2ae1fb1f95a30c8a0fd8e32",
   StrategyFactory:
-    "0xce7cda2fe94a759e88aa873317704186e29addbf78f6784cdbe422b7031a17fb",
-  StrategyManager: "",
-  AllocationManager: "",
-  DelegationManager: "",
+    "0xcc628e6a4e73cbe20974dfd6d66d778e3521f39f805ac03a63b59302aa469703",
+  StrategyManager:
+    "0x66164e4c4d7aa32c9ce81e02a5c335c21160f850890b929b77e84786f711d986",
+  RewardsCoordinator:
+    "0xea669ed0d6ebb63a64da296dd1253d32056d2addab322d407edc29099cfaf573",
+  AllocationManager:
+    "0x026a05d8070e624cb815e48235b51b389e5d25912d6cc4027acd3c37e77fa7f6",
+  DelegationManager:
+    "0x0a54afc3604e4c22a9127b0e687d3860df93eeb3723461d5be247acfdcfd0719",
 };
 
 const client = new SuiClient({
@@ -25,49 +32,49 @@ const Coins = [
     module: "afsui",
     coinType: "AFSUI",
     treasuryCap:
-      "0x28b308bd67a7bd35f11374f02eb12dcfc59dd91f65e7128a71177e40d1ce9614",
+      "0xcca5bc8bf8900217797e356086ee97f52727f62ca75eb982dadc13913a5608a3",
     faucet:
-      "0x3bacfda6dec8aea1458772ea14069572df2f76ebfca70d22f4a88fe721c5ab47",
+      "0xdd88bd2e6da7cf2d9d8439325e5ee5d91fdbe906a6cdd7bcbd071e3efc7e55ba",
   },
   {
     module: "hasui",
     coinType: "HASUI",
     treasuryCap:
-      "0xaf08578e111c6481b0737e5971ce30abaac8c476c309f20343f279e90fc9d81c",
+      "0xdbd0acd43878ff60569e8d76e7f00562b7c9fef46770fc1ad87bed8666e10bcd",
     faucet:
-      "0xeedd96b45aeca6967b96b33fc0e6cee4ac358c6855c6d247a7bb33516b2926e8",
+      "0x7293ab304154fdf860486d59a9836891b22af2cd09dc4a7e72af143b338e6f5d",
   },
   {
     module: "pyth",
     coinType: "PYTH",
     treasuryCap:
-      "0x6d8c143ece4980b2cd38e94e1e6a220dd6a31dc0599ad36a66f7b5217af9ba6b",
+      "0x1314c326cbd4b235e72365cf3ee296c16a90fa3f89cefcc9ebcb8fb2cf85ba97",
     faucet:
-      "0x9e3a8c3af83fde8c203e7424a87caf406960bcfa3193cf30cc2521754b33bc1b",
+      "0x85db0862f42860ee97a50c89988d5b49842fd94e6c5761d5d0a74cbe98badaac",
   },
   {
     module: "stsui",
     coinType: "STSUI",
     treasuryCap:
-      "0x13aa27c6c41a893f33109af777dea6f8f975167b1cd925a86e8a2276a8399852",
+      "0x38c7eb760607369f1289428449ced2f4ac487514a6d4f73bae3ef05be3dcab7b",
     faucet:
-      "0x4782f2ad736ae090bf9842b683dab08c802a2d5de8179d16e52fe1a29fd4936b",
+      "0x0ac606d8fa57bccedc0432efcff4fa0f85132c0d02256ab92f2cd18680f2cb1c",
   },
   {
     module: "cert",
     coinType: "CERT",
     treasuryCap:
-      "0xc863f69843818a288aecb83237d515b73d51d879e74409f2f9d736b80c887413",
+      "0xc6045ea9f8b9258b7367a9be4bd6e5ebee2ad942170d169f7d05c0e218f511f9",
     faucet:
-      "0x47e2274e8d5bbc77d3a37b6f818c0ed8bdfcfc2ec36a64a393b1b2e22bc65134",
+      "0x8b2f4fc6fda2f1bae5bdc2428713d562307207073eac66378599d953e7d545d5",
   },
   {
     module: "lbtc",
     coinType: "LBTC",
     treasuryCap:
-      "0x739a7a845dce8c661ac74e778f5671105d16d0396e72fdbf49f11f4ab6241733",
+      "0xfab9e586a29884aa5958ff47fba7e9a133b85a7f623476087d1052466c3d778f",
     faucet:
-      "0xacde9528df8bc0666493bd4d0f5d90c671754d9bc897782423e837eaba2031c3",
+      "0x5277cfdd4efe8cfe637aeec0a1c267a4c73d243b463181c1c39e2b5679d066b6",
   },
 ];
 
@@ -104,4 +111,4 @@ const Operators = [
   },
 ];
 
-export { Addresses, client, signer, Coins, Operators };
+export { Contract, client, signer, Coins, Operators };
