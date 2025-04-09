@@ -62,8 +62,8 @@ const Coins = [
       "0x47e2274e8d5bbc77d3a37b6f818c0ed8bdfcfc2ec36a64a393b1b2e22bc65134",
   },
   {
-    module: "wbtc",
-    coinType: "WBTC",
+    module: "lbtc",
+    coinType: "LBTC",
     treasuryCap:
       "0x739a7a845dce8c661ac74e778f5671105d16d0396e72fdbf49f11f4ab6241733",
     faucet:

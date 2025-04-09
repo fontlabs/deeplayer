@@ -71,16 +71,16 @@ const strategies: Coin[] = [
   },
   {
     name: "Wrapped BTC",
-    symbol: "WBTC",
+    symbol: "LBTC",
     decimals: 9,
-    image: "/images/wbtc.png",
-    type: `${Contract.DeepLayer}::wbtc::WBTC`,
+    image: "/images/lbtc.png",
+    type: `${Contract.DeepLayer}::lbtc::LBTC`,
     about:
-      "Wrapped Bitcoin is a coin on the SUI blockchain that represents Bitcoin. Each WBTC is backed 1:1 with Bitcoin. Wrapped Bitcoin allows for Bitcoin transfers to be conducted quicker on the SUI blockchain and opens up the possibility for BTC to be used in the SUI ecosystem. Bitcoin is held in custody by the centralized custodian, BitGo. Bitcoin can be converted to Wrapped Bitcoin and vice versa easily.",
-    link: "https://wbtc.network",
+      "Wrapped Bitcoin is a coin on the SUI blockchain that represents Bitcoin. Each LBTC is backed 1:1 with Bitcoin. Wrapped Bitcoin allows for Bitcoin transfers to be conducted quicker on the SUI blockchain and opens up the possibility for BTC to be used in the SUI ecosystem. Bitcoin is held in custody by the centralized custodian, BitGo. Bitcoin can be converted to Wrapped Bitcoin and vice versa easily.",
+    link: "https://lbtc.network",
     faucet: {
       amount: 0.5,
-      module: "wbtc",
+      module: "lbtc",
       object:
         "0xacde9528df8bc0666493bd4d0f5d90c671754d9bc897782423e837eaba2031c3",
     },
