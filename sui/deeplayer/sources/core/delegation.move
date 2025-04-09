@@ -303,13 +303,7 @@ module deeplayer::delegation_module {
             E_INPUT_ARRAY_LENGTH_MISMATCH
         );
 
-        let slashing_factors = get_slashing_factors(
-            delegation_manager,
-            allocation_manager,
-            sender,
-            operator,
-            strategy_ids
-        );
+        let slashing_factors = allocation_module::get_max_magnitudes(allocation_manager, operator, strategy_ids, 0);
 
         remove_shares_and_queue_withdrawal(
             delegation_manager,
@@ -373,24 +367,11 @@ module deeplayer::delegation_module {
         });
 
         // Get slashing factors at completion time
-        let prev_slashing_factors = get_slashing_factors_at_block(
-            delegation_manager,
-            allocation_manager,
-            withdrawal.staker,
-            withdrawal.delegated_to,
-            withdrawal.strategy_ids,
-            slashable_until
-        );
+        let prev_slashing_factors = allocation_module::get_max_magnitudes(allocation_manager, withdrawal.delegated_to, withdrawal.strategy_ids, slashable_until);
 
         // Get current slashing factors for redeposit
         let new_operator = *table::borrow(&delegation_manager.delegated_to, withdrawal.staker);
-        let new_slashing_factors = get_slashing_factors(
-            delegation_manager,
-            allocation_manager,
-            withdrawal.staker,
-            new_operator,
-            withdrawal.strategy_ids
-        );
+        let new_slashing_factors = allocation_module::get_max_magnitudes(allocation_manager, new_operator, withdrawal.strategy_ids, 0);
 
         // Process each strategy
         let mut i = 0;
@@ -523,13 +504,7 @@ module deeplayer::delegation_module {
         let (strategy_ids, withdrawable_shares) = strategy_manager_module::get_deposits(strategy_manager, staker);
         
         // Get slashing factors
-        let slashing_factors = get_slashing_factors(
-            delegation_manager,
-            allocation_manager,
-            @0x0,
-            operator,
-            strategy_ids
-        );
+        let slashing_factors = allocation_module::get_max_magnitudes(allocation_manager, @0x0, strategy_ids, 0);
 
         // Delegate to operator
         table::add(&mut delegation_manager.delegated_to, staker, operator);
@@ -586,13 +561,7 @@ module deeplayer::delegation_module {
         };
 
         // Get slashing factors
-        let slashing_factors = get_slashing_factors(
-            delegation_manager,
-            allocation_manager,
-            staker,
-            operator,
-            strategy_ids
-        );
+        let slashing_factors = allocation_module::get_max_magnitudes(allocation_manager, operator, strategy_ids, 0);
 
         // Queue withdrawals for each strategy
         let mut i = 0;
@@ -788,7 +757,7 @@ module deeplayer::delegation_module {
     }
 
     public fun get_deposit_scaling_factor_value(
-        delegation_manager: &mut DelegationManager,
+        delegation_manager: &DelegationManager,
         staker: address,
         strategy_id: string::String,
         ctx: &mut TxContext
@@ -835,12 +804,11 @@ module deeplayer::delegation_module {
     }
 
     public fun get_withdrawable_shares(
-        delegation_manager: &mut DelegationManager,
+        delegation_manager: &DelegationManager,
         allocation_manager: &AllocationManager,
         strategy_manager: &StrategyManager,
         staker: address,
-        strategy_ids: vector<string::String>,
-        ctx: &mut TxContext
+        strategy_ids: vector<string::String>
     ): (vector<u64>, vector<u64>) {
         if (!table::contains(&delegation_manager.delegated_to, staker)) {
             let shares = strategy_manager_module::get_all_staker_shares(
@@ -855,7 +823,7 @@ module deeplayer::delegation_module {
         let mut deposit_shares = vector::empty<u64>();
 
         let operator = *table::borrow(&delegation_manager.delegated_to, staker);
-        let slashing_factors = get_slashing_factors(delegation_manager, allocation_manager, staker, operator, strategy_ids);
+        let slashing_factors = allocation_module::get_max_magnitudes(allocation_manager, operator, strategy_ids, 0);
 
         let mut i = 0;
         let len = vector::length(&strategy_ids);
@@ -927,7 +895,7 @@ module deeplayer::delegation_module {
     }
 
     public fun convert_to_deposit_shares(
-        delegation_manager: &mut DelegationManager,
+        delegation_manager: &DelegationManager,
         allocation_manager: &AllocationManager,
         staker: address,
         strategy_ids: vector<string::String>,
@@ -935,9 +903,10 @@ module deeplayer::delegation_module {
         ctx: &mut TxContext
     ): vector<u64> {
         let operator = *table::borrow(&delegation_manager.delegated_to, staker);
-        let slashing_factors = get_slashing_factors(delegation_manager, allocation_manager, staker, operator, strategy_ids);
+        let slashing_factors = allocation_module::get_max_magnitudes(allocation_manager, operator, strategy_ids, 0);
 
         let mut deposit_shares = vector::empty<u64>();
+
         let mut i = 0;
         let len = vector::length(&strategy_ids);
         while (i < len) {
@@ -951,9 +920,11 @@ module deeplayer::delegation_module {
             vector::push_back(&mut deposit_shares, deposit);
             i = i + 1;
         };
+
         deposit_shares
     }
 
+    // Helper functions
     fun calculate_withdrawal_root(
         withdrawal: &Withdrawal
     ): vector<u8> {
@@ -966,51 +937,6 @@ module deeplayer::delegation_module {
         root
     }
 
-    // Helper functions
-    fun get_slashing_factors(
-        delegation_manager: &DelegationManager,
-        allocation_manager: &AllocationManager,
-        staker: address,
-        operator: address,
-        strategy_ids: vector<string::String>
-    ): vector<u64> {
-        let mut slashing_factors = vector::empty<u64>();
-        let max_magnitudes = allocation_module::get_max_magnitudes(allocation_manager, operator, strategy_ids, 0);
-
-        let mut i = 0;
-        let len = vector::length(&strategy_ids);
-        while (i < len) {
-            let strategy_id = *vector::borrow(&strategy_ids, i);
-            let max_magnitude = *vector::borrow(&max_magnitudes, i);
-            vector::push_back(&mut slashing_factors, max_magnitude);
-            i = i + 1;
-        };
-
-        slashing_factors
-    }
-
-    fun get_slashing_factors_at_block(
-        delegation_manager: &DelegationManager,
-        allocation_manager: &AllocationManager,
-        staker: address,
-        operator: address,
-        strategy_ids: vector<string::String>,
-        block_number: u64
-    ): vector<u64> {
-        let mut slashing_factors = vector::empty<u64>();
-        let max_magnitudes = allocation_module::get_max_magnitudes(allocation_manager, operator, strategy_ids, block_number);
-
-        let mut i = 0;
-        let len = vector::length(&strategy_ids);
-        while (i < len) {
-            let strategy_id = *vector::borrow(&strategy_ids, i);
-            let max_magnitude = *vector::borrow(&max_magnitudes, i);
-            vector::push_back(&mut slashing_factors, max_magnitude);
-            i = i + 1;
-        };
-        slashing_factors
-    }
-
     fun get_shares_by_withdrawal(
         delegation_manager: &DelegationManager,
         allocation_manager: &AllocationManager,
@@ -1021,22 +947,9 @@ module deeplayer::delegation_module {
         let slashable_until = withdrawal.start_block + delegation_manager.min_withdrawal_delay;
 
         let slashing_factors = if (slashable_until < tx_context::epoch(ctx)) {
-            get_slashing_factors_at_block(
-                delegation_manager,
-                allocation_manager,
-                withdrawal.staker,
-                withdrawal.delegated_to,
-                withdrawal.strategy_ids,
-                slashable_until
-            )
+            allocation_module::get_max_magnitudes(allocation_manager, withdrawal.delegated_to, withdrawal.strategy_ids, slashable_until)
         } else {
-            get_slashing_factors(
-                delegation_manager,
-                allocation_manager,
-                withdrawal.staker,
-                withdrawal.delegated_to,
-                withdrawal.strategy_ids
-            )
+            allocation_module::get_max_magnitudes(allocation_manager, withdrawal.delegated_to, withdrawal.strategy_ids, 0)
         };
 
         let mut i = 0;
