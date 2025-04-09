@@ -12,6 +12,7 @@ module deeplayer::avs_directory_module {
     use deeplayer::delegation_module::{Self, DelegationManager};
     use deeplayer::signature_module::{Self, SignatureWithSaltAndExpiry};
 
+    // Constants
     const OPERATOR_AVS_REG_UNREGISTERED: u64 = 0;
     const OPERATOR_AVS_REG_REGISTERED: u64 = 1;
 
@@ -20,6 +21,7 @@ module deeplayer::avs_directory_module {
     const E_OPERATOR_NOT_REGISTERED_TO_AVS: u64 = 1;
     const E_INVALID_SIGNATURE: u64 = 3;
     const E_SALT_SPENT: u64 = 4;
+    const E_OPERATOR_NOT_REGISTERED: u64 = 5;
 
     // Structs
     public struct AVSDirectory has key {
@@ -74,10 +76,8 @@ module deeplayer::avs_directory_module {
 
     // Packages functions
     public(package) fun update_avs_metadata_uri(
-        avs_directory: &AVSDirectory,
         avs: address,
-        metadata_uri: string::String,
-        ctx: &mut TxContext
+        metadata_uri: string::String
     ) {             
         event::emit(AVSMetadataURIUpdated {
             avs,
@@ -120,7 +120,7 @@ module deeplayer::avs_directory_module {
         assert!(!salt_is_spent, E_SALT_SPENT);
         
         let is_operator = delegation_module::is_operator(delegation_manager, operator);
-        assert!(is_operator, E_OPERATOR_NOT_REGISTERED_TO_AVS);
+        assert!(is_operator, E_OPERATOR_NOT_REGISTERED);
         
         let verify = signature_module::verify(
             operator_signature,

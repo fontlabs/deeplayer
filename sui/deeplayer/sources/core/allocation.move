@@ -181,6 +181,7 @@ module deeplayer::allocation_module {
         strategy_id: string::String,
     }
 
+    // Initialization
     fun init(
         ctx: &mut TxContext
     ) {

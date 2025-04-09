@@ -15,16 +15,12 @@ module deeplayer::ecdsa_service_manager_module {
     use deeplayer::signature_module::{Self, SignatureWithSaltAndExpiry};
 
     public entry fun update_avs_metadata_uri(
-        directory: &AVSDirectory,
         avs: address,
-        metadata_uri: string::String,
-        ctx: &mut TxContext
+        metadata_uri: string::String
     ) {      
         avs_directory_module::update_avs_metadata_uri(
-            directory,
             avs,
-            metadata_uri,
-            ctx
+            metadata_uri
         )
     }
 
