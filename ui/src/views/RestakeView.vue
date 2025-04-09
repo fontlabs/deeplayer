@@ -12,7 +12,7 @@ const balanceStore = useBalanceStore();
 const { currentAccount } = useCurrentAccount();
 const search = ref<string | undefined>(undefined);
 const allStrategy = ref<Coin[]>(strategies);
-const type = ref<'all' | 'sui_lst' | 'others'>('all');
+const type = ref<'all' | 'lst' | 'btc' | 'others'>('all');
 
 const getStrategies = () => {
   allStrategy.value = strategies.filter(
@@ -21,14 +21,18 @@ const getStrategies = () => {
         return search.value ? s.name.toLowerCase().includes(search.value.toLowerCase()) :
           true;
       }
-      else if (type.value == 'sui_lst') {
+      else if (type.value == 'lst') {
         return search.value ?
-          s.name.toLowerCase().includes(search.value.toLowerCase()) && (s.isLst || s.isNative) :
+          s.name.toLowerCase().includes(search.value.toLowerCase()) && s.isLst :
+          (s.isLst || s.isNative);
+      } else if (type.value == 'btc') {
+        return search.value ?
+          s.name.toLowerCase().includes(search.value.toLowerCase()) && s.isBtc :
           (s.isLst || s.isNative);
       } else {
         return search.value ?
-          s.name.toLowerCase().includes(search.value.toLowerCase()) && !(s.isLst || s.isNative) :
-          !(s.isLst || s.isNative);
+          s.name.toLowerCase().includes(search.value.toLowerCase()) && !(s.isLst || s.isNative || s.isBtc) :
+          !(s.isLst || s.isNative || s.isBtc);
       }
     }
   );
@@ -90,8 +94,7 @@ onMounted(() => {
             <div class="toolbar">
               <div class="tabs">
                 <button :class="type == 'all' ? 'tab tab_active' : 'tab'" @click="type = 'all'">All</button>
-                <button :class="type == 'sui_lst' ? 'tab tab_active' : 'tab'" @click="type = 'sui_lst'">SUI &
-                  LSTs</button>
+                <button :class="type == 'lst' ? 'tab tab_active' : 'tab'" @click="type = 'lst'">LSTs</button>
                 <button :class="type == 'others' ? 'tab tab_active' : 'tab'" @click="type = 'others'">Others</button>
               </div>
 

@@ -34,6 +34,7 @@ export type Coin = {
   };
   isNative?: boolean;
   isLst?: boolean;
+  isBtc?: boolean;
 };
 
 export type Notification = {
