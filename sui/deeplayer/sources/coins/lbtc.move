@@ -21,7 +21,7 @@ module deeplayer::lbtc {
             witness, 
             9, 
             b"LBTC", 
-            b"Wrapped BTC", 
+            b"Liquid Bitcoin", 
             b"", 
             option::none(), 
             ctx

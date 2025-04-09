@@ -36,7 +36,7 @@ const strategies: Coin[] = [
     },
   },
   {
-    name: "Wrapped BTC",
+    name: "Liquid Bitcoin",
     symbol: "LBTC",
     decimals: 9,
     image: "/images/lbtc.png",
