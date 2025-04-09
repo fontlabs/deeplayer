@@ -42,8 +42,8 @@ const strategies: Coin[] = [
     image: "/images/lbtc.png",
     type: `${Contract.DeepLayer}::lbtc::LBTC`,
     about:
-      "Wrapped Bitcoin is a coin on the SUI blockchain that represents Bitcoin. Each LBTC is backed 1:1 with Bitcoin. Wrapped Bitcoin allows for Bitcoin transfers to be conducted quicker on the SUI blockchain and opens up the possibility for BTC to be used in the SUI ecosystem. Bitcoin is held in custody by the centralized custodian, BitGo. Bitcoin can be converted to Wrapped Bitcoin and vice versa easily.",
-    link: "https://lbtc.network",
+      "Lombard is on a mission to expand the digital economy by transforming Bitcoin’s utility from a store of value into a productive financial tool with LBTC.",
+    link: "https://lombard.finance",
     isBtc: true,
     faucet: {
       amount: 0.5,
