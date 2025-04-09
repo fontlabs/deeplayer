@@ -81,13 +81,13 @@ module deeplayer::strategy_manager_module {
         transfer::share_object(strategy_manager);
     } 
 
-    // Public functions
-    public entry fun deposit_into_strategy<CoinType>(   
+    // Package functions
+    public(package) fun deposit<CoinType>(   
         strategy_factory: &mut StrategyFactory,
         strategy_manager: &mut StrategyManager,
         coin_deposited: coin::Coin<CoinType>,
         ctx: &mut TxContext
-    ) {
+    ): (u64, u64) {
         check_not_paused(strategy_manager);
 
         let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
@@ -109,19 +109,19 @@ module deeplayer::strategy_manager_module {
 
         let staker = tx_context::sender(ctx);
 
+        event::emit(Deposit {
+            staker,
+            strategy_id,
+            shares: new_shares,
+        });
+
         add_shares_impl(
             strategy_manager,
             strategy_id,
             staker, 
             new_shares,
             ctx
-        );
-
-        event::emit(Deposit {
-            staker,
-            strategy_id,
-            shares: new_shares,
-        });
+        )
     }
 
     public entry fun burn_shares<CoinType>(

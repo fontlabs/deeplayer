@@ -481,6 +481,11 @@ module deeplayer::allocation_module {
         if (vector::is_empty(snapshots)) {
             return WAD;
         };
+
+        if (min_block == 0) {
+            let i = vector::length(snapshots) - 1;
+            return vector::borrow(snapshots, i).max_magnitude;
+        };
         
         let mut max_magnitude: u64 = WAD;
 
