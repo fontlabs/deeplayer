@@ -95,6 +95,7 @@ onMounted(() => {
               <div class="tabs">
                 <button :class="type == 'all' ? 'tab tab_active' : 'tab'" @click="type = 'all'">All</button>
                 <button :class="type == 'lst' ? 'tab tab_active' : 'tab'" @click="type = 'lst'">LSTs</button>
+                <button :class="type == 'btc' ? 'tab tab_active' : 'tab'" @click="type = 'btc'">BTC</button>
                 <button :class="type == 'others' ? 'tab tab_active' : 'tab'" @click="type = 'others'">Others</button>
               </div>
 
