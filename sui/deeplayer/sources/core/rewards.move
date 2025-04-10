@@ -19,10 +19,12 @@ module deeplayer::rewards_module {
 
     // Errors
     const E_PAUSED: u64 = 1;
-   
+    const E_AMOUNT_ZERO: u64 = 2;
+
     public struct RewardsSubmission<phantom CoinType> has store {
         unclaimed: balance::Balance<CoinType>,
         claimed: u64,
+        allocations: table::Table<address, u64>,
         start_timestamp: u64,
         duration: u64,
     }
@@ -53,14 +55,29 @@ module deeplayer::rewards_module {
         avs: address,
         duration: u64,
         coin_rewards: coin::Coin<CoinType>,
+        claimers: vector<address>,
+        amounts: vector<u64>,
         the_clock: &clock::Clock,
         ctx: &mut TxContext
     ) {
         check_not_paused(rewards_coordinator);
+
+        assert!(vector::length(&claimers) == vector::length(&amounts), 0);
+        
+        let mut allocations = table::new<address, u64>(ctx);
+
+        let mut i = 0;
+        while (i < vector::length(&claimers)) {
+            let claimer = *vector::borrow<address>(&claimers, i);
+            let amount = *vector::borrow<u64>(&amounts, i);
+            table::add(&mut allocations, claimer, amount);
+            i = i + 1;
+        };
         
         let rewards_submission = RewardsSubmission {
             unclaimed: coin::into_balance(coin_rewards),
             claimed: 0,
+            allocations,
             start_timestamp: clock::timestamp_ms(the_clock),
             duration: duration
         };
@@ -72,31 +89,26 @@ module deeplayer::rewards_module {
 
     public entry fun claim_rewards<CoinType>(
         rewards_coordinator: &mut RewardsCoordinator,
-        delegation_manager: &DelegationManager,
-        strategy_manager: &StrategyManager,
         rewards_root: vector<u8>,
         the_clock: &clock::Clock,
         ctx: &mut TxContext
     ) {
         check_not_paused(rewards_coordinator);
 
-        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
-
-        let staker = tx_context::sender(ctx);
+        let claimer = tx_context::sender(ctx);
         let rewards_submission = bag::borrow_mut<vector<u8>, RewardsSubmission<CoinType>>(
             &mut rewards_coordinator.rewards_submissions, 
             rewards_root
         );
 
-        let total_rewards = balance::value(&rewards_submission.unclaimed) + rewards_submission.claimed;
+        let amount = table::borrow_mut(&mut rewards_submission.allocations, claimer);
+        assert!(*amount > 0, E_AMOUNT_ZERO);
 
-        // let total_shares = 0;
-        // let staker_shares = strategy_manager_module::staker_deposit_shares(
-        //     strategy_manager,
-        //     staker,
-        //     strategy_id
-        // );
-
+        let balance_withdrawn = balance::split(&mut rewards_submission.unclaimed, *amount);
+        let coin_withdrawn = coin::from_balance(balance_withdrawn, ctx);
+        transfer::public_transfer(coin_withdrawn, claimer);
+        rewards_submission.claimed = rewards_submission.claimed + *amount;
+        *amount = 0;
     }
 
     fun calc_rewards_root<CoinType>(

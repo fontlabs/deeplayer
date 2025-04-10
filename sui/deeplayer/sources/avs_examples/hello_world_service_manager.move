@@ -196,20 +196,20 @@ module deeplayer::hello_world_service_manager {
         assert!(verify, E_INVALID_SIGNATURE);
         
         // stake_registry::validate(operator);
-        // task_info.confirmations = task_info.confirmations + 1;
+        increment_task_confirmations(service_manager, task_hash);
 
         let task_response = TaskResponse {
             value: response
         };
 
         event::emit(TaskConfirmation {
-            task_hash: task_hash,
+            task_hash,
             task_response,
             operator
         });
 
         if (task_info.confirmations >= MIN_CONFIRMATIONS) {
-            // task_info.responded = true;
+            mark_as_responded(service_manager, task_hash);
 
             event::emit(TaskResponded {
                 task_hash,
@@ -277,25 +277,24 @@ module deeplayer::hello_world_service_manager {
     fun get_task_info(
         service_manager: &HelloWorldServiceManager,
         task_hash: vector<u8>
-    ): &TaskInfo {
-        table::borrow(&service_manager.task_infos, task_hash)
+    ): TaskInfo {
+        *table::borrow(&service_manager.task_infos, task_hash)
     }
 
-    fun get_task_info_mut(
+    fun increment_task_confirmations(
         service_manager: &mut HelloWorldServiceManager,
         task_hash: vector<u8>
-    ): &mut TaskInfo {
-        table::borrow_mut(&mut service_manager.task_infos, task_hash)
+    ) {
+        let mut task_info = table::borrow_mut(&mut service_manager.task_infos, task_hash);
+        task_info.confirmations = task_info.confirmations + 1;
     }
 
-    fun get_operator_weight_at_block(
-        stake_registry: address,
-        operator: address,
-        block_number: u64
-    ): u64 {
-        // Simplified weight check
-        // In real implementation, query stake registry
-        1
+    fun mark_as_responded(
+        service_manager: &mut HelloWorldServiceManager,
+        task_hash: vector<u8>
+    ) {
+        let mut task_info = table::borrow_mut(&mut service_manager.task_infos, task_hash);
+        task_info.responded = true;
     }
 
     #[test_only]

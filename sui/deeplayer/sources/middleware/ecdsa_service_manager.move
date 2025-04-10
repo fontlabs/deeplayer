@@ -58,27 +58,4 @@ module deeplayer::ecdsa_service_manager_module {
             ctx
         ) 
     }
-
-    public fun create_avs_rewards_submission<CoinType>(
-        rewards_coordinator: &mut RewardsCoordinator,
-        avs: address,
-        duration: u64,
-        coin_rewards: coin::Coin<CoinType>,
-        the_clock: &clock::Clock,
-        ctx: &mut TxContext
-    ) {
-        rewards_module::create_avs_rewards_submission<CoinType>(
-            rewards_coordinator,
-            avs,
-            duration,
-            coin_rewards,
-            the_clock,
-            ctx
-        )
-    }
-
-    public fun get_operator_weight_at_block(
-    ): u64 {
-        0
-    }
 }
