@@ -55,4 +55,17 @@ module deeplayer::lbtc {
         let coin_took = coin::take<LBTC>(&mut faucet.balance, amount, ctx);
         transfer::public_transfer(coin_took, receiver)
     }
+
+    public fun get_faucet_balance(
+        faucet: &Faucet<LBTC>,
+    ): u64 {
+        balance::value(&faucet.balance)
+    }
+
+    #[test_only]
+    public(package) fun init_for_testing(
+        ctx: &mut TxContext,
+    ) {
+        init(LBTC {}, ctx);
+    }    
 }

@@ -78,4 +78,11 @@ module deeplayer::strategy_factory_module {
     fun check_not_paused(strategy_factory: &StrategyFactory) {
         assert!(!strategy_factory.is_paused, E_PAUSED);
     }
+
+    #[test_only]
+    public(package) fun init_for_testing(
+        ctx: &mut TxContext,
+    ) {
+        init(ctx)
+    }
 }

@@ -456,12 +456,10 @@ module deeplayer::allocation_module {
         let len = vector::length(&strategy_ids);
         while (i < len) {
             let strategy_id = *vector::borrow(&strategy_ids, i);
-
             vector::push_back(
                 &mut max_magnitudes,
                 get_max_magnitude(allocation_manager, operator, strategy_id, min_block)
             );
-
             i = i + 1;
         };
         
@@ -474,18 +472,20 @@ module deeplayer::allocation_module {
         strategy_id: string::String,
         min_block: u64
     ): u64 {
-        if (!table::contains(&allocation_manager.max_magnitude_snapshots, operator) ||
-            !table::contains(table::borrow(&allocation_manager.max_magnitude_snapshots, operator), strategy_id)) {
+        if (!table::contains(&allocation_manager.max_magnitude_snapshots, operator)) {
             return WAD;
         };
-        let snapshots = table::borrow(table::borrow(&allocation_manager.max_magnitude_snapshots, operator), strategy_id);
+        let staker_snapshots = table::borrow(&allocation_manager.max_magnitude_snapshots, operator);
+        if (!table::contains(staker_snapshots, strategy_id)) {
+            return WAD;
+        };
+        let snapshots = table::borrow(staker_snapshots, strategy_id);
         if (vector::is_empty(snapshots)) {
             return WAD;
         };
-
         if (min_block == 0) {
-            let i = vector::length(snapshots) - 1;
-            return vector::borrow(snapshots, i).max_magnitude;
+            let latest_snaphot = vector::borrow(snapshots, vector::length(snapshots) - 1);
+            return latest_snaphot.max_magnitude;
         };
         
         let mut max_magnitude: u64 = WAD;
@@ -494,11 +494,9 @@ module deeplayer::allocation_module {
         let len = vector::length(snapshots);
         while (i < len) {
             let snapshot = vector::borrow(snapshots, i);
-
             if (snapshot.block_number >= min_block && snapshot.max_magnitude > max_magnitude) {
                 max_magnitude = snapshot.max_magnitude;
             };
-
             i = i + 1;
         };
 
@@ -542,5 +540,12 @@ module deeplayer::allocation_module {
         params: SlashingParams
     ): (address, string::String) {
         (params.operator, params.strategy_id)
+    }
+
+    #[test_only]
+    public(package) fun init_for_testing(
+        ctx: &mut TxContext,
+    ) {
+        init(ctx)
     }
 }

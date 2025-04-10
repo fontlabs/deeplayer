@@ -48,6 +48,7 @@ const Contract = {
 
   async depositIntoStrategy(
     sender: string,
+    operator: string,
     strategy: Coin,
     amount: bigint
   ): Promise<Transaction | null> {
@@ -66,11 +67,24 @@ const Contract = {
         tx.pure.u64(amount),
       ]);
 
+      // tx.moveCall({
+      //   target: `${this.DeepLayer}::delegation_module::delegate`,
+      //   arguments: [
+      //     tx.object(this.StrategyManager),
+      //     tx.object(this.AllocationManager),
+      //     tx.object(this.DelegationManager),
+      //     tx.pure.address(operator),
+      //     tx.object(SUI_CLOCK_OBJECT_ID),
+      //   ],
+      // });
+
       tx.moveCall({
-        target: `${this.DeepLayer}::strategy_manager_module::deposit_into_strategy`,
+        target: `${this.DeepLayer}::delegation_module::deposit_into_strategy`,
         arguments: [
           tx.object(this.StrategyFactory),
           tx.object(this.StrategyManager),
+          tx.object(this.AllocationManager),
+          tx.object(this.DelegationManager),
           tx.object(coinDesposited),
         ],
         typeArguments: [strategy.type],

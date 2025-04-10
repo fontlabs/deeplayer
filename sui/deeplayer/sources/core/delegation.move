@@ -435,6 +435,10 @@ module deeplayer::delegation_module {
         added_shares: u64,
         ctx: &mut TxContext
     ) {      
+        if (!is_delegated(delegation_manager, staker)) {
+            return;
+        };
+        
         let operator = *table::borrow(&delegation_manager.delegated_to, staker);
         let slashing_factor = allocation_module::get_max_magnitude(allocation_manager, operator, strategy_id, 0);
 
@@ -516,7 +520,7 @@ module deeplayer::delegation_module {
         let mut i = 0;
         let len = vector::length(&strategy_ids);
         while (i < len) {
-            let strategy_id  = *vector::borrow(&strategy_ids, i);
+            let strategy_id = *vector::borrow(&strategy_ids, i);
             let prev_deposit_shares = strategy_manager_module::get_staker_shares(
                 strategy_manager,
                 strategy_id,
@@ -692,7 +696,7 @@ module deeplayer::delegation_module {
             return;
         };
 
-        let mut dsf = get_deposit_scaling_factor_mut(delegation_manager, staker, strategy_id);
+        let mut dsf = get_deposit_scaling_factor_mut(delegation_manager, staker, strategy_id, ctx);
         let new_scaling_factor = slashing_lib_module::update(dsf, prev_deposit_shares, added_shares, slashing_factor);
 
         event::emit(DepositScalingFactorUpdated {
@@ -967,7 +971,7 @@ module deeplayer::delegation_module {
         shares
     }
 
-    fun get_deposit_scaling_factor(
+    fun get_deposit_scaling_factor( 
         delegation_manager: &DelegationManager,
         staker: address,
         strategy_id: string::String
@@ -979,9 +983,16 @@ module deeplayer::delegation_module {
     fun get_deposit_scaling_factor_mut(
         delegation_manager: &mut DelegationManager,
         staker: address,
-        strategy_id: string::String
+        strategy_id: string::String,
+        ctx: &mut TxContext
     ): &mut DepositScalingFactor {
+        if (!table::contains(&delegation_manager.deposit_scaling_factors, staker)) {
+            table::add(&mut delegation_manager.deposit_scaling_factors, staker, table::new<string::String, DepositScalingFactor>(ctx));
+        };
         let mut staker_factors = table::borrow_mut(&mut delegation_manager.deposit_scaling_factors, staker);
+        if (!table::contains(staker_factors, strategy_id)) {
+            table::add(staker_factors, strategy_id, slashing_lib_module::create());
+        };
         table::borrow_mut(staker_factors, strategy_id)
     }
 
@@ -1041,5 +1052,12 @@ module deeplayer::delegation_module {
 
     fun check_not_paused(delegation_manager: &DelegationManager) {
         assert!(!delegation_manager.is_paused, E_PAUSED);
+    }
+
+    #[test_only]
+    public(package) fun init_for_testing(
+        ctx: &mut TxContext,
+    ) {
+        init(ctx)
     }
 }

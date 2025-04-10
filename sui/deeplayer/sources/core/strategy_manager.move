@@ -498,4 +498,11 @@ module deeplayer::strategy_manager_module {
     ) {
         assert!(!strategy_manager.is_paused, E_PAUSED);
     }
+    
+    #[test_only]
+    public(package) fun init_for_testing(
+        ctx: &mut TxContext,
+    ) {
+        init(ctx)
+    }
 }

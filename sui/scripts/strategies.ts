@@ -1,12 +1,12 @@
 import { SUI_TYPE_ARG } from "./node_modules/@mysten/sui/src/utils/constants";
 import { Transaction } from "@mysten/sui/transactions";
-import { Addresses, client, Coins, signer } from "./shared";
+import { Contract, client, Coins, signer } from "./shared";
 
 async function deployStrategy(coinType: string) {
   const transaction = new Transaction();
   transaction.moveCall({
-    target: `${Addresses.DeepLayer}::strategy_factory_module::deploy_new_strategy`,
-    arguments: [transaction.object(Addresses.StrategyFactory)],
+    target: `${Contract.DeepLayer}::strategy_factory_module::deploy_new_strategy`,
+    arguments: [transaction.object(Contract.StrategyFactory)],
     typeArguments: [coinType],
   });
   transaction.setGasBudget(5_000_000);
@@ -22,7 +22,7 @@ async function main() {
 
   for (const coin of Coins) {
     await deployStrategy(
-      `${Addresses.DeepLayer}::${coin.module}::${coin.coinType}`
+      `${Contract.DeepLayer}::${coin.module}::${coin.coinType}`
     );
   }
 }
