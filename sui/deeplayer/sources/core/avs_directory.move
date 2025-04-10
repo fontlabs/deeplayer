@@ -54,8 +54,8 @@ module deeplayer::avs_directory_module {
         transfer::share_object(avs_directory);
     }
    
-    // Public functions
-    public entry fun cancel_salt(
+    // Package functions
+    public(package) fun cancel_salt(
         avs_directory: &mut AVSDirectory,
         salt: vector<u8>,
         ctx: &mut TxContext
@@ -74,7 +74,7 @@ module deeplayer::avs_directory_module {
         };
     }
 
-    // Packages functions
+    // Package functions
     public(package) fun update_avs_metadata_uri(
         avs: address,
         metadata_uri: string::String
@@ -166,5 +166,12 @@ module deeplayer::avs_directory_module {
             avs,
             status: OPERATOR_AVS_REG_UNREGISTERED,
         });
+    }
+
+    #[test_only]
+    public(package) fun init_for_testing(
+        ctx: &mut TxContext
+    ) {
+        init(ctx);
     }
 }

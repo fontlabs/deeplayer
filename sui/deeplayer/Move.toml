@@ -11,6 +11,7 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 [addresses]
 sui = "0x2"
 deeplayer = "0x0"
+hello_world_service_manager = "0x12"
 
 [dev-dependencies]
 

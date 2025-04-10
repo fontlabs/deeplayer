@@ -12,6 +12,8 @@ module deeplayer::hello_world_service_manager {
     use deeplayer::slasher_module;
     use deeplayer::signature_module;
     use deeplayer::ecdsa_service_manager_module;
+    use deeplayer::avs_directory_module::{AVSDirectory};
+    use deeplayer::delegation_module::{Self, DelegationManager};
 
     // Constants
     const MIN_CONFIRMATIONS: u64 = 2;
@@ -94,9 +96,46 @@ module deeplayer::hello_world_service_manager {
         };
 
         transfer::transfer(owner_cap, tx_context::sender(ctx));
+
+        ecdsa_service_manager_module::update_avs_metadata_uri(
+            @hello_world_service_manager,
+            string::utf8(b"metadata_uri")
+        );
     }
 
-    // Public functions
+    // Public entry functions
+    public entry fun register_operator(
+        avs_directory: &mut AVSDirectory,
+        delegation_manager: &DelegationManager,
+        signature: vector<u8>,
+        salt: vector<u8>,
+        expiry: u64,
+        the_clock: &clock::Clock,
+        ctx: &mut TxContext
+    ) {
+        ecdsa_service_manager_module::register_operator_to_avs(
+            avs_directory,
+            delegation_manager,
+            @hello_world_service_manager,
+            tx_context::sender(ctx),
+            signature_module::create(signature, salt, expiry),
+            the_clock,
+            ctx
+        )
+    }
+
+    public entry fun unregister_operator(
+        avs_directory: &mut AVSDirectory,
+        ctx: &mut TxContext
+    ) {
+        ecdsa_service_manager_module::deregister_operator_from_avs(
+            avs_directory,
+            @hello_world_service_manager,
+            tx_context::sender(ctx),
+            ctx
+        )
+    }
+
     public entry fun create_new_task(
         service_manager: &mut HelloWorldServiceManager,
         name: string::String,
@@ -257,5 +296,12 @@ module deeplayer::hello_world_service_manager {
         // Simplified weight check
         // In real implementation, query stake registry
         1
+    }
+
+    #[test_only]
+    public(package) fun init_for_testing(
+        ctx: &mut TxContext
+    ) {
+        init(ctx);
     }
 }

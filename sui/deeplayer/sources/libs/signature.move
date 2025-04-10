@@ -2,7 +2,7 @@
 module deeplayer::signature_module {
     use sui::clock;
     use sui::address;
-    use sui::ed25519::{ed25519_verify};
+    use sui::ed25519;
     use sui::tx_context::{Self, TxContext};
     use sui::bcs;
 
@@ -46,7 +46,7 @@ module deeplayer::signature_module {
         vector::append(&mut msg, bcs::to_bytes<u64>(&signature_with_salt_and_expiry.expiry));
 
         // verify
-        ed25519_verify(
+        ed25519::ed25519_verify(
             &signature_with_salt_and_expiry.signature, 
             &address::to_bytes(signer), 
             &msg

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-module deeplayer::strategy_module {
+module deeplayer::strategy_module {    
     use std::option;
     use std::string;
     use sui::balance::{Self, Balance};
@@ -133,9 +133,9 @@ module deeplayer::strategy_module {
         amount_to_send: u64,
         ctx: &mut TxContext
     ) {
-        let balance_sent = balance::split(&mut strategy.balance_underlying, amount_to_send);
-        let coin_sent = coin::from_balance(balance_sent, ctx);
-        transfer::public_transfer(coin_sent, recipient);
+        let balance_withdrawn = balance::split(&mut strategy.balance_underlying, amount_to_send);
+        let coin_withdrawn = coin::from_balance(balance_withdrawn, ctx);
+        transfer::public_transfer(coin_withdrawn, recipient);
     }
 
     fun emit_exchange_rate(
