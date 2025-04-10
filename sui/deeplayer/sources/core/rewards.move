@@ -21,6 +21,7 @@ module deeplayer::rewards_module {
     const E_PAUSED: u64 = 1;
     const E_AMOUNT_ZERO: u64 = 2;
 
+    // Structs
     public struct RewardsSubmission<phantom CoinType> has store {
         unclaimed: balance::Balance<CoinType>,
         claimed: u64,
@@ -34,6 +35,19 @@ module deeplayer::rewards_module {
         is_paused: bool,
         rewards_submissions: bag::Bag,
         rewards_submission_claims: table::Table<vector<u8>, table::Table<address, bool>>,
+    }
+
+    // Events
+    public struct RewardsSubmissionCreated has copy, drop {
+        rewards_root: vector<u8>,
+        avs: address,
+        duration: u64
+    }
+
+    public struct RewardsSubmissionClaimed has copy, drop {
+        rewards_root: vector<u8>,
+        claimer: address,
+        amount: u64
     }
 
     fun init(
@@ -85,6 +99,12 @@ module deeplayer::rewards_module {
         let rewards_root = calc_rewards_root<CoinType>(&rewards_submission, avs);
 
         bag::add(&mut rewards_coordinator.rewards_submissions, rewards_root, rewards_submission);
+
+        event::emit(RewardsSubmissionCreated {
+            rewards_root,
+            avs,
+            duration
+        });
     }
 
     public entry fun claim_rewards<CoinType>(
@@ -96,7 +116,7 @@ module deeplayer::rewards_module {
         check_not_paused(rewards_coordinator);
 
         let claimer = tx_context::sender(ctx);
-        let rewards_submission = bag::borrow_mut<vector<u8>, RewardsSubmission<CoinType>>(
+        let mut rewards_submission = bag::borrow_mut<vector<u8>, RewardsSubmission<CoinType>>(
             &mut rewards_coordinator.rewards_submissions, 
             rewards_root
         );
@@ -108,9 +128,17 @@ module deeplayer::rewards_module {
         let coin_withdrawn = coin::from_balance(balance_withdrawn, ctx);
         transfer::public_transfer(coin_withdrawn, claimer);
         rewards_submission.claimed = rewards_submission.claimed + *amount;
+
+        event::emit(RewardsSubmissionClaimed {
+            rewards_root,
+            claimer,
+            amount: *amount
+        });
+
         *amount = 0;
     }
 
+    // Helper functions
     fun calc_rewards_root<CoinType>(
         rewards_submission: &RewardsSubmission<CoinType>,
         avs: address
@@ -127,4 +155,20 @@ module deeplayer::rewards_module {
     ) {
         assert!(!rewards_coordinator.is_paused, E_PAUSED)
     }
+
+    // View functions
+    public fun get_allocation_amount<CoinType>(
+        rewards_coordinator: &RewardsCoordinator,
+        rewards_root: vector<u8>,
+        claimer: address
+    ): u64 {
+        if (!bag::contains<vector<u8>>(&rewards_coordinator.rewards_submissions, rewards_root)) {
+            return 0;
+        };
+        let rewards_submission = bag::borrow<vector<u8>, RewardsSubmission<CoinType>>(&rewards_coordinator.rewards_submissions, rewards_root);
+        if (!table::contains(&rewards_submission.allocations, claimer)) {
+            return 0;
+        };
+        *table::borrow(&rewards_submission.allocations, claimer)
+    } 
 }
