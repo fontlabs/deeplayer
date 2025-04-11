@@ -164,6 +164,10 @@ tbody tr {
     border-bottom: 1px solid transparent;
 }
 
+tbody tr:hover {
+    background: var(--bg-lighter);
+}
+
 tbody td {
     color: var(--tx-semi);
 }

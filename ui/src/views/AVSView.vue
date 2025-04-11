@@ -151,6 +151,10 @@ const balanceStore = useBalanceStore();
     cursor: pointer;
 }
 
+.service:hover {
+    border: 1px solid var(--bg-lightest);
+}
+
 .service_info {
     display: flex;
     align-items: center;

@@ -31,6 +31,12 @@ const route = useRoute();
                         <button :class="route.name?.toString().startsWith('avs') ? 'tab tab_active' : 'tab'">AVS
                         </button>
                     </RouterLink>
+
+                    <a href="https://x.com/deep_layr" target="_blank" rel="noopener noreferrer">
+                        <button class="tab">
+                            <img src="/images/x.png" alt="X">
+                        </button>
+                    </a>
                 </div>
 
                 <div class="actions">
@@ -75,7 +81,7 @@ header {
 .tabs {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 16px;
 }
 
 .tab {
@@ -87,6 +93,15 @@ header {
     border: 1px solid transparent;
     cursor: pointer;
     font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.tab img {
+    width: 16px;
+    height: 16px;
 }
 
 .tab_active {
