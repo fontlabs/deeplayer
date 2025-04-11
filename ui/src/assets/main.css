@@ -24,8 +24,8 @@ section {
 }
 
 .app_width {
-  width: 1440px;
-  max-width: calc(100% - 40px);
+  width: 100%;
+  max-width: calc(100% - 60px);
 }
 
 .empty {
@@ -63,7 +63,7 @@ input[type="number"] {
   color: var(--tx-normal) !important;
   border-radius: 8px !important;
   font-size: 16px !important;
-  height: 45px !important;
+  height: 40px !important;
   min-width: 120px !important;
 }
 
@@ -75,6 +75,6 @@ input[type="number"] {
   color: var(--tx-normal) !important;
   border-radius: 8px !important;
   font-size: 16px !important;
-  height: 45px !important;
+  height: 40px !important;
   min-width: 120px !important;
 }

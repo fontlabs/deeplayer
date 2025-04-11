@@ -159,7 +159,7 @@ onMounted(() => {
 
 <style scoped>
 .restake {
-  padding: 20px 0;
+  padding: 30px 0;
 }
 
 .title h3 {
@@ -299,6 +299,7 @@ thead td {
 tbody tr {
   height: 60px;
   cursor: pointer;
+  border-bottom: 1px solid transparent;
 }
 
 tbody td {

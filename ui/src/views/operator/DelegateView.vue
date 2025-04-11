@@ -285,9 +285,9 @@ onMounted(() => {
 
 <style scoped>
 .delegate {
-    padding: 20px 0;
+    padding: 30px 0;
     display: grid;
-    grid-template-columns: 1fr 500px;
+    grid-template-columns: 1fr 0.6fr;
     gap: 20px;
     justify-content: center;
 }

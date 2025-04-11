@@ -179,8 +179,6 @@ onMounted(() => {
                             </div>
                         </div>
 
-                        <div class="label" v-if="!isDelegated">Select an operator</div>
-
                         <button class="restake" @click="restake">Restake</button>
                     </div>
                 </div>
@@ -265,9 +263,9 @@ onMounted(() => {
 
 <style scoped>
 .stake {
-    padding: 20px 0;
+    padding: 30px 0;
     display: grid;
-    grid-template-columns: 600px 400px;
+    grid-template-columns: 1000px 700px;
     gap: 20px;
     justify-content: center;
 }

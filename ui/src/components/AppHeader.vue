@@ -11,7 +11,7 @@ const route = useRoute();
             <header>
                 <div class="logo">
                     <RouterLink to="/">
-                        <h3>Deep<span>Layer</span></h3>
+                        <h3>Deep<span>Layr.</span></h3>
                     </RouterLink>
                 </div>
 
@@ -46,26 +46,18 @@ section {
     position: sticky;
     top: 0;
     z-index: 99;
-    background: var(--bg);
-    border-image-source: linear-gradient(to left, transparent, var(--bg-light), transparent);
-    border-left: 0;
-    border-right: 0;
-    border-top: 0;
-    border-bottom: 1px solid;
-    border-image-slice: 1;
+    background: var(--dark);
+    border-bottom: 1px solid var(--bg-lightest);
 }
 
 header {
-    height: 90px;
-    display: flex;
+    height: 70px;
+    display: grid;
     align-items: center;
-    justify-content: space-between;
+    grid-template-columns: auto 1fr auto;
+    gap: 40px;
 }
 
-.logo,
-.actions {
-    width: 200px;
-}
 
 .logo h3 {
     font-size: 24px;
@@ -93,7 +85,7 @@ header {
     background: none;
     border: 1px solid transparent;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 16px;
 }
 
 .tab_active {
