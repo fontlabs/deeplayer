@@ -132,56 +132,45 @@ const getOperator = (address: string) => {
 const getIsDelegated = async () => {
     if (!currentAccount.value) return;
 
-    const transaction = await Contract.isDelegated(
-        currentAccount.value.address
-    );
-    if (!transaction) return;
-
-    const results = await Clients.suiClient.devInspectTransactionBlock({
-        transactionBlock: transaction,
+    const { results } = await Clients.suiClient.devInspectTransactionBlock({
+        transactionBlock: Contract.isDelegated(
+            currentAccount.value.address
+        ),
         sender: currentAccount.value.address,
     });
-    console.log(results, "results");
-
     if (!results) return;
-    // if (!results[0].returnValues) return;
+    if (!results[0].returnValues) return;
 
-    // isDelegated.value = bcs
-    //     .bool()
-    //     .parse(Uint8Array.from(results[0].returnValues[0][0]));
-
-    // console.log(isDelegated.value, "isDelegated");
-
+    isDelegated.value = bcs
+        .bool()
+        .parse(Uint8Array.from(results[0].returnValues[0][0]));
 };
 
 const getIsDelegatedTo = async () => {
     if (!currentAccount.value) return;
     if (!operator.value) return;
 
-    const transaction = await Contract.isDelegatedTo(
-        currentAccount.value.address,
-        operator.value.address
-    );
-    if (!transaction) return;
+    if (!currentAccount.value) return;
 
-    const results = await Clients.suiClient.devInspectTransactionBlock({
-        transactionBlock: transaction,
+    const { results } = await Clients.suiClient.devInspectTransactionBlock({
+        transactionBlock: Contract.isDelegatedTo(
+            currentAccount.value.address,
+            operator.value.address
+        ),
         sender: currentAccount.value.address,
     });
     if (!results) return;
-    console.log(results, "results");
+    if (!results[0].returnValues) return;
 
-    // if (!results[0].returnValues) return;
-
-    // isDelegatedTo.value = bcs
-    //     .bool()
-    //     .parse(Uint8Array.from(results[0].returnValues[0][0]));
+    isDelegatedTo.value = bcs
+        .bool()
+        .parse(Uint8Array.from(results[0].returnValues[0][0]));
 };
 
 onMounted(() => {
     getOperator(route.params.id.toString());
     getIsDelegated();
-    // getIsDelegatedTo();
+    getIsDelegatedTo();
 });
 </script>
 

@@ -190,7 +190,7 @@ const Contract = {
 
     tx.moveCall({
       target: `${this.DeepLayer}::delegation_module::is_delegated`,
-      arguments: [tx.object(this.DelegationManager), tx.pure.string(staker)],
+      arguments: [tx.object(this.DelegationManager), tx.pure.address(staker)],
     });
 
     return tx;
@@ -203,8 +203,8 @@ const Contract = {
       target: `${this.DeepLayer}::delegation_module::is_delegated_to`,
       arguments: [
         tx.object(this.DelegationManager),
-        tx.pure.string(staker),
-        tx.pure.string(operator),
+        tx.pure.address(staker),
+        tx.pure.address(operator),
       ],
     });
 

@@ -46,10 +46,9 @@ watch(search, () => {
   getStrategies();
 });
 
-
-
 onMounted(() => {
-  balanceStore.getBalances(currentAccount.value?.address);
+  if (!currentAccount.value) return;
+  balanceStore.getBalances(currentAccount.value.address);
 });
 </script>
 
@@ -69,8 +68,8 @@ onMounted(() => {
               <p class="value">0 <span>SUI</span></p>
 
               <div class="actions">
-                <button>Unstake</button>
-                <button>Withdraw</button>
+                <RouterLink to="/operator/0x1"><button>Unstake</button></RouterLink>
+                <RouterLink to="/withdraws"><button>Withdraws</button></RouterLink>
               </div>
             </div>
 
@@ -79,7 +78,7 @@ onMounted(() => {
               <p class="value">0 <span>SUI</span></p>
 
               <div class="actions">
-                <button>Claim Rewards</button>
+                <RouterLink to="/rewards"><button>Claim Rewards</button></RouterLink>
               </div>
             </div>
           </div>
@@ -201,6 +200,11 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   gap: 10px;
+}
+
+.stat .actions a {
+  width: 100%;
+  display: block;
 }
 
 .stat .actions button {

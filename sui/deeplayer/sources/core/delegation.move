@@ -766,6 +766,11 @@ module deeplayer::delegation_module {
         table::contains(&delegation_manager.delegated_to, staker) && *table::borrow(&delegation_manager.delegated_to, staker) == operator
     }
 
+    public fun get_delegated_to(delegation_manager: &DelegationManager, staker: address): address {
+        assert!(is_delegated(delegation_manager, staker), E_NOT_ACTIVELY_DELEGATED);
+        *table::borrow(&delegation_manager.delegated_to, staker)
+    }
+
     public fun is_operator(delegation_manager: &DelegationManager, operator: address): bool {
         operator != @0x0 && 
         table::contains(&delegation_manager.delegated_to, operator) && 

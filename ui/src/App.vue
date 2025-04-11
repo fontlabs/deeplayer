@@ -10,7 +10,8 @@ const balanceStore = useBalanceStore();
 const { currentAccount } = useCurrentAccount();
 
 watch(currentAccount, () => {
-  balanceStore.getBalances(currentAccount.value?.address);
+  if (!currentAccount.value) return;
+  balanceStore.getBalances(currentAccount.value.address);
 });
 </script>
 
