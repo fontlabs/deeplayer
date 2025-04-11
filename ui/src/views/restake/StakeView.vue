@@ -265,7 +265,7 @@ onMounted(() => {
 .stake {
     padding: 30px 0;
     display: grid;
-    grid-template-columns: 1000px 700px;
+    grid-template-columns: 800px 600px;
     gap: 20px;
     justify-content: center;
 }
