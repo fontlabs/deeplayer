@@ -14,7 +14,7 @@ module deeplayer::deeplayer_tests {
     use sui::tx_context;
 
     use deeplayer::math_module;
-    use deeplayer::coin_utils_module;
+    use deeplayer::utils_module;
     use deeplayer::lbtc::{Self, LBTC, Faucet};
     use deeplayer::strategy_module::{Self, Strategy};
     use deeplayer::strategy_factory_module::{Self, StrategyFactory};
@@ -109,7 +109,7 @@ module deeplayer::deeplayer_tests {
 
         ts::next_tx(&mut scenario, staker);
 
-        let strategy_id = coin_utils_module::get_strategy_id<LBTC>();
+        let strategy_id = utils_module::get_strategy_id<LBTC>();
         let coin_deposited = ts::take_from_sender<Coin<LBTC>>(&scenario);
         let strategy_ids = vector[strategy_id];
 

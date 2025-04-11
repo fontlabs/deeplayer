@@ -18,4 +18,11 @@ module deeplayer::deeplayer_module {
 
         transfer::transfer(cap, tx_context::sender(ctx));
     }
+
+    #[test_only]
+    public(package) fun init_for_testing(
+        ctx: &mut TxContext
+    ) {
+        init(ctx);
+    }
 }

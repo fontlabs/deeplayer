@@ -11,7 +11,7 @@ module deeplayer::rewards_module {
     use sui::bag::{Self, Bag};
     use sui::table;
 
-    use deeplayer::coin_utils_module;
+    use deeplayer::utils_module;
     use deeplayer::strategy_module::{Strategy};
     use deeplayer::delegation_module::{Self, DelegationManager};
     use deeplayer::strategy_manager_module::{Self, StrategyManager};
@@ -171,4 +171,11 @@ module deeplayer::rewards_module {
         };
         *table::borrow(&rewards_submission.allocations, claimer)
     } 
+
+    #[test_only]
+    public(package) fun init_for_testing(
+        ctx: &mut TxContext
+    ) {
+        init(ctx);
+    }
 }

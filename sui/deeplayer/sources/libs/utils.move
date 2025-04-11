@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-module deeplayer::coin_utils_module {
+module deeplayer::utils_module {
     use std::string;
     use std::ascii::into_bytes;
     use std::type_name::{get, TypeName, into_string};

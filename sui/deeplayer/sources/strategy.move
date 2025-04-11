@@ -10,7 +10,7 @@ module deeplayer::strategy_module {
     use sui::tx_context::{Self, TxContext};
 
     use deeplayer::math_module;
-    use deeplayer::coin_utils_module;
+    use deeplayer::utils_module;
 
     // Constants
     const WAD: u64 = 1_000_000_000;
@@ -70,7 +70,7 @@ module deeplayer::strategy_module {
         let total_shares = prior_total_shares + new_shares;
         assert!(total_shares <= MAX_TOTAL_SHARES, E_TOTAL_SHARES_EXCEEDS_MAX);
 
-        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+        let strategy_id = utils_module::get_strategy_id<CoinType>();
         emit_exchange_rate(strategy_id, virtual_coin_balance, total_shares + SHARES_OFFSET);
 
         new_shares
@@ -92,7 +92,7 @@ module deeplayer::strategy_module {
         let virtual_coin_balance = balance::value(&strategy.balance_underlying) + BALANCE_OFFSET;
         let amount_to_send = math_module::mul_div(virtual_coin_balance, amount_shares, virtual_prior_total_shares);
 
-        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+        let strategy_id = utils_module::get_strategy_id<CoinType>();
         emit_exchange_rate(strategy_id, virtual_coin_balance - amount_to_send, total_shares + SHARES_OFFSET);
 
         after_withdrawal(strategy, recipient, amount_to_send, ctx);

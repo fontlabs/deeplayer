@@ -14,7 +14,7 @@ module deeplayer::delegation_module {
     use sui::bcs;
 
     use deeplayer::math_module;
-    use deeplayer::coin_utils_module;
+    use deeplayer::utils_module;
     use deeplayer::slashing_lib_module::{Self, DepositScalingFactor};
     use deeplayer::strategy_module::{Strategy};
     use deeplayer::strategy_factory_module::{Self, StrategyFactory};
@@ -165,7 +165,7 @@ module deeplayer::delegation_module {
         check_not_paused(delegation_manager);
 
         let staker = tx_context::sender(ctx);
-        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+        let strategy_id = utils_module::get_strategy_id<CoinType>();
 
         let (prev_deposit_shares, added_shares) = strategy_manager_module::deposit<CoinType>(
             strategy_factory,
@@ -466,7 +466,7 @@ module deeplayer::delegation_module {
         new_max_magnitude: u64,
         ctx: &mut TxContext
     ) {     
-        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+        let strategy_id = utils_module::get_strategy_id<CoinType>();
 
         let operator_shares = get_operator_shares_impl(
             delegation_manager, 

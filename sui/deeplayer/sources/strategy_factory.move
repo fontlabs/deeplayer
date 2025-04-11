@@ -11,7 +11,7 @@ module deeplayer::strategy_factory_module {
     use sui::bag::{Self, Bag};
     use sui::tx_context::{Self, TxContext};
 
-    use deeplayer::coin_utils_module;
+    use deeplayer::utils_module;
     use deeplayer::strategy_module::{Self, Strategy};
 
     // Error codes
@@ -50,7 +50,7 @@ module deeplayer::strategy_factory_module {
     ) {
         check_not_paused(strategy_factory);
 
-        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+        let strategy_id = utils_module::get_strategy_id<CoinType>();
 
         assert!(!table::contains(&strategy_factory.is_blacklisted, strategy_id), E_BLACKLISTED_TOKEN);
         assert!(!bag::contains(&strategy_factory.deployed_strategies, strategy_id), E_STRATEGY_ALREADY_EXISTS);
@@ -63,14 +63,14 @@ module deeplayer::strategy_factory_module {
     public fun get_strategy<CoinType>(
         strategy_factory: &StrategyFactory
     ): &Strategy<CoinType> {
-        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+        let strategy_id = utils_module::get_strategy_id<CoinType>();
         bag::borrow<string::String, Strategy<CoinType>>(&strategy_factory.deployed_strategies, strategy_id)
     }
 
     public fun get_strategy_mut<CoinType>(
         strategy_factory: &mut StrategyFactory
     ): &mut Strategy<CoinType> {
-        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+        let strategy_id = utils_module::get_strategy_id<CoinType>();
         bag::borrow_mut<string::String, Strategy<CoinType>>(&mut strategy_factory.deployed_strategies, strategy_id)
     }
 

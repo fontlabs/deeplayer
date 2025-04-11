@@ -11,7 +11,7 @@ module deeplayer::strategy_manager_module {
     use sui::table;
     use sui::tx_context::{Self, TxContext};
 
-    use deeplayer::coin_utils_module;
+    use deeplayer::utils_module;
     use deeplayer::deeplayer_module::{DeepLayerCap};
     use deeplayer::strategy_module::{Self, Strategy};
     use deeplayer::strategy_factory_module::{Self, StrategyFactory};
@@ -90,7 +90,7 @@ module deeplayer::strategy_manager_module {
     ): (u64, u64) {
         check_not_paused(strategy_manager);
 
-        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+        let strategy_id = utils_module::get_strategy_id<CoinType>();
 
         let prior_total_shares = if (table::contains(&strategy_manager.total_shares, strategy_id)) {
             *table::borrow(&strategy_manager.total_shares, strategy_id)
@@ -133,7 +133,7 @@ module deeplayer::strategy_manager_module {
         ctx: &mut TxContext
     ) {        
         let strategy = strategy_factory_module::get_strategy_mut<CoinType>(strategy_factory);
-        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+        let strategy_id = utils_module::get_strategy_id<CoinType>();
 
         let shares_burned = burn_shares_impl(strategy_manager, strategy_id);
 
@@ -169,7 +169,7 @@ module deeplayer::strategy_manager_module {
         shares: u64,
         ctx: &mut TxContext
     ) {
-        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+        let strategy_id = utils_module::get_strategy_id<CoinType>();
 
         let prior_total_shares = get_total_shares(strategy_manager, strategy_id);
         let total_shares = decrease_total_shares(strategy_manager, strategy_id, shares);
@@ -189,7 +189,7 @@ module deeplayer::strategy_manager_module {
         strategy: &mut Strategy<CoinType>,
         added_shares_to_burn: u64
     ) {
-        let strategy_id = coin_utils_module::get_strategy_id<CoinType>();
+        let strategy_id = utils_module::get_strategy_id<CoinType>();
         
         increase_burnable_shares_impl(strategy_manager, strategy_id, added_shares_to_burn);
 
