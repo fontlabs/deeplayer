@@ -2,12 +2,12 @@
 import ChevronLeftIcon from '@/components/icons/ChevronLeftIcon.vue';
 import OutIcon from '@/components/icons/OutIcon.vue';
 import { notify } from '@/reactives/notify';
-import { findStrategy, operators } from '@/scripts/constant';
+import { findStrategy } from '@/scripts/constant';
 
 import { Contract } from '@/scripts/contract';
 import { Converter } from '@/scripts/converter';
 import { Clients } from '@/scripts/sui';
-import type { Coin, Operator } from '@/scripts/types';
+import type { Coin } from '@/scripts/types';
 import { useBalanceStore } from '@/stores/balance';
 import { useSignAndExecuteTransactionBlock, useCurrentAccount } from 'sui-dapp-kit-vue';
 import { onMounted, ref } from 'vue';
@@ -18,18 +18,9 @@ const balanceStore = useBalanceStore();
 const { currentAccount } = useCurrentAccount();
 const amount = ref<number | undefined>(undefined);
 const strategy = ref<Coin | undefined>(undefined);
-const operator = ref<Operator | undefined>(undefined);
 const isDelegated = ref<boolean>(false);
 
 const { signAndExecuteTransactionBlock } = useSignAndExecuteTransactionBlock();
-
-const operatorChanged = (event: Event) => {
-    const target = event.target as HTMLSelectElement;
-    const selectedOperator = operators.find(operator => operator.address === target.value);
-    if (selectedOperator) {
-        operator.value = selectedOperator;
-    }
-};
 
 const setAmount = (div: number = 1) => {
     if (!strategy.value) return;
@@ -72,7 +63,7 @@ const mint = async () => {
 
         await Clients.suiClient.waitForTransaction({ digest });
 
-        balanceStore.getCoinBalances();
+        balanceStore.getCoinBalances(currentAccount.value.address);
 
         notify.push({
             title: "Minting successful!",
@@ -91,7 +82,6 @@ const mint = async () => {
 };
 
 const restake = async () => {
-    if (!operator.value) return;
     if (!strategy.value) return;
 
     if (!currentAccount.value) {
@@ -116,7 +106,6 @@ const restake = async () => {
 
         const transactionBlock = await Contract.depositIntoStrategy(
             currentAccount.value.address,
-            operator.value.address,
             strategy.value,
             value
         );
@@ -128,7 +117,7 @@ const restake = async () => {
 
         await Clients.suiClient.waitForTransaction({ digest });
 
-        balanceStore.getBalances();
+        balanceStore.getBalances(currentAccount.value.address);
 
         notify.push({
             title: "Restaking successful!",
@@ -150,7 +139,6 @@ const restake = async () => {
 
 const getStrategy = (type: string) => {
     strategy.value = findStrategy(type);
-    operator.value = operators[0];
 };
 
 onMounted(() => {
@@ -193,12 +181,6 @@ onMounted(() => {
 
                         <div class="label" v-if="!isDelegated">Select an operator</div>
 
-                        <select v-if="!isDelegated">
-                            <option v-for="operator in operators" :value="operator.address">
-                                {{ operator.name }}
-                            </option>
-                        </select>
-
                         <button class="restake" @click="restake">Restake</button>
                     </div>
                 </div>
@@ -218,11 +200,11 @@ onMounted(() => {
                         </div>
 
                         <div class="stat">
-                            <p>Restaked Balance</p>
+                            <p>Value Restaked</p>
                             <div class="value">
                                 <p>
                                     {{ Converter.toMoney(
-                                        Converter.fromSUI(balanceStore.restaked_balances[strategy.type],
+                                        Converter.fromSUI(balanceStore.value_restaked[strategy.type],
                                             strategy.decimals)
                                     ) }}
                                 </p>
@@ -336,20 +318,6 @@ onMounted(() => {
     outline: none;
     border: none;
     color: var(--tx-normal);
-}
-
-select {
-    width: 100%;
-    margin-top: 10px;
-    padding: 0 10px;
-    height: 36px;
-    border-radius: 8px;
-    border: none;
-    outline: none;
-    font-size: 14px;
-    color: var(--tx-semi);
-    cursor: pointer;
-    background: var(--bg-lighter);
 }
 
 .helper {

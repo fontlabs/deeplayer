@@ -762,6 +762,10 @@ module deeplayer::delegation_module {
         table::contains(&delegation_manager.delegated_to, staker)
     }
 
+    public fun is_delegated_to(delegation_manager: &DelegationManager, staker: address, operator: address): bool {
+        table::contains(&delegation_manager.delegated_to, staker) && *table::borrow(&delegation_manager.delegated_to, staker) == operator
+    }
+
     public fun is_operator(delegation_manager: &DelegationManager, operator: address): bool {
         operator != @0x0 && 
         table::contains(&delegation_manager.delegated_to, operator) && 
@@ -790,25 +794,6 @@ module deeplayer::delegation_module {
         while (i < len) {
             let strategy_id = *vector::borrow(&strategy_ids, i);
             vector::push_back(&mut shares, get_operator_shares_impl(delegation_manager, operator, strategy_id));
-            i = i + 1;
-        };
-
-        shares
-    }
-
-    public fun get_all_operator_shares(
-        delegation_manager: &DelegationManager,
-        operators: vector<address>,
-        strategy_ids: vector<string::String>
-    ): vector<vector<u64>> {
-        let mut shares = vector::empty<vector<u64>>();
-
-        let mut i = 0;
-        let len = vector::length(&operators);
-        while (i < len) {
-            let operator = *vector::borrow(&operators, i);
-            let operator_shares = get_operator_shares(delegation_manager, operator, strategy_ids);
-            vector::push_back(&mut shares, operator_shares);
             i = i + 1;
         };
 

@@ -24,11 +24,11 @@ const getStrategies = () => {
       else if (type.value == 'lst') {
         return search.value ?
           s.name.toLowerCase().includes(search.value.toLowerCase()) && s.isLst :
-          (s.isLst || s.isNative);
+          s.isLst;
       } else if (type.value == 'btc') {
         return search.value ?
           s.name.toLowerCase().includes(search.value.toLowerCase()) && s.isBtc :
-          (s.isBtc || s.isNative);
+          s.isBtc;
       } else {
         return search.value ?
           s.name.toLowerCase().includes(search.value.toLowerCase()) && !(s.isLst || s.isNative || s.isBtc) :
@@ -107,7 +107,7 @@ onMounted(() => {
                 <tr>
                   <td>Name</td>
                   <td>Wallet Balance</td>
-                  <td>Restaked Balance</td>
+                  <td>Value Restaked</td>
                   <td>Total Value Restaked</td>
                   <td>Actions</td>
                 </tr>
@@ -126,7 +126,7 @@ onMounted(() => {
                     }}
                   </td>
                   <td>
-                    {{ Converter.toMoney(Converter.fromSUI(balanceStore.restaked_balances[strategy.type],
+                    {{ Converter.toMoney(Converter.fromSUI(balanceStore.value_restaked[strategy.type],
                       strategy.decimals))
                     }}
                   </td>

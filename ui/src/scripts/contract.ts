@@ -6,25 +6,21 @@ import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 
 const Contract = {
   DeepLayer:
-    "0xf52e10b4ceb96a57686e6df13661e1873e1b02ad566e560c106ad70ff2c4bdfe",
+    "0x75883ea1ba2ba25d4ea8ef3fef720511af880936549e2927ddb8422db88691c7",
   AVSDirectory:
-    "0x6c657abead0a727adb3b95e8b27dc66e6c774041f2ae1fb1f95a30c8a0fd8e32",
+    "0x61dd4a12b50ec2494c422007c97efb1e200baf351b390db766fbf82fec677e1b",
   StrategyFactory:
-    "0xcc628e6a4e73cbe20974dfd6d66d778e3521f39f805ac03a63b59302aa469703",
+    "0x148fb2188709766a2fd51c46e572ff42d9cdb512fcc891fb8c3267de3c724ee4",
   StrategyManager:
-    "0x66164e4c4d7aa32c9ce81e02a5c335c21160f850890b929b77e84786f711d986",
+    "0x8395b1e9e6fcb845930ab3d97a807971cdc90cc1d5fff2bf45953ec750b98ca4",
   RewardsCoordinator:
-    "0xea669ed0d6ebb63a64da296dd1253d32056d2addab322d407edc29099cfaf573",
+    "0x40a8d600650b6f3947df6fe04f0018bb57f34efef311404403120e67d50904d1",
   AllocationManager:
-    "0x026a05d8070e624cb815e48235b51b389e5d25912d6cc4027acd3c37e77fa7f6",
+    "0xf0dfffde1b7200b0d93de58aa4a4973cf1fc8a8e0eedebcad503f15c6d66dfe3",
   DelegationManager:
-    "0x0a54afc3604e4c22a9127b0e687d3860df93eeb3723461d5be247acfdcfd0719",
+    "0x34dc47d3fee8a06103a130ff686d45ed54f56cc9aab4521001d979d45ada1b91",
 
-  async mintCoin(
-    sender: string,
-    strategy: Coin,
-    amount: bigint
-  ): Promise<Transaction | null> {
+  mintCoin(sender: string, strategy: Coin, amount: bigint): Transaction | null {
     try {
       const tx = new Transaction();
 
@@ -48,7 +44,6 @@ const Contract = {
 
   async depositIntoStrategy(
     sender: string,
-    operator: string,
     strategy: Coin,
     amount: bigint
   ): Promise<Transaction | null> {
@@ -66,17 +61,6 @@ const Contract = {
       const [coinDesposited] = tx.splitCoins(destinationInCoin, [
         tx.pure.u64(amount),
       ]);
-
-      // tx.moveCall({
-      //   target: `${this.DeepLayer}::delegation_module::delegate`,
-      //   arguments: [
-      //     tx.object(this.StrategyManager),
-      //     tx.object(this.AllocationManager),
-      //     tx.object(this.DelegationManager),
-      //     tx.pure.address(operator),
-      //     tx.object(SUI_CLOCK_OBJECT_ID),
-      //   ],
-      // });
 
       tx.moveCall({
         target: `${this.DeepLayer}::delegation_module::deposit_into_strategy`,
@@ -96,135 +80,146 @@ const Contract = {
     }
   },
 
-  async delegate(operator: string): Promise<Transaction | null> {
-    try {
-      const tx = new Transaction();
+  delegate(operator: string): Transaction {
+    const tx = new Transaction();
 
-      tx.moveCall({
-        target: `${this.DeepLayer}::delegation_module::delegate`,
-        arguments: [
-          tx.object(this.StrategyManager),
-          tx.object(this.AllocationManager),
-          tx.object(this.DelegationManager),
-          tx.pure.address(operator),
-          tx.object(SUI_CLOCK_OBJECT_ID),
-        ],
-      });
+    tx.moveCall({
+      target: `${this.DeepLayer}::delegation_module::delegate`,
+      arguments: [
+        tx.object(this.StrategyManager),
+        tx.object(this.AllocationManager),
+        tx.object(this.DelegationManager),
+        tx.pure.address(operator),
+        tx.object(SUI_CLOCK_OBJECT_ID),
+      ],
+    });
 
-      return tx;
-    } catch (error) {
-      return null;
-    }
+    return tx;
   },
 
-  async getTotalShares(
-    strategyId: string,
-    staker: string
-  ): Promise<Transaction | null> {
-    try {
-      const tx = new Transaction();
+  undelegate(staker: string): Transaction {
+    const tx = new Transaction();
 
-      tx.moveCall({
-        target: `${this.DeepLayer}::strategy_manager_module::get_total_shares`,
-        arguments: [
-          tx.object(this.StrategyManager),
-          tx.pure.string(strategyId),
-        ],
-      });
+    tx.moveCall({
+      target: `${this.DeepLayer}::delegation_module::undelegate`,
+      arguments: [
+        tx.object(this.StrategyManager),
+        tx.object(this.AllocationManager),
+        tx.object(this.DelegationManager),
+        tx.pure.address(staker),
+      ],
+    });
 
-      return tx;
-    } catch (error) {
-      return null;
-    }
+    return tx;
   },
 
-  async getStakerShares(
-    strategyId: string,
-    staker: string
-  ): Promise<Transaction | null> {
-    try {
-      const tx = new Transaction();
+  redelegate(new_operator: string): Transaction {
+    const tx = new Transaction();
 
-      tx.moveCall({
-        target: `${this.DeepLayer}::strategy_manager_module::get_staker_shares`,
-        arguments: [
-          tx.object(this.StrategyManager),
-          tx.pure.string(strategyId),
-          tx.pure.address(staker),
-        ],
-      });
+    tx.moveCall({
+      target: `${this.DeepLayer}::delegation_module::redelegate`,
+      arguments: [
+        tx.object(this.StrategyManager),
+        tx.object(this.AllocationManager),
+        tx.object(this.DelegationManager),
+        tx.pure.address(new_operator),
+        tx.object(SUI_CLOCK_OBJECT_ID),
+      ],
+    });
 
-      return tx;
-    } catch (error) {
-      return null;
-    }
+    return tx;
   },
 
-  async getAllStakerShares(
-    strategyIds: string[],
-    staker: string
-  ): Promise<Transaction | null> {
-    try {
-      const tx = new Transaction();
+  getAllTotalShares(strategyIds: string[]): Transaction {
+    const tx = new Transaction();
 
-      tx.moveCall({
-        target: `${this.DeepLayer}::strategy_manager_module::get_all_staker_shares`,
-        arguments: [
-          tx.object(this.StrategyManager),
-          tx.pure(bcs.vector(bcs.String).serialize(strategyIds)),
-          tx.pure.address(staker),
-        ],
-      });
+    tx.moveCall({
+      target: `${this.DeepLayer}::strategy_manager_module::get_all_total_shares`,
+      arguments: [
+        tx.object(this.StrategyManager),
+        tx.pure(bcs.vector(bcs.String).serialize(strategyIds)),
+      ],
+    });
 
-      return tx;
-    } catch (error) {
-      return null;
-    }
+    return tx;
   },
 
-  async getDepositShares(staker: string): Promise<Transaction | null> {
-    try {
-      const tx = new Transaction();
+  getStakerShares(strategyId: string, staker: string): Transaction {
+    const tx = new Transaction();
 
-      tx.moveCall({
-        target: `${this.DeepLayer}::strategy_manager_module::deposit_shares`,
-        arguments: [tx.object(this.StrategyManager), tx.pure.string(staker)],
-      });
+    tx.moveCall({
+      target: `${this.DeepLayer}::strategy_manager_module::get_staker_shares`,
+      arguments: [
+        tx.object(this.StrategyManager),
+        tx.pure.string(strategyId),
+        tx.pure.address(staker),
+      ],
+    });
 
-      return tx;
-    } catch (error) {
-      return null;
-    }
+    return tx;
   },
 
-  async isDelegated(staker: string): Promise<Transaction | null> {
-    try {
-      const tx = new Transaction();
+  getAllStakerShares(strategyIds: string[], staker: string): Transaction {
+    const tx = new Transaction();
 
-      tx.moveCall({
-        target: `${this.DeepLayer}::delegation_module::is_delegated`,
-        arguments: [tx.object(this.DelegationManager), tx.pure.string(staker)],
-      });
+    tx.moveCall({
+      target: `${this.DeepLayer}::strategy_manager_module::get_all_staker_shares`,
+      arguments: [
+        tx.object(this.StrategyManager),
+        tx.pure(bcs.vector(bcs.String).serialize(strategyIds)),
+        tx.pure.address(staker),
+      ],
+    });
 
-      return tx;
-    } catch (error) {
-      return null;
-    }
+    return tx;
   },
 
-  async isOperator(account: string): Promise<Transaction | null> {
-    try {
-      const tx = new Transaction();
+  getDepositShares(staker: string): Transaction {
+    const tx = new Transaction();
 
-      tx.moveCall({
-        target: `${this.DeepLayer}::delegation_module::is_operator`,
-        arguments: [tx.object(this.DelegationManager), tx.pure.string(account)],
-      });
+    tx.moveCall({
+      target: `${this.DeepLayer}::strategy_manager_module::deposit_shares`,
+      arguments: [tx.object(this.StrategyManager), tx.pure.string(staker)],
+    });
 
-      return tx;
-    } catch (error) {
-      return null;
-    }
+    return tx;
+  },
+
+  isDelegated(staker: string): Transaction {
+    const tx = new Transaction();
+
+    tx.moveCall({
+      target: `${this.DeepLayer}::delegation_module::is_delegated`,
+      arguments: [tx.object(this.DelegationManager), tx.pure.string(staker)],
+    });
+
+    return tx;
+  },
+
+  isDelegatedTo(staker: string, operator: string): Transaction {
+    const tx = new Transaction();
+
+    tx.moveCall({
+      target: `${this.DeepLayer}::delegation_module::is_delegated_to`,
+      arguments: [
+        tx.object(this.DelegationManager),
+        tx.pure.string(staker),
+        tx.pure.string(operator),
+      ],
+    });
+
+    return tx;
+  },
+
+  isOperator(account: string): Transaction {
+    const tx = new Transaction();
+
+    tx.moveCall({
+      target: `${this.DeepLayer}::delegation_module::is_operator`,
+      arguments: [tx.object(this.DelegationManager), tx.pure.string(account)],
+    });
+
+    return tx;
   },
 };
 

@@ -20,6 +20,7 @@ module deeplayer::rewards_module {
     // Errors
     const E_PAUSED: u64 = 1;
     const E_AMOUNT_ZERO: u64 = 2;
+    const E_TIMESTAMP_EXPIRED: u64 = 3;
 
     // Structs
     public struct RewardsSubmission<phantom CoinType> has store {
@@ -73,7 +74,7 @@ module deeplayer::rewards_module {
         amounts: vector<u64>,
         the_clock: &clock::Clock,
         ctx: &mut TxContext
-    ) {
+    ): vector<u8> {
         check_not_paused(rewards_coordinator);
 
         assert!(vector::length(&claimers) == vector::length(&amounts), 0);
@@ -105,6 +106,8 @@ module deeplayer::rewards_module {
             avs,
             duration
         });
+
+        rewards_root
     }
 
     public entry fun claim_rewards<CoinType>(
@@ -120,6 +123,8 @@ module deeplayer::rewards_module {
             &mut rewards_coordinator.rewards_submissions, 
             rewards_root
         );
+
+        assert!(clock::timestamp_ms(the_clock) < rewards_submission.start_timestamp + rewards_submission.duration, E_TIMESTAMP_EXPIRED);
 
         let amount = table::borrow_mut(&mut rewards_submission.allocations, claimer);
         assert!(*amount > 0, E_AMOUNT_ZERO);

@@ -22,7 +22,7 @@ const setAmount = (div: number = 1) => {
     if (!strategy.value) return;
 
     const bal = Converter.fromSUI(
-        balanceStore.restaked_balances[strategy.value.type],
+        balanceStore.value_restaked[strategy.value.type],
         strategy.value.decimals
     );
     if (bal === undefined) return;
@@ -83,7 +83,7 @@ onMounted(() => {
                             <input type="number" v-model="amount" placeholder="0.00">
                             <div class="helper">
                                 <p> {{ Converter.toMoney(
-                                    Converter.fromSUI(balanceStore.restaked_balances[strategy.type],
+                                    Converter.fromSUI(balanceStore.value_restaked[strategy.type],
                                         strategy.decimals)
                                 ) }} {{ strategy.symbol }}</p>
                                 <div class="buttons">
@@ -101,11 +101,11 @@ onMounted(() => {
                 <div class="stake_info">
                     <div class="stats">
                         <div class="stat">
-                            <p>Restaked Balance</p>
+                            <p>Value Restaked</p>
                             <div class="value">
                                 <p>
                                     {{ Converter.toMoney(
-                                        Converter.fromSUI(balanceStore.restaked_balances[strategy.type],
+                                        Converter.fromSUI(balanceStore.value_restaked[strategy.type],
                                             strategy.decimals)
                                     ) }}
                                 </p>

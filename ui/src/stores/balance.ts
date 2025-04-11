@@ -11,7 +11,7 @@ export const useBalanceStore = defineStore("balance", {
   state: () => ({
     // restake
     balances: {} as { [key: string]: bigint },
-    restaked_balances: {} as { [key: string]: bigint },
+    value_restaked: {} as { [key: string]: bigint },
     total_value_restaked: {} as { [key: string]: bigint },
 
     // operator
@@ -26,38 +26,32 @@ export const useBalanceStore = defineStore("balance", {
     total_num_stakers: {} as { [key: string]: number },
   }),
   actions: {
-    getBalances(owner?: string) {
+    getBalances(owner: string) {
       this.getCoinBalances(owner);
-      this.getRestakedBalances(owner);
-      this.getTotalValueRestaked();
+      this.getValueRestaked(owner);
+      this.getTotalValueRestaked(owner);
     },
 
-    getOperatorBalances(owner?: string) {
-      this.getTotalRestakedSUI();
-      this.getYourShares();
-      this.getTotalShares();
-      this.getAVSSecured();
+    getOperatorBalances(owner: string) {
+      this.getOperatorShares(owner);
+      this.getAVSSecured(owner);
     },
 
-    getAVSBalance(owner?: string) {
-      this.getSUIStaked();
-      this.getTotalNumOperators();
-      this.getTotalNumStakers();
+    getAVSBalance(owner: string) {
+      this.getTotalAVSValueRestaked(owner);
+      this.getTotalNumOperators(owner);
+      this.getTotalNumStakers(owner);
     },
 
-    async getCoinBalances(owner?: string) {
-      if (!owner) return;
-
+    async getCoinBalances(owner: string) {
       this.balances = await CoinAPI.getCoinsBalance(
         owner,
         strategies.map((strategy) => strategy.type)
       );
     },
 
-    async getRestakedBalances(owner?: string) {
-      if (!owner) return;
-
-      const transaction = await Contract.getAllStakerShares(
+    async getValueRestaked(owner: string) {
+      const transaction = Contract.getAllStakerShares(
         strategies.map((strategy) =>
           strategy.type
             .replace(
@@ -68,7 +62,6 @@ export const useBalanceStore = defineStore("balance", {
         ),
         owner
       );
-      if (!transaction) return;
 
       const { results } = await Clients.suiClient.devInspectTransactionBlock({
         transactionBlock: transaction,
@@ -77,31 +70,53 @@ export const useBalanceStore = defineStore("balance", {
       if (!results) return;
       if (!results[0].returnValues) return;
 
-      const restaked_balances = bcs
+      const value_restaked = bcs
         .vector(bcs.U64)
         .parse(Uint8Array.from(results[0].returnValues[0][0]));
 
       strategies.forEach((strategy, index) => {
-        this.restaked_balances[strategy.type] = BigInt(
-          restaked_balances[index]
+        this.value_restaked[strategy.type] = BigInt(value_restaked[index]);
+      });
+    },
+
+    async getTotalValueRestaked(owner: string) {
+      const transaction = Contract.getAllTotalShares(
+        strategies.map((strategy) =>
+          strategy.type
+            .replace(
+              SUI_TYPE_ARG,
+              "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI"
+            )
+            .replace("0x", "")
+        )
+      );
+
+      const { results } = await Clients.suiClient.devInspectTransactionBlock({
+        transactionBlock: transaction,
+        sender: owner,
+      });
+      if (!results) return;
+      if (!results[0].returnValues) return;
+
+      const total_value_restaked = bcs
+        .vector(bcs.U64)
+        .parse(Uint8Array.from(results[0].returnValues[0][0]));
+
+      strategies.forEach((strategy, index) => {
+        this.total_value_restaked[strategy.type] = BigInt(
+          total_value_restaked[index]
         );
       });
     },
 
-    async getTotalValueRestaked() {},
+    async getOperatorShares(owner: string) {},
 
-    async getTotalRestakedSUI() {},
+    async getAVSSecured(owner: string) {},
 
-    async getYourShares() {},
+    async getTotalAVSValueRestaked(owner: string) {},
 
-    async getTotalShares() {},
+    async getTotalNumOperators(owner: string) {},
 
-    async getAVSSecured() {},
-
-    async getSUIStaked() {},
-
-    async getTotalNumOperators() {},
-
-    async getTotalNumStakers() {},
+    async getTotalNumStakers(owner: string) {},
   },
 });

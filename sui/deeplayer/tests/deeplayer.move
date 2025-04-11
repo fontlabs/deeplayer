@@ -22,6 +22,7 @@ module deeplayer::deeplayer_tests {
     use deeplayer::allocation_module::{Self, AllocationManager};
     use deeplayer::delegation_module::{Self, DelegationManager};
     use deeplayer::avs_directory_module::{Self, AVSDirectory};
+    use deeplayer::rewards_module::{Self, RewardsCoordinator, RewardsSubmission};
 
     use deeplayer::hello_world_service_manager::{Self, HelloWorldServiceManager};
 
@@ -81,14 +82,12 @@ module deeplayer::deeplayer_tests {
 
         let amount = 100_000;
         lbtc::mint(&mut faucet, amount, staker, ts::ctx(&mut scenario));
-        ts::next_tx(&mut scenario, admin);
         
         // Verify staker got the coins
+        ts::next_tx(&mut scenario, admin);
         let coin = ts::take_from_address<Coin<LBTC>>(&scenario, staker);
         assert!(coin::value(&coin) == amount, 2);
         ts::return_to_address(staker, coin);
-
-        ts::next_tx(&mut scenario, admin);
         
         // Verify faucet balance was decreased
         let faucet_balance = lbtc::get_faucet_balance(&faucet);
@@ -178,7 +177,7 @@ module deeplayer::deeplayer_tests {
         // ========== REDELEGATE ========== //
         ts::next_tx(&mut scenario, staker);
         
-        clock::increment_for_testing(&mut the_clock, 10000);
+        clock::increment_for_testing(&mut the_clock, 10_000);
 
         let withdrawal_roots = delegation_module::redelegate(
             &mut strategy_manager,
@@ -238,6 +237,111 @@ module deeplayer::deeplayer_tests {
         ts::return_shared(faucet);
         ts::return_shared(avs_directory);
         ts::return_shared(hello_world_service_manager);
+        ts::return_to_sender(&scenario, treasury_cap);
+        ts::end(scenario);
+    }
+
+    #[test]
+    fun reward_claiming() {
+        let mut scenario = ts::begin(@0x123);
+        let admin = @0x1;
+        let staker = @0x2;
+        let operator = @0x3;
+
+        // ========== INIT ========== //
+        ts::next_tx(&mut scenario, admin);
+
+        let mut the_clock = clock::create_for_testing(ts::ctx(&mut scenario));
+        clock::set_for_testing(&mut the_clock, 98_749_028);
+
+        lbtc::init_for_testing(ts::ctx(&mut scenario));
+        ts::next_tx(&mut scenario, admin);
+
+        rewards_module::init_for_testing(ts::ctx(&mut scenario));
+        ts::next_tx(&mut scenario, admin);
+
+        // ========== TAKE OBJECTS ========== //
+
+        let mut treasury_cap = ts::take_from_sender<TreasuryCap<LBTC>>(&scenario);
+        let mut faucet = ts::take_shared<Faucet<LBTC>>(&scenario);
+        let mut rewards_coordinator = ts::take_shared<RewardsCoordinator>(&scenario);
+
+        // ========== CREATE COIN ========== //
+        ts::next_tx(&mut scenario, admin);
+
+        lbtc::init_supply(&mut treasury_cap, &mut faucet, ts::ctx(&mut scenario));
+        
+        // ========== MINT COIN ========== //
+        ts::next_tx(&mut scenario, admin);
+
+        let amount = 100_000 + 150_000;
+        lbtc::mint(&mut faucet, amount, admin, ts::ctx(&mut scenario));
+        
+        // Verify admin got the coins
+        ts::next_tx(&mut scenario, admin);
+        let coin = ts::take_from_address<Coin<LBTC>>(&scenario, admin);
+        assert!(coin::value(&coin) == amount, 2);
+        ts::return_to_address(admin, coin);
+
+        // ========== CREATE REWARD SUBMISSION ========== //
+        ts::next_tx(&mut scenario, admin);
+
+        let coin_rewards = ts::take_from_sender<Coin<LBTC>>(&scenario);
+
+        let rewards_root = rewards_module::create_avs_rewards_submission<LBTC>(
+            &mut rewards_coordinator, 
+            @hello_world_service_manager,
+            10_000, // duration,
+            coin_rewards,
+            vector[staker, operator], // claimers
+            vector[100_000, 150_000], // amounts
+            &the_clock,
+            ts::ctx(&mut scenario)
+        );
+
+        // ========== CLAIM REWARDS ========== //
+        ts::next_tx(&mut scenario, staker);
+
+        let amount = rewards_module::get_allocation_amount<LBTC>(
+            &rewards_coordinator, 
+            rewards_root,
+            staker
+        );
+
+        assert!(amount == 100_000, 2);
+
+        rewards_module::claim_rewards<LBTC>(
+            &mut rewards_coordinator, 
+            rewards_root,
+            &the_clock,
+            ts::ctx(&mut scenario)
+        );
+
+        ts::next_tx(&mut scenario, operator);
+
+        let amount2 = rewards_module::get_allocation_amount<LBTC>(
+            &rewards_coordinator, 
+            rewards_root,
+            operator
+        );
+
+        assert!(amount2 == 150_000, 2);
+
+        clock::increment_for_testing(&mut the_clock, 999);
+
+        rewards_module::claim_rewards<LBTC>(
+            &mut rewards_coordinator, 
+            rewards_root,
+            &the_clock,
+            ts::ctx(&mut scenario)
+        );
+
+        // ========== RETURN/CLOSE OBJECTS ========== //
+        ts::next_tx(&mut scenario, admin);
+
+        clock::destroy_for_testing(the_clock);
+        ts::return_shared(faucet);
+        ts::return_shared(rewards_coordinator);
         ts::return_to_sender(&scenario, treasury_cap);
         ts::end(scenario);
     }
