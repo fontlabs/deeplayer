@@ -34,6 +34,7 @@ const route = useRoute();
                 </div>
 
                 <div class="actions">
+                    <button class="ai">Ask AI</button>
                     <ConnectButton />
                 </div>
             </header>
@@ -97,5 +98,30 @@ header {
 .actions {
     display: flex;
     justify-content: flex-end;
+    gap: 20px;
+}
+
+.ai {
+    color: var(--tx-normal);
+    padding: 14px 20px;
+    border-radius: 14px;
+    font-size: 16px;
+    border: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    cursor: pointer;
+    box-shadow: rgba(255, 255, 255, 0.1) -3px -3px 9px inset, rgba(255, 255, 255, 0.15) 0 3px 9px inset, rgba(255, 255, 255, 0.6) 0 1px 1px inset, rgba(0, 0, 0, 0.3) 0 -8px 36px inset, rgba(255, 255, 255, 0.6) 0 1px 5px inset, rgba(0, 0, 0, 0.2) 2px 19px 31px;
+    background-color: var(--accent-green);
+    background-image: radial-gradient(93% 87% at 87% 89%, rgba(0, 0, 0, .23) 0, transparent 86.18%), radial-gradient(66% 66% at 26% 20%, rgba(255, 255, 255, .55) 0, rgba(255, 255, 255, 0) 69.79%, rgba(255, 255, 255, 0) 100%);
+    transition: all 150ms ease-in-out;
+}
+
+.ai:hover {
+    filter: brightness(1.05);
+}
+
+.ai:active {
+    transform: scale(.95);
 }
 </style>
