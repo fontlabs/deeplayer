@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router';
 import { useCurrentAccount } from 'sui-dapp-kit-vue';
 import type { Coin } from '@/scripts/types';
 import { useBalanceStore } from '@/stores/balance';
+import AdvertPop from '@/components/AdvertPop.vue';
 
 const router = useRouter();
 const balanceStore = useBalanceStore();
@@ -83,6 +84,8 @@ onMounted(() => {
             </div>
           </div>
         </div>
+
+        <AdvertPop />
 
         <div class="coins">
           <div class="title">
