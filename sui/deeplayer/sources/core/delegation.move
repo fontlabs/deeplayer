@@ -847,13 +847,6 @@ module deeplayer::delegation_module {
         (withdrawable_shares, deposit_shares)
     }
 
-    public fun queued_withdrawals(
-        delegation_manager: &DelegationManager,
-        withdrawal_root: vector<u8>
-    ): Withdrawal {
-        *table::borrow(&delegation_manager.queued_withdrawals, withdrawal_root)
-    }
-
     public fun get_queued_withdrawal(
         delegation_manager: &DelegationManager,
         allocation_manager: &AllocationManager,
