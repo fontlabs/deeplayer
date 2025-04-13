@@ -35,9 +35,9 @@ onMounted(() => {
         <div class="app_width">
             <header>
                 <div class="logo">
-                    <RouterLink to="/">
-                        <h3>Deep<span>Layr.</span></h3>
-                    </RouterLink>
+                    <p>Nebula</p>
+                    <p>|</p>
+                    <h3>Deep<span>Layr.</span></h3>
                 </div>
 
                 <div class="tabs">
@@ -75,6 +75,17 @@ header {
     gap: 40px;
 }
 
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo p {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--tx-dimmed);
+}
 
 .logo h3 {
     font-size: 24px;

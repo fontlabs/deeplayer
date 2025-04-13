@@ -6,7 +6,7 @@ import { parseUnits } from "viem";
 
 const TokenModule = buildModule("TokenModule", (m) => {
   const sui = m.contract("Token", ["SUI", "SUI", 9], { id: "Token_SUI" });
-  const lbtc = m.contract("Token", ["Liquid Bitcoin", "LBTC", 8], {
+  const lbtc = m.contract("Token", ["Liquid Bitcoin", "LBTC", 9], {
     id: "Token_LBTC",
   });
 

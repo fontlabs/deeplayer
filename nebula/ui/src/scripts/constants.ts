@@ -14,7 +14,7 @@ export const tokens: Token[] = [
   {
     name: "Liquid Bitcoin",
     symbol: "LBTC",
-    decimals: 8,
+    decimals: 9,
     price: 94_329.42,
     address: "0xF3F9b7d82650F38795200326B6DE933f4E78965f",
     image: "/images/lbtc.png",

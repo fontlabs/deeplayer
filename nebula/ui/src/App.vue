@@ -6,18 +6,23 @@ import { Converter } from './scripts/converter';
 import { tokens } from './scripts/constants';
 import { TokenContract } from './scripts/erc20';
 import { useWalletStore } from './stores/wallet';
-import { formatUnits, parseUnits, zeroAddress } from 'viem';
+import { formatUnits, parseUnits, zeroAddress, type Hex } from 'viem';
 import AllAssets from './components/AllAssets.vue';
+import NotifyPop from './components/NotifyPop.vue';
 import type { Token } from './scripts/types';
+import { Contract } from './scripts/contract';
+import { notify } from './reactives/notify';
 
 const walletStore = useWalletStore();
 const allAssets = ref<boolean>(false);
 const minting = ref<boolean>(false);
+const approving = ref<boolean>(false);
+const bridging = ref<boolean>(false);
 
 const form = ref({
   token: tokens[0],
   amount: undefined as number | undefined,
-  receiver: undefined as string | undefined,
+  receiver: undefined as Hex | undefined,
 });
 
 const onTokenChanged = (token: Token) => {
@@ -37,13 +42,125 @@ const mint = async () => {
   );
 
   if (tx) {
+    notify.push({
+      title: 'Minted',
+      description: `Minted ${form.value.token.symbol}`,
+      category: 'success',
+      linkTitle: 'View Trx',
+      linkUrl: `${import.meta.env.VITE_EXPLORER_URL}/tx/${tx}`,
+    });
+
     getBalances();
   } else {
-
+    notify.push({
+      title: 'Mint Failed',
+      description: `Failed to mint ${form.value.token.symbol}`,
+      category: 'error'
+    });
   }
 
   minting.value = false;
 };
+
+const approve = async () => {
+  if (approving.value) return;
+  if (!walletStore.address) return;
+  if (!form.value.amount) return;
+
+  approving.value = true;
+
+  const tx = await TokenContract.approve(
+    form.value.token.address,
+    Contract.address,
+    parseUnits(form.value.amount.toString(), form.value.token.decimals),
+  );
+
+  if (tx) {
+    notify.push({
+      title: 'Approved',
+      description: `Approved ${form.value.token.symbol}`,
+      category: 'success',
+      linkTitle: 'View Trx',
+      linkUrl: `${import.meta.env.VITE_EXPLORER_URL}/tx/${tx}`,
+    });
+
+    getApprovals();
+  } else {
+    notify.push({
+      title: 'Approval Failed',
+      description: `Failed to approve ${form.value.token.symbol}`,
+      category: 'error'
+    });
+  }
+
+  approving.value = false;
+};
+
+const bridge = async () => {
+  if (bridging.value) return;
+  if (!walletStore.address) return;
+
+  if (!form.value.amount) {
+    notify.push({
+      title: 'Amount Required',
+      description: `Please enter an amount`,
+      category: 'error'
+    });
+    return;
+  }
+
+  if (!form.value.receiver) {
+    notify.push({
+      title: 'Receiver Required',
+      description: `Please enter a receiver address`,
+      category: 'error'
+    });
+    return;
+  }
+
+  bridging.value = true;
+
+  let tx: Hex | null = null;
+
+  if (form.value.token.address == zeroAddress) {
+    tx = await Contract.lockETH(
+      parseUnits(form.value.amount.toString(), form.value.token.decimals),
+      form.value.receiver,
+    );
+  } else {
+    tx = await Contract.lock(
+      form.value.token.address,
+      parseUnits(form.value.amount.toString(), form.value.token.decimals),
+      form.value.receiver,
+    );
+  }
+
+  if (tx) {
+    notify.push({
+      title: 'Bridged',
+      description: `Bridged ${form.value.token.symbol}`,
+      category: 'success',
+      linkTitle: 'View Trx',
+      linkUrl: `${import.meta.env.VITE_EXPLORER_URL}/tx/${tx}`,
+    });
+
+    form.value.amount = undefined;
+    form.value.receiver = undefined;
+
+    getBalances();
+    getApprovals();
+
+  } else {
+    notify.push({
+      title: 'Bridge Failed',
+      description: `Failed to bridge ${form.value.token.symbol}`,
+      category: 'error'
+    });
+  }
+
+  bridging.value = false;
+};
+
 const getBalances = async () => {
   if (!walletStore.address) return;
 
@@ -60,12 +177,31 @@ const getBalances = async () => {
   }
 };
 
+const getApprovals = async () => {
+  if (!walletStore.address) return;
+
+  for (let i = 0; i < tokens.length; i++) {
+    const approval = await TokenContract.getAllowance(
+      tokens[i].address,
+      walletStore.address,
+      Contract.address,
+    );
+
+    walletStore.setApproval(
+      tokens[i].address,
+      Number(formatUnits(approval, tokens[i].decimals))
+    );
+  }
+};
+
 watch(form, () => {
   getBalances();
+  getApprovals();
 });
 
 watch(walletStore, () => {
   getBalances();
+  getApprovals();
 });
 </script>
 
@@ -130,9 +266,19 @@ watch(walletStore, () => {
             </div>
           </div>
 
-          <div class="actions">
-            <button>Approve {{ form.token.symbol }}</button>
-            <button disabled>Bridge</button>
+          <div class="actions" v-if="walletStore.balances[form.token.address] < (form.amount || 0)">
+            <button disabled>Insufficient Bal</button>
+          </div>
+
+          <div class="actions" v-else>
+            <button v-if="form.token.address != zeroAddress" @click="approve"
+              :disabled="!form.amount || form.amount == 0 || walletStore.approvals[form.token.address] >= form.amount">{{
+                approving ? '•••' : 'Approve' }}</button>
+            <button v-if="form.token.address != zeroAddress" @click="bridge"
+              :disabled="!form.amount || form.amount == 0 || walletStore.approvals[form.token.address] < form.amount">
+              {{ bridging ? '•••' : 'Bridge' }}</button>
+            <button v-else @click="bridge" :disabled="!form.amount || form.amount == 0">
+              {{ bridging ? '•••' : 'Bridge' }}</button>
           </div>
         </div>
         <div class="about">
@@ -152,6 +298,7 @@ watch(walletStore, () => {
 
     <AllAssets v-if="allAssets" @change="onTokenChanged" :balances="walletStore.balances" :tokens="tokens"
       @close="allAssets = false" />
+    <NotifyPop />
   </section>
 </template>
 

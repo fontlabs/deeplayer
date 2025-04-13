@@ -30,8 +30,11 @@ const TokenContract = {
 
   async getAllowance(token: Hex, wallet: Hex, spender: Hex): Promise<bigint> {
     try {
+      console.log(token);
+
       if (token == zeroAddress)
         return BigInt(parseEther(Number.MAX_VALUE.toString()));
+
       return await readContract(config, {
         abi: erc20Abi,
         address: token,
