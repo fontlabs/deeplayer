@@ -15,7 +15,7 @@ import ChevronDownIcon from './components/icons/ChevronDownIcon.vue';
             <label>From</label>
             <div class="chain">
               <img src="/images/eth.png" alt="Ethereum">
-              <p>Sepolia</p>
+              <p>Holesky</p>
               <ChevronDownIcon />
             </div>
           </div>

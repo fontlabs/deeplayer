@@ -1,4 +1,4 @@
-import { sepolia } from "viem/chains";
+import { holesky } from "viem/chains";
 import { walletConnect } from "@wagmi/connectors";
 import { defaultWagmiConfig } from "@web3modal/wagmi";
 
@@ -9,7 +9,7 @@ const metadata = {
   icons: ["https://avatars.githubusercontent.com/u/37784886"],
 };
 
-export const chains = [sepolia];
+export const chains = [holesky];
 
 export const config = defaultWagmiConfig({
   // @ts-ignore

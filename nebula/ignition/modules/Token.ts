@@ -5,8 +5,10 @@ import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import { parseEther } from "viem";
 
 const TokenModule = buildModule("TokenModule", (m) => {
-  const sui = m.contract("Token");
-  const lbtc = m.contract("Token");
+  const sui = m.contract("Token", ["SUI", "SUI", 9], { id: "SUI" });
+  const lbtc = m.contract("Token", ["Liquid Bitcoin", "LBTC", 9], {
+    id: "LBTC",
+  });
 
   m.call(sui, "mint", [parseEther("1")], { id: "SUI" });
   m.call(lbtc, "mint", [parseEther("0.5")], { id: "LBTC" });

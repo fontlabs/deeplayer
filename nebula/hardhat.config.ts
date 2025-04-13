@@ -1,8 +1,45 @@
-import type { HardhatUserConfig } from "hardhat/config";
+import { vars } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox-viem";
 
-const config: HardhatUserConfig = {
-  solidity: "0.8.28",
-};
+const MNEMONIC = vars.get("MNEMONIC");
+const HOLESKY_API_KEY = vars.get("HOLESKY_API_KEY");
 
-export default config;
+module.exports = {
+  mocha: {
+    timeout: 100000000,
+  },
+  solidity: {
+    version: "0.8.28",
+    settings: {
+      viaIR: true,
+      optimizer: {
+        enabled: true,
+        runs: 1000,
+      },
+    },
+  },
+  networks: {
+    holesky: {
+      url: "https://ethereum-holesky-rpc.publicnode.com",
+      chainId: 17000,
+      accounts: {
+        mnemonic: MNEMONIC,
+      },
+    },
+  },
+  etherscan: {
+    apiKey: {
+      holesky: HOLESKY_API_KEY,
+    },
+    customChains: [
+      {
+        network: "holesky",
+        chainId: 17000,
+        urls: {
+          apiURL: "https://api-holesky.etherscan.io/api",
+          browserURL: "https://holesky.etherscan.io/",
+        },
+      },
+    ],
+  },
+};

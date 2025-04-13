@@ -2,7 +2,7 @@ import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 import dotenv from "dotenv";
 import type { Hex, WatchEventReturnType } from "viem";
 import { createPublicClient, http, parseAbiItem } from "viem";
-import { sepolia } from "viem/chains";
+import { holesky } from "viem/chains";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
@@ -56,7 +56,7 @@ class EventAttester {
           transaction.pure(bcs.vector(bcs.u8()).serialize(salt)),
           transaction.pure.u64(expiry),
           transaction.pure.address(event.uid),
-          transaction.pure.u64(sepolia.id),
+          transaction.pure.u64(holesky.id),
           transaction.pure.u64(event.block_number),
           transaction.pure.u64(event.amount),
           transaction.pure.u64(event.decimals),
@@ -87,7 +87,7 @@ class EventListener {
 
   async startListening(callback: EventListenerCallback) {
     const publicClient = createPublicClient({
-      chain: sepolia,
+      chain: holesky,
       transport: http(),
     });
 
