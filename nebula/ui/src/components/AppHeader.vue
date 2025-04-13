@@ -5,6 +5,7 @@ import { createWeb3Modal } from '@web3modal/wagmi/vue';
 import { useWeb3Modal } from '@web3modal/wagmi/vue';
 import { watchAccount } from '@wagmi/core';
 import { onMounted } from 'vue';
+import { Converter } from '@/scripts/converter';
 
 createWeb3Modal({
     wagmiConfig: config,
@@ -49,8 +50,7 @@ onMounted(() => {
 
                 <div class="actions">
                     <button @click="modal.open()">
-                        {{ walletStore.address ? walletStore.address.slice(0, 6) + '...' + walletStore.address.slice(-4)
-                            : 'Connect' }}
+                        {{ walletStore.address ? Converter.trimAddress(walletStore.address, 4) : 'Connect' }}
                     </button>
                 </div>
             </header>

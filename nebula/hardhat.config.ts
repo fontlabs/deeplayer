@@ -20,7 +20,7 @@ module.exports = {
   },
   networks: {
     holesky: {
-      url: "https://ethereum-holesky-rpc.publicnode.com",
+      url: "https://rpc.ankr.com/eth_holesky",
       chainId: 17000,
       accounts: {
         mnemonic: MNEMONIC,

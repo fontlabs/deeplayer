@@ -4,7 +4,7 @@ import type { Hex } from "viem";
 import { nebulaAbi } from "../abis/nebula";
 
 const Contract = {
-  address: "0x" as Hex,
+  address: "0xF42A8457851E209d95f876937f8f043b14dA23c1" as Hex,
 
   async lock(token: Hex, amount: bigint, receiver: Hex): Promise<Hex | null> {
     try {

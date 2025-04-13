@@ -1,6 +1,72 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue';
 import AppHeader from './components/AppHeader.vue';
 import ChevronDownIcon from './components/icons/ChevronDownIcon.vue';
+import { Converter } from './scripts/converter';
+import { tokens } from './scripts/constants';
+import { TokenContract } from './scripts/erc20';
+import { useWalletStore } from './stores/wallet';
+import { formatUnits, parseUnits, zeroAddress } from 'viem';
+import AllAssets from './components/AllAssets.vue';
+import type { Token } from './scripts/types';
+
+const walletStore = useWalletStore();
+const allAssets = ref<boolean>(false);
+const minting = ref<boolean>(false);
+
+const form = ref({
+  token: tokens[0],
+  amount: undefined as number | undefined,
+  receiver: undefined as string | undefined,
+});
+
+const onTokenChanged = (token: Token) => {
+  form.value.token = token;
+  allAssets.value = false;
+};
+
+const mint = async () => {
+  if (minting.value) return;
+  if (!walletStore.address) return;
+
+  minting.value = true;
+
+  const tx = await TokenContract.mint(
+    form.value.token.address,
+    parseUnits(form.value.token.faucet.toString(), form.value.token.decimals),
+  );
+
+  if (tx) {
+    getBalances();
+  } else {
+
+  }
+
+  minting.value = false;
+};
+const getBalances = async () => {
+  if (!walletStore.address) return;
+
+  for (let i = 0; i < tokens.length; i++) {
+    const balance = await TokenContract.getTokenBalance(
+      tokens[i].address,
+      walletStore.address
+    );
+
+    walletStore.setBalance(
+      tokens[i].address,
+      Number(formatUnits(balance, tokens[i].decimals))
+    );
+  }
+};
+
+watch(form, () => {
+  getBalances();
+});
+
+watch(walletStore, () => {
+  getBalances();
+});
 </script>
 
 <template>
@@ -9,53 +75,63 @@ import ChevronDownIcon from './components/icons/ChevronDownIcon.vue';
     <div class="app_width">
       <div class="app">
         <div class="form">
-          <span>Bridge</span>
+          <div class="scroll">
+            <div class="container">
+              <span>Bridge</span>
 
-          <div class="input">
-            <label>From</label>
-            <div class="chain">
-              <img src="/images/eth.png" alt="Ethereum">
-              <p>Holesky</p>
-              <ChevronDownIcon />
-            </div>
-          </div>
+              <div class="input input_disabled">
+                <label>From</label>
+                <div class="chain">
+                  <img src="/images/eth.png" alt="Ethereum">
+                  <p>Holesky</p>
+                  <ChevronDownIcon />
+                </div>
+              </div>
 
-          <div class="input">
-            <label>To</label>
-            <div class="chain">
-              <img src="/images/sui.png" alt="SUI">
-              <p>SUI</p>
-              <ChevronDownIcon />
-            </div>
-          </div>
+              <div class="input input_disabled">
+                <label>To</label>
+                <div class="chain">
+                  <img src="/images/sui.png" alt="SUI">
+                  <p>SUI</p>
+                  <ChevronDownIcon />
+                </div>
+              </div>
 
-          <div class="input">
-            <label>Asset</label>
-            <div class="chain">
-              <img src="/images/lbtc.png" alt="LBTC">
-              <p>LBTC</p>
-              <ChevronDownIcon />
-            </div>
-          </div>
+              <div class="input">
+                <label>Asset</label>
+                <div class="chain" @click="allAssets = true">
+                  <img :src="form.token.image" :alt="form.token.name">
+                  <p>{{ form.token.symbol }}</p>
+                  <ChevronDownIcon />
+                </div>
+              </div>
 
-          <div class="input2">
-            <div class="labels">
-              <label>Amount</label>
-              <div class="bal">
-                <p>Bal: 0 LBTC</p>
-                <button>Mint</button>
+              <div class="input2">
+                <div class="labels">
+                  <label>Amount</label>
+                  <div class="bal">
+                    <p>Bal: {{ Converter.toMoney(walletStore.balances[form.token.address]) }} {{ form.token.symbol }}
+                    </p>
+                    <a href="https://cloud.google.com/application/web3/faucet/ethereum/holesky" target="_blank"
+                      v-if="form.token.address == zeroAddress">
+                      <button>Request ETH</button>
+                    </a>
+                    <button v-else @click="mint">{{ minting ? '•••' : 'Mint' }}</button>
+                  </div>
+                </div>
+                <input type="number" placeholder="0.00" v-model="form.amount" />
+              </div>
+
+              <div class="input2">
+                <label>Receiver (SUI address)</label>
+                <input type="text" placeholder="0x264d28e6e657b8d099cefafc7d186f15f74b88bc76882feb31bcd81d7804ddd9"
+                  v-model="form.receiver" />
               </div>
             </div>
-            <input type="number" placeholder="0.00" />
-          </div>
-
-          <div class="input2">
-            <label>Receiver (SUI address)</label>
-            <input type="text" placeholder="0x1234567890abcdef1234567890abcdef12345678" />
           </div>
 
           <div class="actions">
-            <button>Approve</button>
+            <button>Approve {{ form.token.symbol }}</button>
             <button disabled>Bridge</button>
           </div>
         </div>
@@ -73,6 +149,9 @@ import ChevronDownIcon from './components/icons/ChevronDownIcon.vue';
         </div>
       </div>
     </div>
+
+    <AllAssets v-if="allAssets" @change="onTokenChanged" :balances="walletStore.balances" :tokens="tokens"
+      @close="allAssets = false" />
   </section>
 </template>
 
@@ -124,8 +203,14 @@ import ChevronDownIcon from './components/icons/ChevronDownIcon.vue';
   cursor: pointer;
 }
 
+.scroll {
+  height: calc(100vh - 240px);
+  overflow: auto;
+}
+
 .form {
-  padding: 40px 30px;
+  padding: 40px 30px 0 30px;
+  position: relative;
 }
 
 .form span {
@@ -138,6 +223,10 @@ import ChevronDownIcon from './components/icons/ChevronDownIcon.vue';
   align-items: center;
   justify-content: space-between;
   margin-bottom: 40px;
+}
+
+.input_disabled .chain {
+  cursor: not-allowed;
 }
 
 .input label {
@@ -173,13 +262,16 @@ import ChevronDownIcon from './components/icons/ChevronDownIcon.vue';
   cursor: pointer;
 }
 
-
 .input2 {
   width: 100%;
   display: flex;
   flex-direction: column;
   margin-bottom: 40px;
   gap: 10px;
+}
+
+.input2:last-child {
+  margin-bottom: 0;
 }
 
 .input2 label {
@@ -228,7 +320,7 @@ import ChevronDownIcon from './components/icons/ChevronDownIcon.vue';
   display: flex;
   align-items: center;
   gap: 20px;
-  margin-top: 20px;
+  padding: 20px 0;
 }
 
 .actions button {

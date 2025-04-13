@@ -1,12 +1,17 @@
 import { defineStore } from "pinia";
+import type { Hex } from "viem";
 
 export const useWalletStore = defineStore("wallet", {
   state: () => ({
-    address: null as `0x${string}` | null,
+    address: null as Hex | null,
+    balances: {} as Record<Hex, number>,
   }),
   actions: {
-    setAddress(newAddress: `0x${string}` | null) {
+    setAddress(newAddress: Hex | null) {
       this.address = newAddress;
+    },
+    setBalance(token: Hex, balance: number) {
+      this.balances[token] = balance;
     },
   },
 });

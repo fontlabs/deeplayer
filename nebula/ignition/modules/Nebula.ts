@@ -5,7 +5,7 @@ import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import { zeroAddress } from "viem";
 import TokenModule from "./Token";
 
-const DeepLayer = "";
+const DeepLayer = "0x1";
 
 const NebulaModule = buildModule("NebulaModule", (m) => {
   const nebula = m.contract("Nebula");
