@@ -1,3 +1,4 @@
+import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 import dotenv from "dotenv";
 import type { Hex, WatchEventReturnType } from "viem";
 import { createPublicClient, http, parseAbiItem } from "viem";
@@ -10,14 +11,14 @@ import { bcs } from "@mysten/sui/bcs";
 dotenv.config();
 
 const SUI_CONTRACT: Hex = "0x";
+const AVS_DIRECTORY: Hex = "0x";
 const SUI_CONTRACT_STATE: Hex = "0x";
 
 const ETHEREUM_CONTRACT: Hex = "0x";
-const ETHEREUM_START_BLOCK: bigint = BigInt(0);
 
 type EthereumMessage = {
-  id: Hex;
-  token: Hex;
+  uid: Hex;
+  coinType: string;
   decimals: bigint;
   amount: bigint;
   receiver: Hex;
@@ -27,9 +28,8 @@ type EthereumMessage = {
 interface EventListenerCallback {
   onEvent: (events: EthereumMessage[]) => void;
 }
-
-class EventSubmitter {
-  async submitEvent(event: EthereumMessage) {
+class EventAttester {
+  async attestEvent(event: EthereumMessage) {
     try {
       const client = new SuiClient({ url: getFullnodeUrl("testnet") });
 
@@ -38,37 +38,35 @@ class EventSubmitter {
       const signer = Ed25519Keypair.fromSecretKey(process.env.SECRET_KEY);
 
       const expiry = Date.now() + 30_000;
-      const salt = new TextEncoder().encode(event.id);
+      const salt = new TextEncoder().encode(event.uid);
       const expiryBytes = new TextEncoder().encode(expiry.toString());
 
       const msg = new Uint8Array([...salt, ...expiryBytes]);
       const { signature } = await signer.signPersonalMessage(msg);
 
-      let signature_with_salt_and_expiry = new TextEncoder().encode(signature);
+      let signature_bytes = new TextEncoder().encode(signature);
 
       const transaction = new Transaction();
       transaction.moveCall({
-        target: `${SUI_CONTRACT}::zk_bridge_module::submit`,
+        target: `${SUI_CONTRACT}::nebula::attest`,
         arguments: [
           transaction.object(SUI_CONTRACT_STATE),
-          transaction.pure(
-            bcs.vector(bcs.u8()).serialize(signature_with_salt_and_expiry)
-          ),
+          transaction.object(AVS_DIRECTORY),
+          transaction.pure(bcs.vector(bcs.u8()).serialize(signature_bytes)),
           transaction.pure(bcs.vector(bcs.u8()).serialize(salt)),
           transaction.pure.u64(expiry),
-          transaction.pure.address(event.id),
-          transaction.pure.address(event.token),
-          transaction.pure.u64(event.decimals),
-          transaction.pure.u64(event.amount),
-          transaction.pure.address(event.receiver),
+          transaction.pure.address(event.uid),
+          transaction.pure.u64(sepolia.id),
           transaction.pure.u64(event.block_number),
+          transaction.pure.u64(event.amount),
+          transaction.pure.u64(event.decimals),
+          transaction.pure.address(event.receiver),
+          transaction.object(SUI_CLOCK_OBJECT_ID),
         ],
-        typeArguments: [],
+        typeArguments: [event.coinType],
       });
-      transaction.setGasBudget(500_000);
-      transaction.setSender(signer.getPublicKey().toSuiAddress());
-
-      await client.signAndExecuteTransaction({
+      transaction.setGasBudget(5_000_000);
+      const { digest } = await client.signAndExecuteTransaction({
         signer,
         transaction,
       });
@@ -76,35 +74,37 @@ class EventSubmitter {
   }
 }
 
-const eventSubmitter = new EventSubmitter();
+const eventAttester = new EventAttester();
 
 const callback: EventListenerCallback = {
   onEvent(events: EthereumMessage[]) {
-    events.forEach((event) => eventSubmitter.submitEvent(event));
+    events.forEach((event) => eventAttester.attestEvent(event));
   },
 };
 
 class EventListener {
   unwatch: WatchEventReturnType | undefined = undefined;
 
-  startListening(callback: EventListenerCallback) {
+  async startListening(callback: EventListenerCallback) {
     const publicClient = createPublicClient({
       chain: sepolia,
       transport: http(),
     });
 
+    const fromBlock = await publicClient.getBlockNumber();
+
     this.unwatch = publicClient.watchEvent({
       address: ETHEREUM_CONTRACT,
-      fromBlock: ETHEREUM_START_BLOCK,
+      fromBlock,
       event: parseAbiItem(
-        "event TokenLocked(address indexed id, bytes32 token, uint256 decimals, uint256 amount, bytes32 receiver)"
+        "event TokenLocked(bytes32 indexed uid, string coinType, uint256 decimals, uint256 amount, bytes32 receiver)"
       ),
       onLogs: (events) =>
         callback.onEvent(
           events.map((event) => {
             return {
-              id: event.args.id!,
-              token: event.args.token!,
+              uid: event.args.uid!,
+              coinType: event.args.coinType!,
               decimals: event.args.decimals!,
               amount: event.args.amount!,
               receiver: event.args.receiver!,

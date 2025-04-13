@@ -168,6 +168,22 @@ module deeplayer::avs_directory_module {
         });
     }
 
+    public fun is_operator_registered(
+        avs_directory: &AVSDirectory,
+        avs: address,
+        operator: address
+    ): bool {
+        if (!table::contains(&avs_directory.avs_operator_status, avs)) {
+            return false;
+        };
+        let operator_status = table::borrow(&avs_directory.avs_operator_status, avs);
+        if (!table::contains(operator_status, operator)) {
+            return false;
+        };
+        let status = table::borrow(operator_status, operator);
+        status == OPERATOR_AVS_REG_REGISTERED
+    }
+
     #[test_only]
     public(package) fun init_for_testing(
         ctx: &mut TxContext

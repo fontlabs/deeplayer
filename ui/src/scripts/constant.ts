@@ -156,23 +156,12 @@ const operators: Operator[] = [
 
 const services: AVS[] = [
   {
-    name: "Randomizer",
-    address:
-      "0x0000000000000000000000000000000000000000000000000000000000000001",
-    description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Enim placeat harum ex rem minima error illo magni repellat excepturi rerum, voluptatibus, possimus maiores accusamus, atque totam voluptatem vitae qui sint!",
-    link: "https://sui-randomizer.netlify.app",
-    image: "/images/colors.png",
-    reward_coin: findStrategy(SUI_TYPE_ARG)!,
-    weekly_rewards: 9432930,
-  },
-  {
-    name: "SUI zkBridge",
+    name: "Nebula",
     address:
       "0x0000000000000000000000000000000000000000000000000000000000000002",
     description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Enim placeat harum ex rem minima error illo magni repellat excepturi rerum, voluptatibus, possimus maiores accusamus, atque totam voluptatem vitae qui sint!",
-    link: "https://sui-zkbridge.netlify.app",
+      "Nebula is a decentralized bridge that allows users to transfer assets between different blockchains using zero-knowledge proofs.",
+    link: "https://nebula.deeplayr.xyz",
     image: "/images/colors.png",
     reward_coin: findStrategy(SUI_TYPE_ARG)!,
     weekly_rewards: 12291230,

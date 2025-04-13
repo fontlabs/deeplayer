@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-module deeplayer::ecdsa_service_manager_module {
+module deeplayer::avs_manager_module {
     use std::string;
     use sui::event;
     use sui::object::{Self, UID};
@@ -29,7 +29,6 @@ module deeplayer::ecdsa_service_manager_module {
         avs_directory: &mut AVSDirectory,
         delegation_manager: &DelegationManager,
         avs: address,
-        operator: address,
         operator_signature: SignatureWithSaltAndExpiry,
         the_clock: &clock::Clock,
         ctx: &mut TxContext
@@ -38,7 +37,7 @@ module deeplayer::ecdsa_service_manager_module {
             avs_directory,
             delegation_manager,
             avs,
-            operator,
+            tx_context::sender(ctx),
             operator_signature,
             the_clock,
             ctx
@@ -57,5 +56,32 @@ module deeplayer::ecdsa_service_manager_module {
             operator,
             ctx
         ) 
+    }
+
+    public fun is_operator_registered(
+        avs_directory: &AVSDirectory,
+        avs: address,
+        operator: address
+    ): bool {
+        avs_directory_module::is_operator_registered(
+            avs_directory,
+            avs,
+            operator
+        )
+    }
+
+    public fun get_operator_shares(
+        delegation_manager: &DelegationManager,
+        operator: address,
+        strategy_ids: vector<string::String>
+    ): vector<u64> {
+        delegation_module::get_operator_shares(delegation_manager, operator, strategy_ids)
+    }
+
+    #[test_only]
+    public(package) fun init_for_testing(
+        ctx: &mut TxContext,
+    ) {
+        init(ctx)
     }
 }
