@@ -12,7 +12,6 @@ module deeplayer::avs_manager_module {
     use deeplayer::rewards_module::{Self, RewardsCoordinator};    
     use deeplayer::avs_directory_module::{Self, AVSDirectory};
     use deeplayer::delegation_module::{Self, DelegationManager};
-    use deeplayer::signature_module::{Self, SignatureWithSaltAndExpiry};
     
     // Public functions
     public fun update_avs_metadata_uri(
@@ -29,7 +28,7 @@ module deeplayer::avs_manager_module {
         avs_directory: &mut AVSDirectory,
         delegation_manager: &DelegationManager,
         avs: address,
-        operator_signature: SignatureWithSaltAndExpiry,
+        salt: vector<u8>,
         the_clock: &clock::Clock,
         ctx: &mut TxContext
     ) {
@@ -38,7 +37,7 @@ module deeplayer::avs_manager_module {
             delegation_manager,
             avs,
             tx_context::sender(ctx),
-            operator_signature,
+            salt,
             the_clock,
             ctx
         )
@@ -76,12 +75,5 @@ module deeplayer::avs_manager_module {
         strategy_ids: vector<string::String>
     ): vector<u64> {
         delegation_module::get_operator_shares(delegation_manager, operator, strategy_ids)
-    }
-
-    #[test_only]
-    public(package) fun init_for_testing(
-        ctx: &mut TxContext,
-    ) {
-        init(ctx)
     }
 }

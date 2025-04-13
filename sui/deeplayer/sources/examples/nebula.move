@@ -12,7 +12,6 @@ module deeplayer::nebula {
     use sui::tx_context::{Self, TxContext};
 
     use deeplayer::utils_module;
-    use deeplayer::signature_module::{Self, SignatureWithSaltAndExpiry};
     use deeplayer::avs_manager_module;  
     use deeplayer::avs_directory_module::{AVSDirectory};
     use deeplayer::delegation_module::{Self, DelegationManager};
@@ -27,6 +26,7 @@ module deeplayer::nebula {
     const E_INVALID_SIGNATURE: u64 = 3;
     const E_WRONG_SALT: u64 = 4;
 
+    // Structs
     public struct Claim has copy, store {
         source_uid: vector<u8>,
         source_chain: u64,
@@ -52,6 +52,7 @@ module deeplayer::nebula {
         id: UID
     }
 
+    // Events
     public struct ClaimAttested has copy, drop {
         claim_root: vector<u8>,
         claimed: bool,
@@ -113,22 +114,17 @@ module deeplayer::nebula {
     }
 
     public entry fun register_operator(
-        nebula: &Nebula,
         avs_directory: &mut AVSDirectory,
         delegation_manager: &DelegationManager,
-        avs: address,
-        signature: vector<u8>,
         salt: vector<u8>,
-        expiry: u64,
         the_clock: &clock::Clock,
         ctx: &mut TxContext
     ) {
-        let signature_data = signature_module::create(signature, salt, expiry);
         avs_manager_module::register_operator_to_avs(
             avs_directory,
             delegation_manager,
             @nebula,
-            signature_data,
+            salt,
             the_clock,
             ctx
         )
@@ -137,9 +133,6 @@ module deeplayer::nebula {
     public entry fun attest<CoinType>(
         nebula: &mut Nebula,
         avs_directory: &AVSDirectory,
-        signature: vector<u8>,
-        salt: vector<u8>,
-        expiry: u64,
         source_uid: vector<u8>,
         source_chain: u64,
         source_block_number: u64,
@@ -151,25 +144,12 @@ module deeplayer::nebula {
     ) {
         let operator = tx_context::sender(ctx);
 
-        assert!(salt == source_uid, E_WRONG_SALT);
-
         // Check if the operator is registered in the AVS directory
         assert!(avs_manager_module::is_operator_registered(
             avs_directory, 
             @nebula, 
             operator
         ), E_OPERATOR_REQUIREMENT_NOT_MET);
-
-        // Verify the operator signature
-        let signature_data = signature_module::create(signature, salt, expiry);
-        let verify = signature_module::verify(
-            signature_data,
-            operator,
-            the_clock,
-            ctx
-        );
-
-        assert!(verify, E_INVALID_SIGNATURE);  
 
         let claim_root = get_claim_root(source_uid, source_chain, source_block_number, amount, receiver);
 

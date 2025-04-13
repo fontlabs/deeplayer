@@ -10,7 +10,6 @@ module deeplayer::avs_directory_module {
 
     use deeplayer::strategy_manager_module::{StrategyManager};
     use deeplayer::delegation_module::{Self, DelegationManager};
-    use deeplayer::signature_module::{Self, SignatureWithSaltAndExpiry};
 
     // Constants
     const OPERATOR_AVS_REG_UNREGISTERED: u64 = 0;
@@ -90,7 +89,7 @@ module deeplayer::avs_directory_module {
         delegation_manager: &DelegationManager,
         avs: address,
         operator: address,
-        operator_signature: SignatureWithSaltAndExpiry,
+        salt: vector<u8>,
         the_clock: &clock::Clock,
         ctx: &mut TxContext
     ) {        
@@ -103,36 +102,26 @@ module deeplayer::avs_directory_module {
             table::add(operator_status, operator, OPERATOR_AVS_REG_UNREGISTERED);
         };
 
-        let status = table::borrow(operator_status, operator);
-        assert!(status != OPERATOR_AVS_REG_REGISTERED, E_OPERATOR_ALREADY_REGISTERED_TO_AVS);
+        let mut status = table::borrow_mut(operator_status, operator);
+        assert!(*status != OPERATOR_AVS_REG_REGISTERED, E_OPERATOR_ALREADY_REGISTERED_TO_AVS);
         
         // Check if salt is already spent
         if (!table::contains(&avs_directory.operator_salt_is_spent, operator)) {
             table::add(&mut avs_directory.operator_salt_is_spent, operator, table::new<vector<u8>, bool>(ctx));
         };
-        let salt = signature_module::salt(operator_signature);
         let mut operator_salt = table::borrow_mut(&mut avs_directory.operator_salt_is_spent, operator);
         if (!table::contains(operator_salt, salt)) {
             table::add(operator_salt, salt, false);
         };
 
-        let salt_is_spent = *table::borrow(operator_salt, salt);
-        assert!(!salt_is_spent, E_SALT_SPENT);
+        let mut salt_is_spent = table::borrow_mut(operator_salt, salt);
+        assert!(!*salt_is_spent, E_SALT_SPENT);
         
         let is_operator = delegation_module::is_operator(delegation_manager, operator);
         assert!(is_operator, E_OPERATOR_NOT_REGISTERED);
         
-        let verify = signature_module::verify(
-            operator_signature,
-            operator,
-            the_clock,
-            ctx
-        );
-
-        assert!(verify, E_INVALID_SIGNATURE);
-        
-        table::add(&mut avs_directory.operator_salt_is_spent, operator, table::new<vector<u8>, bool>(ctx));
-        table::add(operator_status, operator, OPERATOR_AVS_REG_REGISTERED);        
+        *status = OPERATOR_AVS_REG_REGISTERED;       
+        *salt_is_spent = true;
 
         event::emit(OperatorAVSRegistrationStatusUpdated {
             operator,

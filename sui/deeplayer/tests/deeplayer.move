@@ -23,8 +23,7 @@ module deeplayer::deeplayer_tests {
     use deeplayer::delegation_module::{Self, DelegationManager};
     use deeplayer::avs_directory_module::{Self, AVSDirectory};
     use deeplayer::rewards_module::{Self, RewardsCoordinator, RewardsSubmission};
-
-    use deeplayer::hello_world_service_manager::{Self, HelloWorldServiceManager};
+    use deeplayer::nebula::{Self, Nebula, NebulaCap, Pool, Claim};
 
     #[test]
     fun restake_lbtc() {
@@ -58,7 +57,7 @@ module deeplayer::deeplayer_tests {
         avs_directory_module::init_for_testing(ts::ctx(&mut scenario));
         ts::next_tx(&mut scenario, admin);
 
-        hello_world_service_manager::init_for_testing(ts::ctx(&mut scenario));
+        nebula::init_for_testing(ts::ctx(&mut scenario));
         ts::next_tx(&mut scenario, admin);
 
         // ========== TAKE OBJECTS ========== //
@@ -70,7 +69,9 @@ module deeplayer::deeplayer_tests {
         let mut allocation_manager = ts::take_shared<AllocationManager>(&scenario);
         let mut delegation_manager = ts::take_shared<DelegationManager>(&scenario);
         let mut avs_directory = ts::take_shared<AVSDirectory>(&scenario);
-        let mut hello_world_service_manager = ts::take_shared<HelloWorldServiceManager>(&scenario);
+        let mut nebula = ts::take_shared<Nebula>(&scenario);   
+        let mut nebula_cap = ts::take_from_sender<NebulaCap>(&scenario);
+
 
         // ========== CREATE COIN ========== //
         ts::next_tx(&mut scenario, admin);
@@ -149,59 +150,94 @@ module deeplayer::deeplayer_tests {
         delegation_module::register_as_operator(&strategy_manager, &allocation_manager, &mut delegation_manager, metadata_uri, ts::ctx(&mut scenario));
         
         // ========== REGISTER OPERATOR TO AVS ========== //  
-        // ts::next_tx(&mut scenario, operator2);
+        ts::next_tx(&mut scenario, operator);
 
-        // // Contruct signed message
-        // let expiry = clock::timestamp_ms(&the_clock) + 1_000;
-        // let salt = vector[1, 2, 3];
+        let salt = vector[0, 1];
 
-        // let mut msg = vector::empty<u8>();
-        // vector::append(&mut msg, salt);
-        // vector::append(&mut msg, bcs::to_bytes<u64>(&expiry));
-
-        // let signature = ed25519::ed25519_sign(
-        //     &msg, 
-        //     ts::ctx(&mut scenario)
-        // );
-
-        // hello_world_service_manager::register_operator(
-        //     &mut avs_directory,
-        //     &delegation_manager,
-        //     signature,
-        //     salt,
-        //     expiry,
-        //     &the_clock,
-        //     ts::ctx(&mut scenario)
-        // );
-
-        // ========== REDELEGATE ========== //
-        ts::next_tx(&mut scenario, staker);
-        
-        clock::increment_for_testing(&mut the_clock, 10_000);
-
-        let withdrawal_roots = delegation_module::redelegate(
-            &mut strategy_manager,
-            &allocation_manager, 
-            &mut delegation_manager, 
-            operator2, 
+        nebula::register_operator(
+            &mut avs_directory,
+            &delegation_manager,
+            salt,
             &the_clock,
             ts::ctx(&mut scenario)
         );
 
-        // // ========== UNDELEGATE ========== //
-        // ts::next_tx(&mut scenario, staker);
+        // ========== REGISTER OPERATOR2 TO AVS ========== //  
+        ts::next_tx(&mut scenario, operator2);
 
-        // let withdrawal_roots = delegation_module::undelegate(
-        //     &mut strategy_manager,
-        //     &allocation_manager, 
-        //     &mut delegation_manager, 
-        //     staker,
-        //     ts::ctx(&mut scenario)
-        // );
+        let salt = vector[0, 1];
 
-        // let u_operator_shares = delegation_module::get_operator_shares(&delegation_manager, operator, strategy_ids);
+        nebula::register_operator(
+            &mut avs_directory,
+            &delegation_manager,
+            salt,
+            &the_clock,
+            ts::ctx(&mut scenario)
+        );
+
+        // =========== DEPOSIT INTO NEBULA ========== //
+        ts::next_tx(&mut scenario, admin);
+
+        // Mint coins to deposit into nebula
+        let nebula_amount = 100_000;
+        lbtc::mint(&mut faucet, nebula_amount, admin, ts::ctx(&mut scenario));
         
-        // assert!(*vector::borrow(&u_operator_shares, 0) == 0, 6);
+        ts::next_tx(&mut scenario, admin);
+        let nebula_coin_deposited = ts::take_from_address<Coin<LBTC>>(&scenario, admin);
+
+        nebula::deposit<LBTC>(
+            &mut nebula,
+            &nebula_cap,
+            nebula_coin_deposited,
+            ts::ctx(&mut scenario)
+        );
+
+        // =========== ATTEST TO NEBULA EVENT ========== //
+        ts::next_tx(&mut scenario, operator);
+
+        nebula::attest<LBTC>(
+            &mut nebula,
+            &avs_directory,
+            vector[0, 2], // source_uid,
+            17000, // source_chain
+            12, // source_block_number
+            100_000, // amount
+            9, // decimals
+            staker, // receiver
+            &the_clock,
+            ts::ctx(&mut scenario)
+        );
+
+        // =========== ATTEST2 TO NEBULA EVENT ========== //
+        ts::next_tx(&mut scenario, operator2);
+
+        nebula::attest<LBTC>(
+            &mut nebula,
+            &avs_directory,
+            vector[0, 2], // source_uid,
+            17000, // source_chain
+            12, // source_block_number
+            100_000, // amount
+            9, // decimals
+            staker, // receiver
+            &the_clock,
+            ts::ctx(&mut scenario)
+        );
+
+        // ========== UNDELEGATE ========== //
+        ts::next_tx(&mut scenario, staker);
+
+        let withdrawal_roots = delegation_module::undelegate(
+            &mut strategy_manager,
+            &allocation_manager, 
+            &mut delegation_manager, 
+            staker,
+            ts::ctx(&mut scenario)
+        );
+
+        let u_operator_shares = delegation_module::get_operator_shares(&delegation_manager, operator, strategy_ids);
+        
+        assert!(*vector::borrow(&u_operator_shares, 0) == 0, 6);
 
         // Withdraw the shares
         // Increment epoch number to 100
@@ -217,7 +253,7 @@ module deeplayer::deeplayer_tests {
             &allocation_manager, 
             &mut delegation_manager, 
             *vector::borrow(&withdrawal_roots, 0),
-            false, // receive_as_coins
+            true, // receive_as_coins
             ts::ctx(&mut scenario)
         );
 
@@ -236,8 +272,9 @@ module deeplayer::deeplayer_tests {
         ts::return_shared(delegation_manager);
         ts::return_shared(faucet);
         ts::return_shared(avs_directory);
-        ts::return_shared(hello_world_service_manager);
         ts::return_to_sender(&scenario, treasury_cap);
+        ts::return_shared(nebula);
+        ts::return_to_sender(&scenario, nebula_cap);
         ts::end(scenario);
     }
 
@@ -290,7 +327,7 @@ module deeplayer::deeplayer_tests {
 
         let rewards_root = rewards_module::create_avs_rewards_submission<LBTC>(
             &mut rewards_coordinator, 
-            @hello_world_service_manager,
+            @nebula,
             10_000, // duration,
             coin_rewards,
             vector[staker, operator], // claimers
