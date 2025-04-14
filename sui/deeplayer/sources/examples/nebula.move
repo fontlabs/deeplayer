@@ -12,7 +12,7 @@ module deeplayer::nebula {
     use sui::tx_context::{Self, TxContext};
 
     use deeplayer::utils_module;
-    use deeplayer::avs_manager_module;  
+    use deeplayer::avs_manager_module::{Self, AVSManager};
     use deeplayer::avs_directory_module::{AVSDirectory};
     use deeplayer::delegation_module::{Self, DelegationManager};
 
@@ -20,7 +20,6 @@ module deeplayer::nebula {
     const MIN_ATTESTATIONS: u64 = 2;
 
     // Errors
-    const E_OPERATOR_REQUIREMENT_NOT_MET: u64 = 0;
     const E_ALREADY_CLAIMED: u64 = 1;
     const E_ALREADY_ATTESTED: u64 = 2;
     const E_INVALID_SIGNATURE: u64 = 3;
@@ -83,6 +82,23 @@ module deeplayer::nebula {
         );
     }
 
+    public fun set_required_operator_weight(
+        avs_manager: &mut AVSManager,
+        cap: &NebulaCap,
+        min_weight: u64
+    ) {
+        avs_manager_module::set_min_weight(avs_manager, @nebula, min_weight)
+    }
+
+    public fun set_quorum(
+        avs_manager: &mut AVSManager,
+        cap: &NebulaCap,
+        strategy_ids: vector<string::String>,
+        weights: vector<u64>
+    ) {
+        avs_manager_module::set_quorum(avs_manager, @nebula, strategy_ids, weights)
+    }
+
     public entry fun deposit<CoinType>(
         nebula: &mut Nebula,
         cap: &NebulaCap,
@@ -114,17 +130,17 @@ module deeplayer::nebula {
     }
 
     public entry fun register_operator(
+        avs_manager: &mut AVSManager,
         avs_directory: &mut AVSDirectory,
         delegation_manager: &DelegationManager,
-        salt: vector<u8>,
         the_clock: &clock::Clock,
         ctx: &mut TxContext
     ) {
         avs_manager_module::register_operator_to_avs(
+            avs_manager,
             avs_directory,
             delegation_manager,
             @nebula,
-            salt,
             the_clock,
             ctx
         )
@@ -132,7 +148,9 @@ module deeplayer::nebula {
 
     public entry fun attest<CoinType>(
         nebula: &mut Nebula,
+        avs_manager: &AVSManager,
         avs_directory: &AVSDirectory,
+        delegation_manager: &DelegationManager,
         source_uid: vector<u8>,
         source_chain: u64,
         source_block_number: u64,
@@ -144,12 +162,13 @@ module deeplayer::nebula {
     ) {
         let operator = tx_context::sender(ctx);
 
-        // Check if the operator is registered in the AVS directory
-        assert!(avs_manager_module::is_operator_registered(
-            avs_directory, 
-            @nebula, 
+        avs_manager_module::check_operator(
+            avs_manager,
+            avs_directory,
+            delegation_manager,
+            @nebula,
             operator
-        ), E_OPERATOR_REQUIREMENT_NOT_MET);
+        );     
 
         let claim_root = get_claim_root(source_uid, source_chain, source_block_number, amount, receiver);
 

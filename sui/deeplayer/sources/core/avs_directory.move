@@ -25,8 +25,7 @@ module deeplayer::avs_directory_module {
     // Structs
     public struct AVSDirectory has key {
         id: UID,
-        avs_operator_status: table::Table<address, table::Table<address, u64>>,
-        operator_salt_is_spent: table::Table<address, table::Table<vector<u8>, bool>>,
+        avs_operator_status: table::Table<address, table::Table<address, u64>>
     }
 
     // Events
@@ -46,31 +45,10 @@ module deeplayer::avs_directory_module {
     ) {
         let avs_directory = AVSDirectory {
             id: object::new(ctx),
-            avs_operator_status: table::new<address, table::Table<address, u64>>(ctx),
-            operator_salt_is_spent: table::new<address, table::Table<vector<u8>, bool>>(ctx),
+            avs_operator_status: table::new<address, table::Table<address, u64>>(ctx)
         };
 
         transfer::share_object(avs_directory);
-    }
-   
-    // Package functions
-    public(package) fun cancel_salt(
-        avs_directory: &mut AVSDirectory,
-        salt: vector<u8>,
-        ctx: &mut TxContext
-    ) {
-        let operator = tx_context::sender(ctx);
-
-        if (!table::contains(&avs_directory.operator_salt_is_spent, operator)) {
-            table::add(&mut avs_directory.operator_salt_is_spent, operator, table::new<vector<u8>, bool>(ctx));
-        };
-        let mut operator_salt = table::borrow_mut(&mut avs_directory.operator_salt_is_spent, operator);
-        if (!table::contains(operator_salt, salt)) {
-            table::add(operator_salt, salt, true);
-        } else {
-            let mut is_spent = table::borrow_mut(operator_salt, salt);
-            *is_spent = true;
-        };
     }
 
     // Package functions
@@ -89,7 +67,6 @@ module deeplayer::avs_directory_module {
         delegation_manager: &DelegationManager,
         avs: address,
         operator: address,
-        salt: vector<u8>,
         the_clock: &clock::Clock,
         ctx: &mut TxContext
     ) {        
@@ -104,24 +81,11 @@ module deeplayer::avs_directory_module {
 
         let mut status = table::borrow_mut(operator_status, operator);
         assert!(*status != OPERATOR_AVS_REG_REGISTERED, E_OPERATOR_ALREADY_REGISTERED_TO_AVS);
-        
-        // Check if salt is already spent
-        if (!table::contains(&avs_directory.operator_salt_is_spent, operator)) {
-            table::add(&mut avs_directory.operator_salt_is_spent, operator, table::new<vector<u8>, bool>(ctx));
-        };
-        let mut operator_salt = table::borrow_mut(&mut avs_directory.operator_salt_is_spent, operator);
-        if (!table::contains(operator_salt, salt)) {
-            table::add(operator_salt, salt, false);
-        };
-
-        let mut salt_is_spent = table::borrow_mut(operator_salt, salt);
-        assert!(!*salt_is_spent, E_SALT_SPENT);
-        
+    
         let is_operator = delegation_module::is_operator(delegation_manager, operator);
         assert!(is_operator, E_OPERATOR_NOT_REGISTERED);
         
         *status = OPERATOR_AVS_REG_REGISTERED;       
-        *salt_is_spent = true;
 
         event::emit(OperatorAVSRegistrationStatusUpdated {
             operator,

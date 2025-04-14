@@ -22,6 +22,7 @@ module deeplayer::deeplayer_tests {
     use deeplayer::allocation_module::{Self, AllocationManager};
     use deeplayer::delegation_module::{Self, DelegationManager};
     use deeplayer::avs_directory_module::{Self, AVSDirectory};
+    use deeplayer::avs_manager_module::{Self, AVSManager};
     use deeplayer::rewards_module::{Self, RewardsCoordinator, RewardsSubmission};
     use deeplayer::nebula::{Self, Nebula, NebulaCap, Pool, Claim};
 
@@ -57,6 +58,9 @@ module deeplayer::deeplayer_tests {
         avs_directory_module::init_for_testing(ts::ctx(&mut scenario));
         ts::next_tx(&mut scenario, admin);
 
+        avs_manager_module::init_for_testing(ts::ctx(&mut scenario));
+        ts::next_tx(&mut scenario, admin);
+
         nebula::init_for_testing(ts::ctx(&mut scenario));
         ts::next_tx(&mut scenario, admin);
 
@@ -69,6 +73,7 @@ module deeplayer::deeplayer_tests {
         let mut allocation_manager = ts::take_shared<AllocationManager>(&scenario);
         let mut delegation_manager = ts::take_shared<DelegationManager>(&scenario);
         let mut avs_directory = ts::take_shared<AVSDirectory>(&scenario);
+        let mut avs_manager = ts::take_shared<AVSManager>(&scenario);
         let mut nebula = ts::take_shared<Nebula>(&scenario);   
         let mut nebula_cap = ts::take_from_sender<NebulaCap>(&scenario);
 
@@ -152,12 +157,10 @@ module deeplayer::deeplayer_tests {
         // ========== REGISTER OPERATOR TO AVS ========== //  
         ts::next_tx(&mut scenario, operator);
 
-        let salt = vector[0, 1];
-
         nebula::register_operator(
+            &mut avs_manager,
             &mut avs_directory,
             &delegation_manager,
-            salt,
             &the_clock,
             ts::ctx(&mut scenario)
         );
@@ -165,12 +168,10 @@ module deeplayer::deeplayer_tests {
         // ========== REGISTER OPERATOR2 TO AVS ========== //  
         ts::next_tx(&mut scenario, operator2);
 
-        let salt = vector[0, 1];
-
         nebula::register_operator(
+            &mut avs_manager,
             &mut avs_directory,
             &delegation_manager,
-            salt,
             &the_clock,
             ts::ctx(&mut scenario)
         );
@@ -192,12 +193,30 @@ module deeplayer::deeplayer_tests {
             ts::ctx(&mut scenario)
         );
 
+        nebula::set_required_operator_weight(
+            &mut avs_manager,
+            &nebula_cap,
+            0, // min_weight
+        );
+
+        nebula::set_quorum(
+            &mut avs_manager,
+            &nebula_cap,
+            vector[utils_module::get_strategy_id<LBTC>()], // strategy_ids
+            vector[10_000] // multipliers
+        );
+
+        let operator_weight = avs_manager_module::get_operator_weight(&avs_manager, &delegation_manager, @nebula, operator);
+        debug::print(&operator_weight);
+
         // =========== ATTEST TO NEBULA EVENT ========== //
         ts::next_tx(&mut scenario, operator);
 
         nebula::attest<LBTC>(
             &mut nebula,
+            &avs_manager,
             &avs_directory,
+            &delegation_manager,
             vector[0, 2], // source_uid,
             17000, // source_chain
             12, // source_block_number
@@ -213,7 +232,9 @@ module deeplayer::deeplayer_tests {
 
         nebula::attest<LBTC>(
             &mut nebula,
+            &avs_manager,
             &avs_directory,
+            &delegation_manager,
             vector[0, 2], // source_uid,
             17000, // source_chain
             12, // source_block_number
@@ -271,6 +292,7 @@ module deeplayer::deeplayer_tests {
         ts::return_shared(allocation_manager);
         ts::return_shared(delegation_manager);
         ts::return_shared(faucet);
+        ts::return_shared(avs_manager);
         ts::return_shared(avs_directory);
         ts::return_to_sender(&scenario, treasury_cap);
         ts::return_shared(nebula);
