@@ -11,6 +11,7 @@ module deeplayer::nebula {
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
 
+    use deeplayer::math_module;
     use deeplayer::utils_module;
     use deeplayer::avs_manager_module::{Self, AVSManager};
     use deeplayer::avs_directory_module::{AVSDirectory};
@@ -148,6 +149,7 @@ module deeplayer::nebula {
 
     public entry fun attest<CoinType>(
         nebula: &mut Nebula,
+        coin_metadata: &coin::CoinMetadata<CoinType>,
         avs_manager: &AVSManager,
         avs_directory: &AVSDirectory,
         delegation_manager: &DelegationManager,
@@ -155,7 +157,7 @@ module deeplayer::nebula {
         source_chain: u64,
         source_block_number: u64,
         amount: u64,
-        decimals: u64,
+        decimals: u8,
         receiver: address,
         the_clock: &clock::Clock,
         ctx: &mut TxContext,
@@ -170,7 +172,7 @@ module deeplayer::nebula {
             operator
         );     
 
-        let claim_root = get_claim_root(source_uid, source_chain, source_block_number, amount, receiver);
+        let claim_root = get_claim_root(source_uid, source_chain, source_block_number, amount, decimals, receiver);
 
         if (!table::contains(&nebula.claims, claim_root)) {
             table::add(&mut nebula.claims, claim_root, Claim {
@@ -195,11 +197,11 @@ module deeplayer::nebula {
 
         // Check if the claim has enough attestations
         if (vector::length(&claim.attestations) >= nebula.min_attestations) {
-            claim.claimed = true;
-
             let coin_type = utils_module::get_strategy_id<CoinType>();
             let pool = bag::borrow_mut<string::String, Pool<CoinType>>(&mut nebula.pools, coin_type);
-            let balance_claimed = balance::split(&mut pool.balance_underlying, claim.amount);
+            let coin_decimals = coin::get_decimals(coin_metadata);
+            let amount_claimed = math_module::scale(amount, decimals, coin_decimals);
+            let balance_claimed = balance::split(&mut pool.balance_underlying, amount_claimed);
             let coin_claimed = coin::from_balance(balance_claimed, ctx);
             transfer::public_transfer(coin_claimed, receiver);
 
@@ -208,6 +210,8 @@ module deeplayer::nebula {
                 claimed: true,
                 attestations: vector::length(&claim.attestations)
             });
+            
+            claim.claimed = true;
         } else {
             event::emit(ClaimAttested {
                 claim_root,
@@ -231,6 +235,7 @@ module deeplayer::nebula {
         source_chain: u64,
         source_block_number: u64,
         amount: u64,
+        decimals: u8,
         receiver: address
     ): vector<u8> {
         let mut root = vector::empty<u8>();
@@ -238,6 +243,7 @@ module deeplayer::nebula {
         vector::append(&mut root, bcs::to_bytes(&source_chain));
         vector::append(&mut root, bcs::to_bytes(&source_block_number));
         vector::append(&mut root, bcs::to_bytes(&amount));
+        vector::append(&mut root, bcs::to_bytes(&decimals));
         vector::append(&mut root, bcs::to_bytes(&receiver));
         root
     }

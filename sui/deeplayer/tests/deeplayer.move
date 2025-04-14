@@ -3,7 +3,7 @@ module deeplayer::deeplayer_tests {
     use std::debug;
     use std::option;
     use sui::test_scenario as ts;
-    use sui::coin::{Self, Coin, TreasuryCap};
+    use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
     use sui::balance;
     use sui::clock;
     use std::string;
@@ -209,11 +209,15 @@ module deeplayer::deeplayer_tests {
         let operator_weight = avs_manager_module::get_operator_weight(&avs_manager, &delegation_manager, @nebula, operator);
         debug::print(&operator_weight);
 
+        ts::next_tx(&mut scenario, admin);
+        let coin_metadata = ts::take_immutable<CoinMetadata<LBTC>>(&scenario);
+
         // =========== ATTEST TO NEBULA EVENT ========== //
         ts::next_tx(&mut scenario, operator);
 
         nebula::attest<LBTC>(
             &mut nebula,
+            &coin_metadata,
             &avs_manager,
             &avs_directory,
             &delegation_manager,
@@ -232,6 +236,7 @@ module deeplayer::deeplayer_tests {
 
         nebula::attest<LBTC>(
             &mut nebula,
+            &coin_metadata,
             &avs_manager,
             &avs_directory,
             &delegation_manager,
@@ -292,6 +297,7 @@ module deeplayer::deeplayer_tests {
         ts::return_shared(allocation_manager);
         ts::return_shared(delegation_manager);
         ts::return_shared(faucet);
+        ts::return_immutable(coin_metadata);
         ts::return_shared(avs_manager);
         ts::return_shared(avs_directory);
         ts::return_to_sender(&scenario, treasury_cap);
