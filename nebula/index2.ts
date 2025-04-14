@@ -150,7 +150,7 @@ class EventListener {
       event: parseAbiItem(
         "event TokenLocked(bytes32 indexed uid, string coinType, uint256 decimals, uint256 amount, bytes32 receiver)"
       ),
-      // pollingInterval: 60_000, // 1 Min
+      pollingInterval: 60_000, // 1 Min
       onLogs: (events) => {
         console.log(events);
         callback.onEvent(
