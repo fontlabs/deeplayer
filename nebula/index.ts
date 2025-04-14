@@ -34,6 +34,8 @@ COIN_METADATA[ETH_TYPE_ARG] =
 
 const HOLESKY_NEBULA: Hex = "0xF42A8457851E209d95f876937f8f043b14dA23c1";
 
+const client = new SuiClient({ url: getFullnodeUrl("testnet") });
+
 type TokenLockedEvent = {
   uid: Hex;
   coinType: string;
@@ -51,8 +53,6 @@ class EventAttester {
     if (!process.env.SECRET_KEY) throw new Error("Invalid secret key!");
 
     try {
-      const client = new SuiClient({ url: getFullnodeUrl("testnet") });
-
       const transaction = new Transaction();
       transaction.moveCall({
         target: `${DeepLayer}::nebula::attest`,
@@ -105,6 +105,7 @@ class EventListener {
     });
 
     const fromBlock = await publicClient.getBlockNumber();
+    console.log("fromBlock", fromBlock);
 
     this.unwatch = publicClient.watchEvent({
       address: HOLESKY_NEBULA,
@@ -112,10 +113,12 @@ class EventListener {
       event: parseAbiItem(
         "event TokenLocked(bytes32 indexed uid, string coinType, uint256 decimals, uint256 amount, bytes32 receiver)"
       ),
-      pollingInterval: 60_000, // 1 Min
+      // pollingInterval: 60_000, // 1 Min
       onLogs: (events) =>
         callback.onEvent(
           events.map((event) => {
+            console.log(event);
+
             return {
               uid: event.args.uid!,
               coinType: event.args.coinType!,
@@ -136,10 +139,31 @@ class EventListener {
 
 class Registrar {
   async tryRegisterToAVS() {
+    if (!process.env.SECRET_KEY) throw new Error("Invalid secret key!");
+
     try {
+      const transaction = new Transaction();
+      transaction.moveCall({
+        target: `${DeepLayer}::nebula::register_operator`,
+        arguments: [
+          transaction.object(AVS_MANAGER),
+          transaction.object(AVS_DIRECTORY),
+          transaction.object(DELEGATION_MANAGER),
+          transaction.object(SUI_CLOCK_OBJECT_ID),
+        ],
+      });
+      transaction.setGasBudget(50_000_000);
+
+      const signer = Ed25519Keypair.fromSecretKey(process.env.SECRET_KEY);
+
+      const { digest } = await client.signAndExecuteTransaction({
+        signer,
+        transaction,
+      });
+      console.log("Transaction digest:", digest);
     } catch (error) {}
   }
 }
 
 new EventListener().startListening(callback);
-new Registrar().tryRegisterToAVS();
+// new Registrar().tryRegisterToAVS();
