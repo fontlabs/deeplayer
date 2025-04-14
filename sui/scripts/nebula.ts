@@ -47,6 +47,7 @@ async function setQuorum() {
       ),
     ],
   });
+
   transaction.setGasBudget(50_000_000);
   const { digest } = await client.signAndExecuteTransaction({
     transaction,

@@ -83,7 +83,7 @@ interface EventListenerCallback {
 }
 class EventAttester {
   async attestEvent(event: TokenLockedEvent) {
-    if (!process.env.SECRET_KEY) throw new Error("Invalid secret key!");
+    if (!process.env.SECRET_KEY_2) throw new Error("Invalid secret key!");
 
     try {
       const transaction = new Transaction();
@@ -110,7 +110,7 @@ class EventAttester {
       });
       transaction.setGasBudget(5_000_000);
 
-      const signer = Ed25519Keypair.fromSecretKey(process.env.SECRET_KEY);
+      const signer = Ed25519Keypair.fromSecretKey(process.env.SECRET_KEY_2);
 
       const { digest } = await client.signAndExecuteTransaction({
         signer,
@@ -179,7 +179,7 @@ class EventListener {
 
 class Registrar {
   async tryRegisterToAVS() {
-    if (!process.env.SECRET_KEY) throw new Error("Invalid secret key!");
+    if (!process.env.SECRET_KEY_2) throw new Error("Invalid secret key!");
 
     try {
       const transaction = new Transaction();
@@ -194,7 +194,7 @@ class Registrar {
       });
       transaction.setGasBudget(50_000_000);
 
-      const signer = Ed25519Keypair.fromSecretKey(process.env.SECRET_KEY);
+      const signer = Ed25519Keypair.fromSecretKey(process.env.SECRET_KEY_2);
 
       const { digest } = await client.signAndExecuteTransaction({
         signer,
