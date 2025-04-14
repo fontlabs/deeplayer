@@ -94,7 +94,7 @@ const Operators = [
   {
     key: process.env.SECRET_KEY_MYSTEN,
     metdata_uri: JSON.stringify({
-      name: "Mysten Labs (Unofficial)",
+      name: "Font Labs",
       about:
         "At Mysten, we are building a company that aims to address these problems (and many others) by laying the foundations for a decentralized web stack suitable for mass adoption. The drive to unlock everything that web3 enables is our north star.",
       website: "https://mystenlabs.com",
@@ -104,7 +104,7 @@ const Operators = [
   {
     key: process.env.SECRET_KEY_PYTH,
     metdata_uri: JSON.stringify({
-      name: "Pyth (Unofficial)",
+      name: "ShunLexxi",
       about:
         "Pyth is a protocol that allows market participants to publish pricing information on-chain for others to use.",
       website: "https://pyth.network",
@@ -114,7 +114,7 @@ const Operators = [
   {
     key: process.env.SECRET_KEY_GOOGLE,
     metdata_uri: JSON.stringify({
-      name: "Google (Unofficial)",
+      name: "Krypt0ne",
       about:
         "Our Web3 team at Google Cloud is dedicated to empowering the next generation of decentralized applications and services by providing developers and businesses with the essential tools, infrastructure, and knowledge to build and scale in the Web3 space.",
       website: "https://google.com",
