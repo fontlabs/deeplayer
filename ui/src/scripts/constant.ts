@@ -158,7 +158,7 @@ const services: AVS[] = [
   {
     name: "Nebula",
     address:
-      "0x0000000000000000000000000000000000000000000000000000000000000002",
+      "0x7b941196e87bbf0f0ee85717c68f49ad88ef598b81943ff4bde11dfea5e1b9a4",
     description:
       "Nebula is a decentralized bridge that allows users to transfer assets between different blockchains using zero-knowledge proofs.",
     link: "https://nebula.deeplayr.xyz",
