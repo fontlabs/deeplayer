@@ -148,9 +148,9 @@ onMounted(() => {
                                 }}
                             </td>
                             <td>
-                                {{
+                                <!-- {{
                                     Converter.toMoney(Converter.fromSUI(balanceStore.total_shares[operator.address]))
-                                }}
+                                }} -->
                             </td>
                             <td>
                                 {{
