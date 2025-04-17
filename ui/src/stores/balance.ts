@@ -1,11 +1,13 @@
 import { CoinAPI } from "@/scripts/coin";
-import { strategies } from "@/scripts/constant";
+import { operators, strategies } from "@/scripts/constant";
 import { Contract } from "@/scripts/contract";
 import { Clients } from "@/scripts/sui";
 import { bcs } from "@mysten/sui/bcs";
-import type { SuiMoveObject } from "@mysten/sui/client";
 import { SUI_TYPE_ARG } from "@mysten/sui/utils";
 import { defineStore } from "pinia";
+
+const SUI_FRAMEWORK_ADDRESS =
+  "0x0000000000000000000000000000000000000000000000000000000000000002";
 
 export const useBalanceStore = defineStore("balance", {
   state: () => ({
@@ -17,7 +19,7 @@ export const useBalanceStore = defineStore("balance", {
     // operator
     total_restaked_sui: {} as { [key: string]: bigint },
     your_shares: {} as { [key: string]: bigint },
-    total_shares: {} as { [key: string]: bigint },
+    total_shares: {} as { [key: string]: { [key: string]: bigint } },
     avs_secured: {} as { [key: string]: number },
 
     // avs
@@ -26,21 +28,23 @@ export const useBalanceStore = defineStore("balance", {
     total_num_stakers: {} as { [key: string]: number },
   }),
   actions: {
-    getBalances(owner: string) {
-      this.getCoinBalances(owner);
-      this.getValueRestaked(owner);
-      this.getTotalValueRestaked(owner);
+    getBalances(owner: string | undefined) {
+      if (owner) {
+        this.getCoinBalances(owner);
+        this.getValueRestaked(owner);
+      }
+      this.getTotalValueRestaked();
     },
 
-    getOperatorBalances(owner: string) {
-      this.getOperatorShares(owner);
-      this.getAVSSecured(owner);
+    getOperatorBalances() {
+      this.getOperatorShares();
+      this.getAVSSecured();
     },
 
-    getAVSBalance(owner: string) {
-      this.getTotalAVSValueRestaked(owner);
-      this.getTotalNumOperators(owner);
-      this.getTotalNumStakers(owner);
+    getAVSBalance() {
+      this.getTotalAVSValueRestaked();
+      this.getTotalNumOperators();
+      this.getTotalNumStakers();
     },
 
     async getCoinBalances(owner: string) {
@@ -54,10 +58,7 @@ export const useBalanceStore = defineStore("balance", {
       const transaction = Contract.getAllStakerShares(
         strategies.map((strategy) =>
           strategy.type
-            .replace(
-              SUI_TYPE_ARG,
-              "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI"
-            )
+            .replace(SUI_TYPE_ARG, `${SUI_FRAMEWORK_ADDRESS}::sui::SUI`)
             .replace("0x", "")
         ),
         owner
@@ -79,21 +80,18 @@ export const useBalanceStore = defineStore("balance", {
       });
     },
 
-    async getTotalValueRestaked(owner: string) {
+    async getTotalValueRestaked() {
       const transaction = Contract.getAllTotalShares(
         strategies.map((strategy) =>
           strategy.type
-            .replace(
-              SUI_TYPE_ARG,
-              "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI"
-            )
+            .replace(SUI_TYPE_ARG, `${SUI_FRAMEWORK_ADDRESS}::sui::SUI`)
             .replace("0x", "")
         )
       );
 
       const { results } = await Clients.suiClient.devInspectTransactionBlock({
         transactionBlock: transaction,
-        sender: owner,
+        sender: SUI_FRAMEWORK_ADDRESS,
       });
       if (!results) return;
       if (!results[0].returnValues) return;
@@ -109,14 +107,49 @@ export const useBalanceStore = defineStore("balance", {
       });
     },
 
-    async getOperatorShares(owner: string) {},
+    async getOperatorShares() {
+      for (let index = 0; index < operators.length; index++) {
+        const operator = operators[index].address;
 
-    async getAVSSecured(owner: string) {},
+        console.log(operator);
 
-    async getTotalAVSValueRestaked(owner: string) {},
+        const transaction = Contract.getOperatorShares(
+          strategies.map((strategy) =>
+            strategy.type
+              .replace(SUI_TYPE_ARG, `${SUI_FRAMEWORK_ADDRESS}::sui::SUI`)
+              .replace("0x", "")
+          ),
+          operator
+        );
 
-    async getTotalNumOperators(owner: string) {},
+        const { results } = await Clients.suiClient.devInspectTransactionBlock({
+          transactionBlock: transaction,
+          sender: SUI_FRAMEWORK_ADDRESS,
+        });
+        if (!results) return;
+        if (!results[0].returnValues) return;
 
-    async getTotalNumStakers(owner: string) {},
+        const total_shares = bcs
+          .vector(bcs.U64)
+          .parse(Uint8Array.from(results[0].returnValues[0][0]));
+
+        strategies.forEach((strategy, index) => {
+          const shares = {} as { [key: string]: bigint };
+          shares[strategy.type] = BigInt(total_shares[index]);
+          this.total_shares[operator] = {
+            ...this.total_shares[operator],
+            ...shares,
+          };
+        });
+      }
+    },
+
+    async getAVSSecured() {},
+
+    async getTotalAVSValueRestaked() {},
+
+    async getTotalNumOperators() {},
+
+    async getTotalNumStakers() {},
   },
 });

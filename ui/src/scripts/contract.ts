@@ -221,6 +221,21 @@ const Contract = {
 
     return tx;
   },
+
+  getOperatorShares(strategyIds: string[], operator: string): Transaction {
+    const tx = new Transaction();
+
+    tx.moveCall({
+      target: `${this.DeepLayer}::delegation_module::get_operator_shares`,
+      arguments: [
+        tx.object(this.DelegationManager),
+        tx.pure.address(operator),
+        tx.pure(bcs.vector(bcs.String).serialize(strategyIds)),
+      ],
+    });
+
+    return tx;
+  },
 };
 
 export { Contract };

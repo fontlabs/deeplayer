@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import ChevronLeftIcon from '@/components/icons/ChevronLeftIcon.vue';
 import OutIcon from '@/components/icons/OutIcon.vue';
-import { findService } from '@/scripts/constant';
+import { operators, findService } from '@/scripts/constant';
 import { Converter } from '@/scripts/converter';
 import type { AVS } from '@/scripts/types';
 import { useBalanceStore } from '@/stores/balance';
 import { onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute();
+const router = useRouter();
 const balanceStore = useBalanceStore();
 const service = ref<AVS | undefined>(undefined);
 
@@ -117,7 +118,48 @@ onMounted(() => {
                         </div>
                     </div>
                 </div>
+            </div>
 
+            <div class="operators">
+                <div class="title">
+                    <h3>Operators</h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <td>Operator</td>
+                            <td>Total Restaked (SUI)</td>
+                            <td>Total Shares</td>
+                            <td>AVS Secured</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="operator in operators" :key="operator.address"
+                            @click="router.push(`/operator/${operator.address}`)">
+                            <td>
+                                <div class="operator_info">
+                                    <img :src="operator.image" alt="operator">
+                                    <p>{{ operator.name }}</p>
+                                </div>
+                            </td>
+                            <td>
+                                {{
+                                    Converter.toMoney(Converter.fromSUI(balanceStore.total_restaked_sui[operator.address]))
+                                }}
+                            </td>
+                            <td>
+                                {{
+                                    Converter.toMoney(Converter.fromSUI(balanceStore.total_shares[operator.address]))
+                                }}
+                            </td>
+                            <td>
+                                {{
+                                    balanceStore.avs_secured[operator.address] || "•••"
+                                }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </section>
@@ -245,7 +287,7 @@ onMounted(() => {
 }
 
 .link p {
-    font-size: 11px;
+    font-size: 14px;
     color: var(--accent-green);
 }
 
@@ -275,5 +317,78 @@ onMounted(() => {
 .reward_amount {
     font-size: 16px;
     color: var(--tx-normal);
+}
+
+table {
+    margin-top: 10px;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+td:first-child {
+    width: 40%;
+}
+
+td:not(:first-child) {
+    text-align: right;
+}
+
+thead tr {
+    height: 40px;
+    border-bottom: 1px solid var(--bg-lighter);
+}
+
+thead td {
+    font-size: 12px;
+    color: var(--tx-dimmed);
+    text-transform: uppercase;
+}
+
+tbody tr {
+    height: 60px;
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+}
+
+tbody tr:hover {
+    background: var(--bg-lighter);
+}
+
+tbody td {
+    color: var(--tx-semi);
+}
+
+tbody tr:not(:last-child) {
+    border-bottom: 1px solid var(--bg-lighter);
+}
+
+.operators {
+    background: var(--bg-light);
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--bg-lighter);
+}
+
+.operators .title h3 {
+    font-size: 20px;
+    color: var(--tx-dimmed);
+    font-weight: 500;
+}
+
+.operator_info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.operator_info img {
+    height: 24px;
+    width: 24px;
+    border-radius: 8px;
+}
+
+.operator_info p {
+    font-size: 14px;
+    color: var(--tx-semi);
 }
 </style>

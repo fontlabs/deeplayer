@@ -10,6 +10,8 @@ module deeplayer::nebula {
     use sui::object::{Self, UID};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
+    use sui::ed25519;
+    use sui::address;
 
     use deeplayer::math_module;
     use deeplayer::utils_module;
@@ -56,7 +58,7 @@ module deeplayer::nebula {
     public struct ClaimAttested has copy, drop {
         claim_root: vector<u8>,
         claimed: bool,
-        attestations: u64
+        operator: address
     }
 
     fun init(
@@ -153,6 +155,8 @@ module deeplayer::nebula {
         avs_manager: &AVSManager,
         avs_directory: &AVSDirectory,
         delegation_manager: &DelegationManager,
+        signatures: vector<vector<u8>>,
+        signers: vector<address>,
         source_uid: vector<u8>,
         source_chain: u64,
         source_block_number: u64,
@@ -162,8 +166,51 @@ module deeplayer::nebula {
         the_clock: &clock::Clock,
         ctx: &mut TxContext,
     ) {
-        let operator = tx_context::sender(ctx);
+        let mut i = 0;
+        let len = vector::length(&signatures);
+        while (i < len) {
+            let signature = *vector::borrow(&signatures, i);
+            let signer = *vector::borrow(&signers, i);
+            
+            if (!ed25519::ed25519_verify(&signature, &address::to_bytes(signer), &source_uid)) continue;
 
+            attest_impl<CoinType>(
+                nebula,
+                coin_metadata,
+                avs_manager,
+                avs_directory,
+                delegation_manager,
+                signer,
+                source_uid,
+                source_chain,
+                source_block_number,
+                amount,
+                decimals,
+                receiver,
+                the_clock,
+                ctx
+            );
+
+            i = i + 1;
+        };
+    }
+
+    fun attest_impl<CoinType>(
+        nebula: &mut Nebula,
+        coin_metadata: &coin::CoinMetadata<CoinType>,
+        avs_manager: &AVSManager,
+        avs_directory: &AVSDirectory,
+        delegation_manager: &DelegationManager,
+        operator: address,
+        source_uid: vector<u8>,
+        source_chain: u64,
+        source_block_number: u64,
+        amount: u64,
+        decimals: u8,
+        receiver: address,
+        the_clock: &clock::Clock,
+        ctx: &mut TxContext,
+    ) {
         avs_manager_module::check_operator(
             avs_manager,
             avs_directory,
@@ -188,15 +235,19 @@ module deeplayer::nebula {
 
         let mut claim = table::borrow_mut(&mut nebula.claims, claim_root);
 
-        // Check if the claim is already claimed or attested
-        assert!(!claim.claimed, E_ALREADY_CLAIMED);
+        // Check if the claim is already attested by operator
         assert!(!vector::contains(&claim.attestations, &operator), E_ALREADY_ATTESTED);
 
         // Attest the claim
         vector::push_back(&mut claim.attestations, operator);
 
-        // Check if the claim has enough attestations
-        if (vector::length(&claim.attestations) >= nebula.min_attestations) {
+        if (claim.claimed) {
+            event::emit(ClaimAttested {
+                claim_root,
+                claimed: true,
+                operator: operator
+            });
+        } else if (!claim.claimed && vector::length(&claim.attestations) >= nebula.min_attestations) {
             let coin_type = utils_module::get_strategy_id<CoinType>();
             let pool = bag::borrow_mut<string::String, Pool<CoinType>>(&mut nebula.pools, coin_type);
             let coin_decimals = coin::get_decimals(coin_metadata);
@@ -208,7 +259,7 @@ module deeplayer::nebula {
             event::emit(ClaimAttested {
                 claim_root,
                 claimed: true,
-                attestations: vector::length(&claim.attestations)
+                operator: operator
             });
             
             claim.claimed = true;
@@ -216,7 +267,7 @@ module deeplayer::nebula {
             event::emit(ClaimAttested {
                 claim_root,
                 claimed: false,
-                attestations: vector::length(&claim.attestations)
+                operator: operator
             });
         };      
     }

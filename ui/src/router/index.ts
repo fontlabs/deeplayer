@@ -6,6 +6,7 @@ import StakeView from "@/views/restake/StakeView.vue";
 import UnStakeView from "@/views/restake/UnStakeView.vue";
 import DelegateView from "@/views/operator/DelegateView.vue";
 import AVSInfoView from "@/views/avs/AVSInfoView.vue";
+import AIView from "@/views/AIView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -51,6 +52,11 @@ const router = createRouter({
       path: "/avs/:id",
       name: "avs-id",
       component: AVSInfoView,
+    },
+    {
+      path: "/ai",
+      name: "ai",
+      component: AIView,
     },
   ],
 });

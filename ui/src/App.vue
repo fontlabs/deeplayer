@@ -3,14 +3,17 @@ import AppHeader from './components/AppHeader.vue';
 import NotifyPop from '@/components/NotifyPop.vue';
 import { useCurrentAccount } from 'sui-dapp-kit-vue';
 import { useBalanceStore } from '@/stores/balance';
-import { watch } from 'vue';
+import { onMounted, watch } from 'vue';
 
 const balanceStore = useBalanceStore();
 const { currentAccount } = useCurrentAccount();
 
+onMounted(() => {
+  balanceStore.getOperatorBalances();
+});
+
 watch(currentAccount, () => {
-  if (!currentAccount.value) return;
-  balanceStore.getBalances(currentAccount.value.address);
+  balanceStore.getBalances(currentAccount.value?.address);
 });
 </script>
 

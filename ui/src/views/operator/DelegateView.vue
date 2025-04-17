@@ -2,18 +2,19 @@
 import ChevronLeftIcon from '@/components/icons/ChevronLeftIcon.vue';
 import OutIcon from '@/components/icons/OutIcon.vue';
 import { notify } from '@/reactives/notify';
-import { findOperator, findStrategy } from '@/scripts/constant';
+import { services, findOperator, findStrategy } from '@/scripts/constant';
 import { Contract } from '@/scripts/contract';
 import { Converter } from '@/scripts/converter';
 import type { Operator } from '@/scripts/types';
 import { useBalanceStore } from '@/stores/balance';
 import { onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useSignAndExecuteTransactionBlock, useCurrentAccount } from 'sui-dapp-kit-vue';
 import { Clients } from '@/scripts/sui';
 import { bcs } from '@mysten/sui/bcs';
 
 const route = useRoute();
+const router = useRouter();
 const balanceStore = useBalanceStore();
 const { currentAccount } = useCurrentAccount();
 const operator = ref<Operator | undefined>(undefined);
@@ -177,106 +178,170 @@ onMounted(() => {
 <template>
     <section>
         <div class="app_width">
-            <div class="delegate" v-if="operator">
-                <div class="delegate_info">
-                    <div class="head">
-                        <RouterLink to="/operator">
-                            <div class="back">
-                                <ChevronLeftIcon />
-                                <p>Operators</p>
+            <div class="view">
+                <div class="delegate" v-if="operator">
+                    <div class="delegate_info">
+                        <div class="head">
+                            <RouterLink to="/operator">
+                                <div class="back">
+                                    <ChevronLeftIcon />
+                                    <p>Operators</p>
+                                </div>
+                            </RouterLink>
+                        </div>
+
+                        <div class="stats">
+                            <div class="stat">
+                                <p>Total Restaked</p>
+                                <div class="value">
+                                    <p>
+                                        {{
+                                            Converter.toMoney(Converter.fromSUI(balanceStore.total_restaked_sui[operator.address]))
+                                        }}
+                                    </p>
+                                    <span>SUI</span>
+                                </div>
                             </div>
-                        </RouterLink>
+
+                            <div class="stat">
+                                <p>Your Shares</p>
+                                <div class="value">
+                                    <p>
+                                        {{
+                                            Converter.toMoney(Converter.fromSUI(balanceStore.your_shares[operator.address]))
+                                        }}
+                                    </p>
+                                </div>
+                            </div>
+
+
+                            <div class="stat">
+                                <p>AVS Secured</p>
+                                <div class="value">
+                                    <p>
+                                        {{
+                                            balanceStore.avs_secured[operator.address] || "•••"
+                                        }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="operator">
+                            <div class="title">
+                                <h3>About</h3>
+                            </div>
+
+                            <div class="operator_info">
+                                <img :src="operator.image" alt="operator">
+                                <p>{{ operator.name }}</p>
+                            </div>
+
+                            <div class="description">
+                                {{ operator.about }}
+                            </div>
+
+                            <a v-if="operator.link" :href="operator.link" target="_blank" class="link">
+                                <p>Learn more</p>
+                                <OutIcon />
+                            </a>
+                        </div>
                     </div>
 
-                    <div class="stats">
-                        <div class="stat">
-                            <p>Total Restaked</p>
-                            <div class="value">
-                                <p>
-                                    {{
-                                        Converter.toMoney(Converter.fromSUI(balanceStore.total_restaked_sui[operator.address]))
-                                    }}
-                                </p>
-                                <span>SUI</span>
+                    <div class="delegate_wrapper">
+                        <div class="box">
+                            <div class="label">You're delegating</div>
+
+                            <div class="input">
+                                <div class="strategy" v-for="strategyId in Object.keys(balanceStore.value_restaked)"
+                                    v-show="balanceStore.value_restaked[strategyId] > 0" :key="strategyId">
+                                    <input type="text"
+                                        :value="Converter.toMoney(Converter.fromSUI(balanceStore.value_restaked[strategyId]))"
+                                        disabled>
+                                    <p>{{ findStrategy(strategyId)?.symbol }}</p>
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="stat">
-                            <p>Your Shares</p>
-                            <div class="value">
-                                <p>
-                                    {{
-                                        Converter.toMoney(Converter.fromSUI(balanceStore.your_shares[operator.address]))
-                                    }}
-                                </p>
-                            </div>
-                        </div>
+                            <button class="redelegate" v-if="!isDelegated" @click="delegate">Delegate</button>
 
-                        <div class="stat">
-                            <p>Total Shares</p>
-                            <div class="value">
-                                <p>
-                                    {{
-                                        Converter.toMoney(Converter.fromSUI(balanceStore.total_shares[operator.address]))
-                                    }}
-                                </p>
-                            </div>
-                        </div>
+                            <button class="redelegate" v-else-if="isDelegated && !isDelegatedTo"
+                                @click="redelegate">Redelegate</button>
 
-                        <div class="stat">
-                            <p>AVS Secured</p>
-                            <div class="value">
-                                <p>
-                                    {{
-                                        balanceStore.avs_secured[operator.address] || "•••"
-                                    }}
-                                </p>
-                            </div>
+                            <button class="undelegate" v-else @click="undelegate">Undelegate</button>
                         </div>
-                    </div>
-
-                    <div class="operator">
-                        <div class="title">
-                            <h3>About</h3>
-                        </div>
-
-                        <div class="operator_info">
-                            <img :src="operator.image" alt="operator">
-                            <p>{{ operator.name }}</p>
-                        </div>
-
-                        <div class="description">
-                            {{ operator.about }}
-                        </div>
-
-                        <a v-if="operator.link" :href="operator.link" target="_blank" class="link">
-                            <p>Learn more</p>
-                            <OutIcon />
-                        </a>
                     </div>
                 </div>
 
-                <div class="delegate_wrapper">
-                    <div class="box">
-                        <div class="label">You're delegating</div>
-
-                        <div class="input">
-                            <div class="strategy" v-for="strategyId in Object.keys(balanceStore.value_restaked)"
-                                v-show="balanceStore.value_restaked[strategyId] > 0" :key="strategyId">
-                                <input type="text"
-                                    :value="Converter.toMoney(Converter.fromSUI(balanceStore.value_restaked[strategyId]))"
-                                    disabled>
-                                <p>{{ findStrategy(strategyId)?.symbol }}</p>
-                            </div>
-                        </div>
-
-                        <button class="redelegate" v-if="!isDelegated" @click="delegate">Delegate</button>
-
-                        <button class="redelegate" v-else-if="isDelegated && !isDelegatedTo"
-                            @click="redelegate">Redelegate</button>
-
-                        <button class="undelegate" v-else @click="undelegate">Undelegate</button>
+                <div class="coins" v-if="operator">
+                    <div class="title">
+                        <h3>Restaked Coins</h3>
                     </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <td>Coin</td>
+                                <td>Value Restaked</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="strategyId in Object.keys(balanceStore.total_shares[operator.address])"
+                                v-show="balanceStore.total_shares[operator.address][strategyId] > 0" :key="strategyId">
+                                <td>
+                                    <div class="service_info">
+                                        <img :src="''" alt="service">
+                                        <p>{{ strategyId }}</p>
+                                    </div>
+                                </td>
+                                <td>
+                                    {{
+                                        Converter.toMoney(Converter.fromSUI(balanceStore.total_shares[operator.address][strategyId]))
+                                    }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="services">
+                    <div class="title">
+                        <h3>Services</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <td>AVS</td>
+                                <td>SUI Restaked</td>
+                                <td>Total Num. Operators</td>
+                                <td>Total Num. Stakers</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="service in services" :key="service.address"
+                                @click="router.push(`/avs/${service.address}`)">
+                                <td>
+                                    <div class="service_info">
+                                        <img :src="service.image" alt="service">
+                                        <p>{{ service.name }}</p>
+                                    </div>
+                                </td>
+                                <td>
+                                    <!-- {{
+                                    Converter.toMoney(Converter.fromSUI(balanceStore.total_restaked_sui[service.address]))
+                                }} -->
+                                </td>
+                                <td>
+                                    <!-- {{
+                                Converter.toMoney(Converter.fromSUI(balanceStore.total_shares[service.address]))
+                                }} -->
+                                </td>
+                                <td>
+                                    {{
+                                        balanceStore.avs_secured[service.address] || "•••"
+                                    }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -284,8 +349,12 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.delegate {
+.view {
     padding: 30px 0;
+}
+
+.delegate {
+    margin-bottom: 30px;
     display: grid;
     grid-template-columns: 1fr 0.6fr;
     gap: 20px;
@@ -468,7 +537,89 @@ onMounted(() => {
 }
 
 .link p {
-    font-size: 11px;
+    font-size: 14px;
     color: var(--accent-green);
+}
+
+table {
+    margin-top: 10px;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+td:first-child {
+    width: 40%;
+}
+
+td:not(:first-child) {
+    text-align: right;
+}
+
+thead tr {
+    height: 40px;
+    border-bottom: 1px solid var(--bg-lighter);
+}
+
+thead td {
+    font-size: 12px;
+    color: var(--tx-dimmed);
+    text-transform: uppercase;
+}
+
+tbody tr {
+    height: 60px;
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+}
+
+tbody tr:hover {
+    background: var(--bg-lighter);
+}
+
+tbody td {
+    color: var(--tx-semi);
+}
+
+tbody tr:not(:last-child) {
+    border-bottom: 1px solid var(--bg-lighter);
+}
+
+.coins {
+    background: var(--bg-light);
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--bg-lighter);
+}
+
+.services {
+    margin-top: 20px;
+    background: var(--bg-light);
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--bg-lighter);
+}
+
+.coins .title h3,
+.services .title h3 {
+    font-size: 20px;
+    color: var(--tx-dimmed);
+    font-weight: 500;
+}
+
+.service_info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.service_info img {
+    height: 24px;
+    width: 24px;
+    border-radius: 8px;
+}
+
+.service_info p {
+    font-size: 14px;
+    color: var(--tx-semi);
 }
 </style>

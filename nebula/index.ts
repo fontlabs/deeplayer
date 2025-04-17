@@ -1,46 +1,43 @@
-import { SUI_CLOCK_OBJECT_ID, SUI_TYPE_ARG } from "@mysten/sui/utils";
 import dotenv from "dotenv";
-import type { Hex, WatchEventReturnType } from "viem";
-import { createPublicClient, defineChain, http, parseAbiItem } from "viem";
+
+import { SUI_CLOCK_OBJECT_ID, SUI_TYPE_ARG } from "@mysten/sui/utils";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { bcs } from "@mysten/sui/bcs";
+import http from "http";
+
+import type { Hex } from "viem";
+
+type TokenLockedEvent = {
+  uid: Hex;
+  coinType: string;
+  decimals: number;
+  amount: bigint;
+  receiver: Hex;
+  block_number: bigint;
+  chain_id: number;
+  signature: string;
+  signer: string;
+};
+
+type SignedTokenLockedEvent = {
+  uid: Hex;
+  coinType: string;
+  decimals: number;
+  amount: bigint;
+  receiver: Hex;
+  block_number: bigint;
+  chain_id: number;
+  signatures: string[];
+  signers: string[];
+};
 
 dotenv.config();
 
-const holesky = /*#__PURE__*/ defineChain({
-  id: 17000,
-  name: "Holesky",
-  nativeCurrency: { name: "Holesky Ether", symbol: "ETH", decimals: 18 },
-  rpcUrls: {
-    default: {
-      http: ["https://rpc.ankr.com/eth_holesky"],
-    },
-  },
-  blockExplorers: {
-    default: {
-      name: "Etherscan",
-      url: "https://holesky.etherscan.io",
-      apiUrl: "https://api-holesky.etherscan.io/api",
-    },
-  },
-  contracts: {
-    multicall3: {
-      address: "0xca11bde05977b3631167028862be2a173976ca11",
-      blockCreated: 77,
-    },
-    ensRegistry: {
-      address: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-      blockCreated: 801613,
-    },
-    ensUniversalResolver: {
-      address: "0xa6AC935D4971E3CD133b950aE053bECD16fE7f3b",
-      blockCreated: 973484,
-    },
-  },
-  testnet: true,
-});
+const MinAttestation = 2;
+const MemPool: Record<string, TokenLockedEvent[]> = {};
+const ProcessingPool: Record<string, boolean> = {};
 
 const DeepLayer: Hex =
   "0x7b941196e87bbf0f0ee85717c68f49ad88ef598b81943ff4bde11dfea5e1b9a4";
@@ -65,27 +62,43 @@ COIN_METADATA[LBTC_TYPE_ARG] =
 COIN_METADATA[ETH_TYPE_ARG] =
   "0x7ff5a65a182ac8704d12cda4b2a1c53bef2095752112667919f3b1fe5cce0983";
 
-const HOLESKY_NEBULA: Hex = "0xa2236475db73775aD69aE4b4099Ac4B8FF374085";
-
 const client = new SuiClient({ url: getFullnodeUrl("testnet") });
 
-type TokenLockedEvent = {
-  uid: Hex;
-  coinType: string;
-  decimals: number;
-  amount: bigint;
-  receiver: Hex;
-  block_number: bigint;
-};
-
-interface EventListenerCallback {
-  onEvent: (events: TokenLockedEvent[]) => void;
+interface SubmitCallback {
+  onSubmit: (event: TokenLockedEvent) => void;
 }
-class EventAttester {
-  async attestEvent(event: TokenLockedEvent) {
+class Attester {
+  getSignedEvent(events: TokenLockedEvent[]): SignedTokenLockedEvent | null {
+    if (!events.every((event) => event.uid == events[0].uid)) return null;
+    if (!events.every((event) => event.coinType == events[0].coinType))
+      return null;
+    if (!events.every((event) => event.decimals == events[0].decimals))
+      return null;
+    if (!events.every((event) => event.amount == events[0].amount)) return null;
+    if (!events.every((event) => event.receiver == events[0].receiver))
+      return null;
+    if (!events.every((event) => event.block_number == events[0].block_number))
+      return null;
+    if (!events.every((event) => event.chain_id == events[0].chain_id))
+      return null;
+    return {
+      ...events[0],
+      signatures: events.map((event) => event.signature),
+      signers: events.map((event) => event.signer),
+    };
+  }
+
+  async attest(events: TokenLockedEvent[]): Promise<boolean> {
     if (!process.env.SECRET_KEY) throw new Error("Invalid secret key!");
 
+    const event = this.getSignedEvent(events);
+    if (!event) return false;
+
+    if (ProcessingPool[event.uid]) return false;
+
     try {
+      ProcessingPool[event.uid] = true;
+
       const transaction = new Transaction();
 
       transaction.moveCall({
@@ -97,9 +110,19 @@ class EventAttester {
           transaction.object(AVS_DIRECTORY),
           transaction.object(DELEGATION_MANAGER),
           transaction.pure(
+            bcs
+              .vector(bcs.vector(bcs.U8))
+              .serialize(
+                event.signatures.map((signature) =>
+                  new TextEncoder().encode(signature)
+                )
+              )
+          ),
+          transaction.pure(
             bcs.vector(bcs.U8).serialize(new TextEncoder().encode(event.uid))
           ),
-          transaction.pure.u64(holesky.id),
+          transaction.pure(bcs.vector(bcs.Address).serialize(event.signers)),
+          transaction.pure.u64(event.chain_id),
           transaction.pure.u64(event.block_number),
           transaction.pure.u64(event.amount),
           transaction.pure.u8(event.decimals),
@@ -111,99 +134,81 @@ class EventAttester {
       transaction.setGasBudget(5_000_000);
 
       const signer = Ed25519Keypair.fromSecretKey(process.env.SECRET_KEY);
-
       const { digest } = await client.signAndExecuteTransaction({
         signer,
         transaction,
       });
+
       console.log("Transaction Digest:", digest);
+
+      delete MemPool[event.uid];
+      delete ProcessingPool[event.uid];
+
+      return true;
     } catch (error) {
       console.error("Error attesting event:", error);
+      delete ProcessingPool[event.uid];
+      return false;
     }
   }
 }
 
-const eventAttester = new EventAttester();
+const attester = new Attester();
 
-const callback: EventListenerCallback = {
-  onEvent(events: TokenLockedEvent[]) {
-    events.forEach((event) => eventAttester.attestEvent(event));
+const callback: SubmitCallback = {
+  onSubmit(event: TokenLockedEvent) {
+    if (!MemPool[event.uid]) {
+      MemPool[event.uid] = [];
+    } else if (!MemPool[event.uid].find((e) => e.signer == event.signer)) {
+      MemPool[event.uid].push(event);
+    }
+
+    if (MemPool[event.uid].length >= MinAttestation) {
+      attester.attest(MemPool[event.uid]);
+    }
   },
 };
 
-class EventListener {
-  unwatch: WatchEventReturnType | undefined = undefined;
+class Server {
+  readonly port = 8000;
+  readonly host = "localhost";
 
-  async startListening(callback: EventListenerCallback) {
-    const publicClient = createPublicClient({
-      chain: holesky,
-      transport: http(),
+  start() {
+    const server = http.createServer((req, res) => {
+      if (req.url === "/submit" && req.method === "POST") {
+        let body = "";
+
+        req.on("data", (chunk) => {
+          body += chunk.toString(); // Convert Buffer to string
+        });
+
+        req.on("end", () => {
+          try {
+            const data = JSON.parse(body); // assuming it's JSON
+            console.log("Received POST data:", data);
+
+            // You can call your callback with the parsed data
+            callback.onSubmit(data);
+
+            res.setHeader("Content-Type", "application/json");
+            res.writeHead(200);
+            res.end(JSON.stringify({ message: "Received", data }));
+          } catch (err) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+      } else {
+        res.setHeader("Content-Type", "application/json");
+        res.writeHead(200);
+        res.end(JSON.stringify({ message: "OK" }));
+      }
     });
 
-    const fromBlock = await publicClient.getBlockNumber();
-
-    console.log("Started listening from block: ", fromBlock);
-
-    this.unwatch = publicClient.watchEvent({
-      address: HOLESKY_NEBULA,
-      fromBlock,
-      event: parseAbiItem(
-        "event TokenLocked(bytes32 indexed uid, string coinType, uint256 decimals, uint256 amount, bytes32 receiver)"
-      ),
-      pollingInterval: 60_000, // 1 Min
-      onLogs: (events) => {
-        console.log(events);
-        callback.onEvent(
-          events.map((event) => {
-            return {
-              uid: event.args.uid!,
-              coinType: event.args.coinType!,
-              decimals: Number(event.args.decimals!),
-              amount: event.args.amount!,
-              receiver: event.args.receiver!,
-              block_number: event.blockNumber,
-            } as TokenLockedEvent;
-          })
-        );
-      },
-      onError: (error) => {
-        console.log(error);
-      },
+    server.listen(this.port, this.host, () => {
+      console.log(`Server is running on http://${this.host}:${this.port}`);
     });
-  }
-
-  stopListening() {
-    if (this.unwatch) this.unwatch();
   }
 }
 
-class Registrar {
-  async tryRegisterToAVS() {
-    if (!process.env.SECRET_KEY) throw new Error("Invalid secret key!");
-
-    try {
-      const transaction = new Transaction();
-      transaction.moveCall({
-        target: `${DeepLayer}::nebula::register_operator`,
-        arguments: [
-          transaction.object(AVS_MANAGER),
-          transaction.object(AVS_DIRECTORY),
-          transaction.object(DELEGATION_MANAGER),
-          transaction.object(SUI_CLOCK_OBJECT_ID),
-        ],
-      });
-      transaction.setGasBudget(50_000_000);
-
-      const signer = Ed25519Keypair.fromSecretKey(process.env.SECRET_KEY);
-
-      const { digest } = await client.signAndExecuteTransaction({
-        signer,
-        transaction,
-      });
-      console.log("Transaction digest:", digest);
-    } catch (error) {}
-  }
-}
-
-new EventListener().startListening(callback);
-// new Registrar().tryRegisterToAVS();
+new Server().start();

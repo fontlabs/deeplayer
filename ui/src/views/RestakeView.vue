@@ -48,8 +48,7 @@ watch(search, () => {
 });
 
 onMounted(() => {
-  if (!currentAccount.value) return;
-  balanceStore.getBalances(currentAccount.value.address);
+  balanceStore.getBalances(currentAccount.value?.address);
 });
 </script>
 

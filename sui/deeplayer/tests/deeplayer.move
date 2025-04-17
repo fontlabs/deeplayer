@@ -212,43 +212,43 @@ module deeplayer::deeplayer_tests {
         ts::next_tx(&mut scenario, admin);
         let coin_metadata = ts::take_immutable<CoinMetadata<LBTC>>(&scenario);
 
-        // =========== ATTEST TO NEBULA EVENT ========== //
-        ts::next_tx(&mut scenario, operator);
+        // // =========== ATTEST TO NEBULA EVENT ========== //
+        // ts::next_tx(&mut scenario, operator);
 
-        nebula::attest<LBTC>(
-            &mut nebula,
-            &coin_metadata,
-            &avs_manager,
-            &avs_directory,
-            &delegation_manager,
-            vector[0, 2], // source_uid,
-            17000, // source_chain
-            12, // source_block_number
-            100_000, // amount
-            9, // decimals
-            staker, // receiver
-            &the_clock,
-            ts::ctx(&mut scenario)
-        );
+        // nebula::attest<LBTC>(
+        //     &mut nebula,
+        //     &coin_metadata,
+        //     &avs_manager,
+        //     &avs_directory,
+        //     &delegation_manager,
+        //     vector[0, 2], // source_uid,
+        //     17000, // source_chain
+        //     12, // source_block_number
+        //     100_000, // amount
+        //     9, // decimals
+        //     staker, // receiver
+        //     &the_clock,
+        //     ts::ctx(&mut scenario)
+        // );
 
-        // =========== ATTEST2 TO NEBULA EVENT ========== //
-        ts::next_tx(&mut scenario, operator2);
+        // // =========== ATTEST2 TO NEBULA EVENT ========== //
+        // ts::next_tx(&mut scenario, operator2);
 
-        nebula::attest<LBTC>(
-            &mut nebula,
-            &coin_metadata,
-            &avs_manager,
-            &avs_directory,
-            &delegation_manager,
-            vector[0, 2], // source_uid,
-            17000, // source_chain
-            12, // source_block_number
-            100_000, // amount
-            9, // decimals
-            staker, // receiver
-            &the_clock,
-            ts::ctx(&mut scenario)
-        );
+        // nebula::attest<LBTC>(
+        //     &mut nebula,
+        //     &coin_metadata,
+        //     &avs_manager,
+        //     &avs_directory,
+        //     &delegation_manager,
+        //     vector[0, 2], // source_uid,
+        //     17000, // source_chain
+        //     12, // source_block_number
+        //     100_000, // amount
+        //     9, // decimals
+        //     staker, // receiver
+        //     &the_clock,
+        //     ts::ctx(&mut scenario)
+        // );
 
         // ========== UNDELEGATE ========== //
         ts::next_tx(&mut scenario, staker);

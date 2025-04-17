@@ -13,6 +13,7 @@ sui = "0x2"
 deeplayer = "0x0"
 hello_world_service_manager = "0x12"
 nebula = "0x13"
+daxios = "0x14"
 
 [dev-dependencies]
 

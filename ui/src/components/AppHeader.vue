@@ -40,7 +40,7 @@ const route = useRoute();
                 </div>
 
                 <div class="actions">
-                    <button class="ai">Ask AI</button>
+                    <RouterLink to="/ai"><button class="ai">Ask AI</button></RouterLink>
                     <ConnectButton />
                 </div>
             </header>
