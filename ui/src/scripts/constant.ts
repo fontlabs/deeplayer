@@ -152,8 +152,16 @@ const services: AVS[] = [
       "Nebula is a decentralized bridge that allows users to transfer assets between different blockchains using zero-knowledge proofs.",
     link: "https://nebula.deeplayr.xyz",
     image: "/images/colors.png",
-    reward_coin: findStrategy(SUI_TYPE_ARG)!,
-    weekly_rewards: 12291230,
+    reward_coin: {
+      name: "SUI",
+      symbol: "SUI",
+      decimals: 9,
+      image: "/images/sui.png",
+      type: SUI_TYPE_ARG,
+      about: "SUI Coin.",
+      link: "https://sui.io",
+    },
+    weekly_rewards: 122930,
   },
 ];
 
