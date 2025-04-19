@@ -1,4 +1,4 @@
-use crate::schema::{coins, operators, restakeds, rewards, services, stakers, withdrawals};
+use crate::schema::{coins, activities, operators, restakeds, rewards, services, stakers, withdrawals};
 use diesel::prelude::*;
 
 #[derive(Queryable, Selectable, Insertable, AsChangeset, Debug)]
@@ -6,6 +6,7 @@ use diesel::prelude::*;
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Staker {
     pub id: String,
+    pub delegated_to: String,
 }
 
 #[derive(Queryable, Selectable, Insertable, AsChangeset, Debug)]
@@ -13,6 +14,10 @@ pub struct Staker {
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Operator {
     pub id: String,
+    pub name: String,
+    pub image: String,
+    pub about: String,
+    pub website: String,
 }
 
 #[derive(Queryable, Selectable, Insertable, AsChangeset, Debug)]
@@ -79,4 +84,17 @@ pub struct Withdrawal {
     pub withdrawn_as_shares: bool,
     pub start_epoch: i32,
     pub min_withdrawal_delay: i32,
+}
+
+#[derive(Queryable, Selectable, Insertable, AsChangeset, Debug)]
+#[diesel(table_name = activities)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct Activity {
+    pub id: String,
+    pub actor: String,
+    pub action_type: String,
+    pub coin: String,
+    pub value: String,
+    pub memo: String,
+    pub timestamp_ms: String,
 }
