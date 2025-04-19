@@ -3,7 +3,6 @@ import { operators, strategies } from "@/scripts/constant";
 import { Contract } from "@/scripts/contract";
 import { Clients } from "@/scripts/sui";
 import { bcs } from "@mysten/sui/bcs";
-import { SUI_TYPE_ARG } from "@mysten/sui/utils";
 import { defineStore } from "pinia";
 
 const SUI_FRAMEWORK_ADDRESS =
@@ -56,11 +55,7 @@ export const useBalanceStore = defineStore("balance", {
 
     async getValueRestaked(owner: string) {
       const transaction = Contract.getAllStakerShares(
-        strategies.map((strategy) =>
-          strategy.type
-            .replace(SUI_TYPE_ARG, `${SUI_FRAMEWORK_ADDRESS}::sui::SUI`)
-            .replace("0x", "")
-        ),
+        strategies.map((strategy) => strategy.type.replace("0x", "")),
         owner
       );
 
@@ -82,11 +77,7 @@ export const useBalanceStore = defineStore("balance", {
 
     async getTotalValueRestaked() {
       const transaction = Contract.getAllTotalShares(
-        strategies.map((strategy) =>
-          strategy.type
-            .replace(SUI_TYPE_ARG, `${SUI_FRAMEWORK_ADDRESS}::sui::SUI`)
-            .replace("0x", "")
-        )
+        strategies.map((strategy) => strategy.type.replace("0x", ""))
       );
 
       const { results } = await Clients.suiClient.devInspectTransactionBlock({
@@ -111,14 +102,8 @@ export const useBalanceStore = defineStore("balance", {
       for (let index = 0; index < operators.length; index++) {
         const operator = operators[index].address;
 
-        console.log(operator);
-
         const transaction = Contract.getOperatorShares(
-          strategies.map((strategy) =>
-            strategy.type
-              .replace(SUI_TYPE_ARG, `${SUI_FRAMEWORK_ADDRESS}::sui::SUI`)
-              .replace("0x", "")
-          ),
+          strategies.map((strategy) => strategy.type.replace("0x", "")),
           operator
         );
 

@@ -1,4 +1,3 @@
-import { SUI_TYPE_ARG } from "./node_modules/@mysten/sui/src/utils/constants";
 import { Transaction } from "@mysten/sui/transactions";
 import { Contract, client, Coins, signer } from "./shared";
 
@@ -18,8 +17,6 @@ async function deployStrategy(coinType: string) {
 }
 
 async function main() {
-  await deployStrategy(SUI_TYPE_ARG);
-
   for (const coin of Coins) {
     await deployStrategy(
       `${Contract.DeepLayer}::${coin.module}::${coin.coinType}`

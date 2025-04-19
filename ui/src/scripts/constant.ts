@@ -8,17 +8,6 @@ const findStrategy = (coinType: string): Coin | undefined => {
 
 const strategies: Coin[] = [
   {
-    name: "Native SUI",
-    symbol: "SUI",
-    decimals: 9,
-    image: "/images/sui.png",
-    type: SUI_TYPE_ARG,
-    about:
-      "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Pariatur veniam itaque a tempora dicta ipsa perferendis corrupti nobis. Est amet ad omnis ex. Voluptas, similique. Aperiam nihil cupiditate molestiae labore?",
-    link: "https://sui.io",
-    isNative: true,
-  },
-  {
     name: "AlphaFi Staked SUI",
     symbol: "stSUI",
     decimals: 9,

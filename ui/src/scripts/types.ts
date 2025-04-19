@@ -32,7 +32,6 @@ export type Coin = {
     module: string;
     object: string;
   };
-  isNative?: boolean;
   isLst?: boolean;
   isBtc?: boolean;
 };

@@ -32,8 +32,8 @@ const getStrategies = () => {
           s.isBtc;
       } else {
         return search.value ?
-          s.name.toLowerCase().includes(search.value.toLowerCase()) && !(s.isLst || s.isNative || s.isBtc) :
-          !(s.isLst || s.isNative || s.isBtc);
+          s.name.toLowerCase().includes(search.value.toLowerCase()) && !(s.isLst || s.isBtc) :
+          !(s.isLst || s.isBtc);
       }
     }
   );

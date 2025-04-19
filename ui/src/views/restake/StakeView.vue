@@ -242,16 +242,12 @@ onMounted(() => {
                         </a>
                     </div>
 
-                    <div class="faucet">
+                    <div class="faucet" v-if="strategy.faucet">
                         <div class="title">
                             <h3>Faucet</h3>
                         </div>
 
-                        <a href="https://faucet.sui.io" target="_blank" v-if="strategy.isNative">
-                            <button class="mint">Request Testnet SUI</button>
-                        </a>
-
-                        <button class="mint" @click="mint" v-else-if="strategy.faucet">
+                        <button class="mint" @click="mint">
                             Mint {{ strategy.faucet.amount }} {{ strategy.symbol }}
                         </button>
                     </div>
