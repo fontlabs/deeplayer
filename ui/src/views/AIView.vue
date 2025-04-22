@@ -78,7 +78,7 @@ watch(currentAccount, () => {
 
     <div class="container" v-else>
         <div class="messages" ref="scrollContainer">
-            <div class="no_message" v-if="chats.length == 0">
+            <div class="no_message" v-if="chats.length == 0 || !currentAccount || !currentAccount.address">
                 <div class="icon">
                     <AIIcon />
                 </div>
@@ -87,7 +87,7 @@ watch(currentAccount, () => {
                 <p>Your DeepLayr and Restaking AI Assistant.</p>
             </div>
 
-            <div v-for="chat in chats.sort((a, b) => a.timestampMs - b.timestampMs)"
+            <div v-show="currentAccount?.address" v-for="chat in chats.sort((a, b) => a.timestampMs - b.timestampMs)"
                 :class="chat.from == currentAccount?.address ? 'message message_user' : 'message'">
                 <img v-if="chat.from == currentAccount?.address" src="/images/colors.png" alt="">
                 <img v-else src="/images/ai.png" alt="">
