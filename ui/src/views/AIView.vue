@@ -5,50 +5,71 @@ import CloseIcon from '@/components/icons/CloseIcon.vue';
 // import SendIcon from '@/components/icons/SendIcon.vue';
 // import ProgressBox from '@/components/ProgressBox.vue';
 import { notify } from '@/reactives/notify';
-// import { Client } from '@/scripts/client';
-// import type { Chat } from '@/scripts/types';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { AI, type Chat } from '@/scripts/ai';
+import { onMounted, ref, watch } from 'vue';
+import { useCurrentAccount } from 'sui-dapp-kit-vue';
 
-const faqs = [
+const Faqs = [
     "What is Restaking?",
     "Can BTC LSTs be restaked?",
     "Risks of Restaking?",
     "What is BTC LST?",
 ];
 
-
 const text = ref<string>('');
-// const chats = ref<Chat[]>([]);
+const chats = ref<Chat[]>([]);
 const showing = ref<boolean>(true);
 const sending = ref<boolean>(false);
 const progress = ref<boolean>(false);
 const scrollContainer = ref<HTMLElement | null>(null);
+const { currentAccount } = useCurrentAccount();
 
-const getChats = async (load: boolean = true) => {
+const getChats = () => {
+    if (!currentAccount.value) return;
+    AI.getChats(currentAccount.value.address, (results) => {
+        chats.value = results;
 
+        setTimeout(() => {
+            if (scrollContainer.value) {
+                scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight;
+            }
+        }, 400);
+    });
 };
 
 const sendText = async () => {
     if (sending.value) return;
-    // if (!walletStore.address) return;
-    if (text.value == '') return;
+
+    if (!currentAccount.value) {
+        return notify.push({
+            title: "Connect your wallet!",
+            description: "Wallet connection error.",
+            category: "error"
+        });
+    }
+
+    if (text.value == '') {
+        return notify.push({
+            title: "Enter a valid message",
+            description: "Error text",
+            category: "error"
+        });
+    }
 
     sending.value = true;
-
     showing.value = false;
-    const message = text.value;
 
+    AI.chat(currentAccount.value.address, text.value);
 
+    text.value = '';
 };
 
 onMounted(() => {
     getChats();
-    document.body.style.overflowY = 'hidden';
-
 });
 
-onUnmounted(() => {
-    document.body.style.overflowY = 'auto';
+watch(currentAccount, () => {
+    getChats();
 });
 </script>
 
@@ -57,7 +78,7 @@ onUnmounted(() => {
 
     <div class="container" v-else>
         <div class="messages" ref="scrollContainer">
-            <div class="no_message" v-if="[].length == 0">
+            <div class="no_message" v-if="chats.length == 0">
                 <div class="icon">
                     <AIIcon />
                 </div>
@@ -66,9 +87,11 @@ onUnmounted(() => {
                 <p>Your DeepLayr and Restaking AI Assistant.</p>
             </div>
 
-            <div v-for="chat in []" :class="'message message_user'">
-                <img src="/images/colors.png" alt="">
-                <div class="text"></div>
+            <div v-for="chat in chats.sort((a, b) => a.timestampMs - b.timestampMs)"
+                :class="chat.from == currentAccount?.address ? 'message message_user' : 'message'">
+                <img v-if="chat.from == currentAccount?.address" src="/images/colors.png" alt="">
+                <img v-else src="/images/ai.png" alt="">
+                <div class="text">{{ chat.text }}</div>
             </div>
         </div>
         <div class="form">
@@ -81,7 +104,7 @@ onUnmounted(() => {
                     <CloseIcon />
                 </div>
                 <div class="items">
-                    <div class="item" v-for="faq in faqs" @click="text = faq">{{ faq }}</div>
+                    <div class="item" v-for="faq in Faqs" @click="text = faq">{{ faq }}</div>
                 </div>
             </div>
 
