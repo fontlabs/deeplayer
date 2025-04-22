@@ -8,6 +8,7 @@ import {
   onSnapshot,
   or,
   orderBy,
+  limit,
 } from "firebase/firestore";
 import OpenAI from "openai";
 
@@ -47,7 +48,8 @@ const AI = {
       const chatsQuery = query(
         chatsRef,
         or(where("from", "==", from), where("to", "==", from)),
-        orderBy("timestampMs", "desc")
+        orderBy("timestampMs", "desc"),
+        limit(50)
       );
       onSnapshot(chatsQuery, async (snapshot) => {
         const chats = snapshot.docs.map((chat) => chat.data());

@@ -126,7 +126,7 @@ watch(currentAccount, () => {
 }
 
 .messages {
-    padding: 0 50px;
+    padding: 0 30px;
     max-height: calc(100vh - 180px);
     overflow: auto;
 }
@@ -141,6 +141,7 @@ watch(currentAccount, () => {
     grid-template-columns: 40px 1fr;
     gap: 30px;
     font-size: 14px;
+    line-height: 22px;
     color: var(--tx-normal);
     align-items: flex-end;
 }
