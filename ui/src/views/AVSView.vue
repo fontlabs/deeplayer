@@ -2,8 +2,6 @@
 import { services } from '@/scripts/constant';
 import { Converter } from '@/scripts/converter';
 import { useBalanceStore } from '@/stores/balance';
-
-const balanceStore = useBalanceStore();
 </script>
 
 <template>
@@ -44,9 +42,7 @@ const balanceStore = useBalanceStore();
                                     <p>SUI Restaked</p>
                                     <div class="value">
                                         <p>
-                                            {{
-                                                Converter.toMoney(Converter.fromSUI(balanceStore.sui_restaked[service.address]))
-                                            }}
+                                            {{ Converter.toMoney(20483) }}
                                         </p>
                                         <span>SUI</span>
                                     </div>
@@ -55,22 +51,14 @@ const balanceStore = useBalanceStore();
                                 <div class="stat">
                                     <p>Total Num. Operators</p>
                                     <div class="value">
-                                        <p>
-                                            {{
-                                                balanceStore.total_num_operators[service.address] || "•••"
-                                            }}
-                                        </p>
+                                        <p>3</p>
                                     </div>
                                 </div>
 
                                 <div class="stat">
                                     <p>Total Num. Stakers</p>
                                     <div class="value">
-                                        <p>
-                                            {{
-                                                balanceStore.total_num_stakers[service.address] || "•••"
-                                            }}
-                                        </p>
+                                        <p>20</p>
                                     </div>
                                 </div>
 

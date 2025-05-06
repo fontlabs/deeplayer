@@ -163,7 +163,7 @@ const services: AVS[] = [
       about: "SUI Coin.",
       link: "https://sui.io",
     },
-    weekly_rewards: 122930,
+    weekly_rewards: 16402000,
   },
 ];
 

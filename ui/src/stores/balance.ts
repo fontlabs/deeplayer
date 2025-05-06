@@ -11,6 +11,7 @@ const SUI_FRAMEWORK_ADDRESS =
 export const useBalanceStore = defineStore("balance", {
   state: () => ({
     // restake
+    total_balance: BigInt(0),
     balances: {} as { [key: string]: bigint },
     value_restaked: {} as { [key: string]: bigint },
     total_value_restaked: {} as { [key: string]: bigint },
@@ -18,7 +19,6 @@ export const useBalanceStore = defineStore("balance", {
     // operator
     your_shares: {} as { [key: string]: bigint },
     total_shares: {} as { [key: string]: bigint },
-    avs_secured: {} as { [key: string]: number },
 
     // avs
     sui_restaked: {} as { [key: string]: bigint },
@@ -69,8 +69,10 @@ export const useBalanceStore = defineStore("balance", {
         .vector(bcs.U64)
         .parse(Uint8Array.from(results[0].returnValues[0][0]));
 
+      this.total_balance = BigInt(0);
       strategies.forEach((strategy, index) => {
         this.value_restaked[strategy.type] = BigInt(value_restaked[index]);
+        this.total_balance += BigInt(value_restaked[index]);
       });
     },
 

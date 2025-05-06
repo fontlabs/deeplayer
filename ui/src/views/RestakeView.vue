@@ -67,7 +67,11 @@ onMounted(() => {
             <div class="stat">
               <p class="name">Total Restaked
               </p>
-              <p class="value">0 <span>SUI</span></p>
+              <p class="value">
+                {{
+                  Converter.toMoney(Converter.fromSUI(balanceStore.total_balance))
+                }} <span>SUI</span>
+              </p>
 
               <div class="actions">
                 <RouterLink to="/operator/0x1"><button>Unstake</button></RouterLink>

@@ -41,9 +41,7 @@ onMounted(() => {
                             <p>SUI Restaked</p>
                             <div class="value">
                                 <p>
-                                    {{
-                                        Converter.toMoney(Converter.fromSUI(balanceStore.sui_restaked[service.address]))
-                                    }}
+                                    {{ Converter.toMoney(20483) }}
                                 </p>
                                 <span>SUI</span>
                             </div>
@@ -52,22 +50,14 @@ onMounted(() => {
                         <div class="stat">
                             <p>Total Num. Operators</p>
                             <div class="value">
-                                <p>
-                                    {{
-                                        balanceStore.total_num_operators[service.address] || "•••"
-                                    }}
-                                </p>
+                                <p>3</p>
                             </div>
                         </div>
 
                         <div class="stat">
                             <p>Total Num. Stakers</p>
                             <div class="value">
-                                <p>
-                                    {{
-                                        balanceStore.total_num_stakers[service.address] || "•••"
-                                    }}
-                                </p>
+                                <p>20</p>
                             </div>
                         </div>
 
@@ -144,19 +134,16 @@ onMounted(() => {
                             </td>
                             <td>
                                 {{
-                                    Converter.toMoney(Converter.fromSUI(balanceStore.total_restaked_sui[operator.address]))
+                                    Converter.toMoney(Converter.fromSUI(balanceStore.total_shares[operator.address])) ||
+                                    0 * 1.12
                                 }}
-                            </td>
-                            <td>
-                                <!-- {{
-                                    Converter.toMoney(Converter.fromSUI(balanceStore.total_shares[operator.address]))
-                                }} -->
                             </td>
                             <td>
                                 {{
-                                    balanceStore.avs_secured[operator.address] || "•••"
+                                    Converter.toMoney(Converter.fromSUI(balanceStore.total_shares[operator.address]))
                                 }}
                             </td>
+                            <td>1</td>
                         </tr>
                     </tbody>
                 </table>

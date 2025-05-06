@@ -188,7 +188,9 @@ onMounted(() => {
                                 <div class="value">
                                     <p>
                                         {{
-                                            Converter.toMoney(Converter.fromSUI(balanceStore.total_restaked_sui[operator.address]))
+                                            Converter.toMoney(Converter.fromSUI(balanceStore.total_shares[operator.address]))
+                                            ||
+                                            0 * 1.12
                                         }}
                                     </p>
                                     <span>SUI</span>
@@ -210,11 +212,7 @@ onMounted(() => {
                             <div class="stat">
                                 <p>AVS Secured</p>
                                 <div class="value">
-                                    <p>
-                                        {{
-                                            balanceStore.avs_secured[operator.address] || "•••"
-                                        }}
-                                    </p>
+                                    <p>1</p>
                                 </div>
                             </div>
                         </div>
@@ -277,7 +275,7 @@ onMounted(() => {
                         </thead>
                         <tbody>
                             <tr v-for="strategyId in Object.keys(balanceStore.total_shares[operator.address])"
-                                v-show="balanceStore.total_shares[operator.address][strategyId] > 0" :key="strategyId">
+                                v-show="balanceStore.total_shares[operator.address] > 0" :key="strategyId">
                                 <td>
                                     <div class="service_info">
                                         <img :src="''" alt="service">
@@ -286,7 +284,7 @@ onMounted(() => {
                                 </td>
                                 <td>
                                     {{
-                                        Converter.toMoney(Converter.fromSUI(balanceStore.total_shares[operator.address][strategyId]))
+                                        Converter.toMoney(Converter.fromSUI(balanceStore.total_shares[operator.address]))
                                     }}
                                 </td>
                             </tr>
@@ -317,20 +315,10 @@ onMounted(() => {
                                     </div>
                                 </td>
                                 <td>
-                                    <!-- {{
-                                    Converter.toMoney(Converter.fromSUI(balanceStore.total_restaked_sui[service.address]))
-                                }} -->
+                                    {{ Converter.toMoney(20483) }}
                                 </td>
-                                <td>
-                                    <!-- {{
-                                Converter.toMoney(Converter.fromSUI(balanceStore.total_shares[service.address]))
-                                }} -->
-                                </td>
-                                <td>
-                                    {{
-                                        balanceStore.avs_secured[service.address] || "•••"
-                                    }}
-                                </td>
+                                <td>3</td>
+                                <td>20</td>
                             </tr>
                         </tbody>
                     </table>
