@@ -56,25 +56,3 @@ input::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
-
-.connect-btn {
-  background: var(--primary) !important;
-  border: none !important;
-  color: var(--tx-normal) !important;
-  border-radius: 8px !important;
-  font-size: 16px !important;
-  height: 40px !important;
-  min-width: 120px !important;
-}
-
-.connect-btn-menu-btn {
-  display: flex !important;
-  align-items: center !important;
-  background: var(--primary) !important;
-  border: none !important;
-  color: var(--tx-normal) !important;
-  border-radius: 8px !important;
-  font-size: 16px !important;
-  height: 40px !important;
-  min-width: 120px !important;
-}

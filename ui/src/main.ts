@@ -1,5 +1,4 @@
 import "./assets/main.css";
-import "sui-dapp-kit-vue/style.css";
 
 import { createApp } from "vue";
 import { createPinia } from "pinia";

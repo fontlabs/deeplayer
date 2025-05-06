@@ -8,13 +8,13 @@ import { Contract } from '@/scripts/contract';
 import { Converter } from '@/scripts/converter';
 import type { Coin } from '@/scripts/types';
 import { useBalanceStore } from '@/stores/balance';
-import { useSignAndExecuteTransactionBlock, useCurrentAccount } from 'sui-dapp-kit-vue';
+import { useWalletStore } from '@/stores/wallet';
 import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
 const balanceStore = useBalanceStore();
-const { currentAccount } = useCurrentAccount();
+const walletStore = useWalletStore();
 const amount = ref<number | undefined>(undefined);
 const strategy = ref<Coin | undefined>(undefined);
 
@@ -33,7 +33,7 @@ const setAmount = (div: number = 1) => {
 const unstake = async () => {
     if (!strategy.value) return;
 
-    if (!currentAccount.value) {
+    if (!walletStore.address) {
         return notify.push({
             title: "Connect your wallet!",
             description: "Wallet connection error.",

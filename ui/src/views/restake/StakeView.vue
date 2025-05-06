@@ -2,25 +2,24 @@
 import ChevronLeftIcon from '@/components/icons/ChevronLeftIcon.vue';
 import OutIcon from '@/components/icons/OutIcon.vue';
 import { notify } from '@/reactives/notify';
+import { useAdapter } from '@/scripts/config';
 import { findStrategy } from '@/scripts/constant';
 
 import { Contract } from '@/scripts/contract';
 import { Converter } from '@/scripts/converter';
-import { Clients } from '@/scripts/sui';
 import type { Coin } from '@/scripts/types';
 import { useBalanceStore } from '@/stores/balance';
-import { useSignAndExecuteTransactionBlock, useCurrentAccount } from 'sui-dapp-kit-vue';
+import { useWalletStore } from '@/stores/wallet';
 import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
+const walletStore = useWalletStore();
 const balanceStore = useBalanceStore();
-const { currentAccount } = useCurrentAccount();
+const { adapter } = useAdapter();
 const amount = ref<number | undefined>(undefined);
 const strategy = ref<Coin | undefined>(undefined);
 const isDelegated = ref<boolean>(false);
-
-const { signAndExecuteTransactionBlock } = useSignAndExecuteTransactionBlock();
 
 const setAmount = (div: number = 1) => {
     if (!strategy.value) return;
@@ -38,7 +37,7 @@ const mint = async () => {
     if (!strategy.value) return;
     if (!strategy.value.faucet) return;
 
-    if (!currentAccount.value) {
+    if (!walletStore.address) {
         return notify.push({
             title: "Connect your wallet!",
             description: "Wallet connection error.",
@@ -46,24 +45,17 @@ const mint = async () => {
         });
     }
 
-    try {
-        const value = Converter.toSUI(strategy.value.faucet.amount, strategy.value.decimals);
-        if (!value) return;
+    const value = Converter.toSUI(strategy.value.faucet.amount, strategy.value.decimals);
+    if (!value) return;
 
-        const transactionBlock = await Contract.mintCoin(
-            currentAccount.value.address,
-            strategy.value,
-            value
-        );
-        if (!transactionBlock) return;
+    const digest = await Contract.mintCoin(
+        walletStore.address,
+        strategy.value,
+        value
+    );
 
-        const { digest } = await signAndExecuteTransactionBlock({
-            transactionBlock: transactionBlock as any
-        });
-
-        await Clients.suiClient.waitForTransaction({ digest });
-
-        balanceStore.getCoinBalances(currentAccount.value.address);
+    if (digest) {
+        balanceStore.getCoinBalances(walletStore.address);
 
         notify.push({
             title: "Minting successful!",
@@ -72,7 +64,7 @@ const mint = async () => {
             linkTitle: "View on Sui Explorer",
             linkUrl: `https://suiscan.xyz/testnet/tx/${digest}?network=testnet`,
         });
-    } catch (error) {
+    } else {
         notify.push({
             title: "Minting failed!",
             description: "Transaction error.",
@@ -84,7 +76,7 @@ const mint = async () => {
 const restake = async () => {
     if (!strategy.value) return;
 
-    if (!currentAccount.value) {
+    if (!walletStore.address) {
         return notify.push({
             title: "Connect your wallet!",
             description: "Wallet connection error.",
@@ -100,24 +92,18 @@ const restake = async () => {
         });
     }
 
-    try {
-        const value = Converter.toSUI(amount.value, strategy.value.decimals);
-        if (!value) return;
+    const value = Converter.toSUI(amount.value, strategy.value.decimals);
+    if (!value) return;
 
-        const transactionBlock = await Contract.depositIntoStrategy(
-            currentAccount.value.address,
-            strategy.value,
-            value
-        );
-        if (!transactionBlock) return;
+    const digest = await Contract.depositIntoStrategy(
+        walletStore.address,
+        strategy.value,
+        value,
+        adapter.value as any
+    );
 
-        const { digest } = await signAndExecuteTransactionBlock({
-            transactionBlock: transactionBlock as any
-        });
-
-        await Clients.suiClient.waitForTransaction({ digest });
-
-        balanceStore.getBalances(currentAccount.value.address);
+    if (digest) {
+        balanceStore.getBalances(walletStore.address);
 
         notify.push({
             title: "Restaking successful!",
@@ -128,7 +114,7 @@ const restake = async () => {
         });
 
         amount.value = undefined;
-    } catch (error) {
+    } else {
         notify.push({
             title: "Restaking failed!",
             description: "Transaction error.",

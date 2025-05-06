@@ -1,6 +1,8 @@
-import { SUI_TYPE_ARG } from "@mysten/sui/utils";
 import { Contract } from "./contract";
 import type { Coin, AVS, Operator } from "./types";
+
+export const SUI_COIN =
+  "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI";
 
 const findStrategy = (coinType: string): Coin | undefined => {
   return strategies.find((strategy) => strategy.type == coinType);
@@ -157,7 +159,7 @@ const services: AVS[] = [
       symbol: "SUI",
       decimals: 9,
       image: "/images/sui.png",
-      type: SUI_TYPE_ARG,
+      type: SUI_COIN,
       about: "SUI Coin.",
       link: "https://sui.io",
     },

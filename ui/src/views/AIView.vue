@@ -6,8 +6,8 @@ import CloseIcon from '@/components/icons/CloseIcon.vue';
 // import ProgressBox from '@/components/ProgressBox.vue';
 import { notify } from '@/reactives/notify';
 import { AI, type Chat } from '@/scripts/ai';
+import { useWalletStore } from '@/stores/wallet';
 import { onMounted, ref, watch } from 'vue';
-import { useCurrentAccount } from 'sui-dapp-kit-vue';
 
 const Faqs = [
     "What is Restaking?",
@@ -22,11 +22,11 @@ const showing = ref<boolean>(true);
 const sending = ref<boolean>(false);
 const progress = ref<boolean>(false);
 const scrollContainer = ref<HTMLElement | null>(null);
-const { currentAccount } = useCurrentAccount();
+const walletStore = useWalletStore();
 
 const getChats = () => {
-    if (!currentAccount.value) return;
-    AI.getChats(currentAccount.value.address, (results) => {
+    if (!walletStore.address) return;
+    AI.getChats(walletStore.address, (results) => {
         chats.value = results;
 
         setTimeout(() => {
@@ -40,7 +40,7 @@ const getChats = () => {
 const sendText = async () => {
     if (sending.value) return;
 
-    if (!currentAccount.value) {
+    if (!walletStore.address) {
         return notify.push({
             title: "Connect your wallet!",
             description: "Wallet connection error.",
@@ -59,7 +59,7 @@ const sendText = async () => {
     sending.value = true;
     showing.value = false;
 
-    AI.chat(currentAccount.value.address, text.value);
+    AI.chat(walletStore.address, text.value);
 
     text.value = '';
 };
@@ -68,7 +68,7 @@ onMounted(() => {
     getChats();
 });
 
-watch(currentAccount, () => {
+watch(walletStore, () => {
     getChats();
 });
 </script>
@@ -78,7 +78,7 @@ watch(currentAccount, () => {
 
     <div class="container" v-else>
         <div class="messages" ref="scrollContainer">
-            <div class="no_message" v-if="chats.length == 0 || !currentAccount || !currentAccount.address">
+            <div class="no_message" v-if="chats.length == 0 || !walletStore.address">
                 <div class="icon">
                     <AIIcon />
                 </div>
@@ -87,9 +87,9 @@ watch(currentAccount, () => {
                 <p>Your DeepLayr and Restaking AI Assistant.</p>
             </div>
 
-            <div v-show="currentAccount?.address" v-for="chat in chats.sort((a, b) => a.timestampMs - b.timestampMs)"
-                :class="chat.from == currentAccount?.address ? 'message message_user' : 'message'">
-                <img v-if="chat.from == currentAccount?.address" src="/images/colors.png" alt="">
+            <div v-show="walletStore.address" v-for="chat in chats.sort((a, b) => a.timestampMs - b.timestampMs)"
+                :class="chat.from == walletStore.address ? 'message message_user' : 'message'">
+                <img v-if="chat.from == walletStore.address" src="/images/colors.png" alt="">
                 <img v-else src="/images/ai.png" alt="">
                 <div class="text">{{ chat.text }}</div>
             </div>

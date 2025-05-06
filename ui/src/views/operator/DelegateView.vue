@@ -9,46 +9,43 @@ import type { Operator } from '@/scripts/types';
 import { useBalanceStore } from '@/stores/balance';
 import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useSignAndExecuteTransactionBlock, useCurrentAccount } from 'sui-dapp-kit-vue';
 import { Clients } from '@/scripts/sui';
 import { bcs } from '@mysten/sui/bcs';
+import { useWalletStore } from '@/stores/wallet';
+import { useAdapter } from '@/scripts/config';
 
 const route = useRoute();
 const router = useRouter();
+const { adapter } = useAdapter();
 const balanceStore = useBalanceStore();
-const { currentAccount } = useCurrentAccount();
+const walletStore = useWalletStore();
 const operator = ref<Operator | undefined>(undefined);
 const isDelegated = ref<boolean>(false);
 const isDelegatedTo = ref<boolean>(false);
-const { signAndExecuteTransactionBlock } = useSignAndExecuteTransactionBlock();
 
 const delegate = async () => {
     if (!operator.value) return;
-    if (!currentAccount.value) {
+    if (!walletStore.address) {
         return notify.push({
             title: "Connect your wallet!",
             description: "Wallet connection error.",
             category: "error"
         });
     }
+    const digest = await Contract.delegate(
+        operator.value.address,
+        adapter.value as any,
+    );
 
-    try {
-        const { digest } = await signAndExecuteTransactionBlock({
-            transactionBlock: Contract.delegate(
-                operator.value.address
-            ) as any
-        });
-
-        await Clients.suiClient.waitForTransaction({ digest });
-
-        balanceStore.getBalances(currentAccount.value.address);
+    if (digest) {
+        balanceStore.getBalances(walletStore.address);
 
         notify.push({
             title: "Delegation successful!",
             description: "You have successfully delegated your shares.",
             category: "success"
         });
-    } catch (error) {
+    } else {
         notify.push({
             title: "Delegation failed!",
             description: "Transaction error.",
@@ -59,7 +56,7 @@ const delegate = async () => {
 
 const redelegate = async () => {
     if (!operator.value) return;
-    if (!currentAccount.value) {
+    if (!walletStore.address) {
         return notify.push({
             title: "Connect your wallet!",
             description: "Wallet connection error.",
@@ -67,23 +64,22 @@ const redelegate = async () => {
         });
     }
 
-    try {
-        const { digest } = await signAndExecuteTransactionBlock({
-            transactionBlock: Contract.redelegate(
-                operator.value.address
-            ) as any
-        });
+    const digest = await Contract.redelegate(
+        operator.value.address,
+        adapter.value as any,
+    );
 
-        await Clients.suiClient.waitForTransaction({ digest });
-
-        balanceStore.getBalances(currentAccount.value.address);
+    if (digest) {
+        balanceStore.getBalances(walletStore.address);
 
         notify.push({
             title: "Redelegation successful!",
             description: "You have successfully redelegated your shares.",
             category: "success"
         });
-    } catch (error) {
+    }
+
+    else {
         notify.push({
             title: "Redelegation failed!",
             description: "Transaction error.",
@@ -93,7 +89,7 @@ const redelegate = async () => {
 };
 
 const undelegate = async () => {
-    if (!currentAccount.value) {
+    if (!walletStore.address) {
         return notify.push({
             title: "Connect your wallet!",
             description: "Wallet connection error.",
@@ -101,23 +97,19 @@ const undelegate = async () => {
         });
     }
 
-    try {
-        const { digest } = await signAndExecuteTransactionBlock({
-            transactionBlock: Contract.undelegate(
-                currentAccount.value.address,
-            ) as any
-        });
+    const digest = await Contract.undelegate(
+        adapter.value as any
+    );
 
-        await Clients.suiClient.waitForTransaction({ digest });
-
-        balanceStore.getBalances(currentAccount.value.address);
+    if (digest) {
+        balanceStore.getBalances(walletStore.address);
 
         notify.push({
             title: "Undelegation successful!",
             description: "You have successfully undelegated your shares.",
             category: "success"
         });
-    } catch (error) {
+    } else {
         notify.push({
             title: "Undelegation failed!",
             description: "Transaction error.",
@@ -131,13 +123,13 @@ const getOperator = (address: string) => {
 };
 
 const getIsDelegated = async () => {
-    if (!currentAccount.value) return;
+    if (!walletStore.address) return;
 
     const { results } = await Clients.suiClient.devInspectTransactionBlock({
         transactionBlock: Contract.isDelegated(
-            currentAccount.value.address
+            walletStore.address
         ),
-        sender: currentAccount.value.address,
+        sender: walletStore.address,
     });
     if (!results) return;
     if (!results[0].returnValues) return;
@@ -148,17 +140,17 @@ const getIsDelegated = async () => {
 };
 
 const getIsDelegatedTo = async () => {
-    if (!currentAccount.value) return;
+    if (!walletStore.address) return;
     if (!operator.value) return;
 
-    if (!currentAccount.value) return;
+    if (!walletStore.address) return;
 
     const { results } = await Clients.suiClient.devInspectTransactionBlock({
         transactionBlock: Contract.isDelegatedTo(
-            currentAccount.value.address,
+            walletStore.address,
             operator.value.address
         ),
-        sender: currentAccount.value.address,
+        sender: walletStore.address,
     });
     if (!results) return;
     if (!results[0].returnValues) return;

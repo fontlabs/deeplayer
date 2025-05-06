@@ -3,14 +3,14 @@ import { strategies } from '@/scripts/constant';
 import { Converter } from '@/scripts/converter';
 import { onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useCurrentAccount } from 'sui-dapp-kit-vue';
 import type { Coin } from '@/scripts/types';
 import { useBalanceStore } from '@/stores/balance';
 import AdvertPop from '@/components/AdvertPop.vue';
+import { useWalletStore } from '@/stores/wallet';
 
 const router = useRouter();
+const walletStore = useWalletStore();
 const balanceStore = useBalanceStore();
-const { currentAccount } = useCurrentAccount();
 const search = ref<string | undefined>(undefined);
 const allStrategy = ref<Coin[]>(strategies);
 const type = ref<'all' | 'sui_lst' | 'btc_lst' | 'others'>('all');
@@ -48,7 +48,9 @@ watch(search, () => {
 });
 
 onMounted(() => {
-  balanceStore.getBalances(currentAccount.value?.address);
+  if (walletStore.address) {
+    balanceStore.getBalances(walletStore.address);
+  }
 });
 </script>
 

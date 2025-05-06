@@ -3,6 +3,8 @@ import { CoinAPI } from "./coin";
 import { Transaction } from "@mysten/sui/transactions";
 import { bcs } from "@mysten/sui/bcs";
 import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
+import type { NightlyConnectSuiAdapter } from "@nightlylabs/wallet-selector-sui";
+import { SUI_COIN } from "./constant";
 
 const Contract = {
   DeepLayer:
@@ -20,8 +22,18 @@ const Contract = {
   DelegationManager:
     "0x4f9789410e46b594e2f67a2b0c5a1cedf4ac453f8083e4f800c5745d8bac1e48",
 
-  mintCoin(sender: string, strategy: Coin, amount: bigint): Transaction | null {
+  async mintCoin(
+    sender: string,
+    strategy: Coin,
+    amount: bigint,
+    adapter?: NightlyConnectSuiAdapter
+  ): Promise<string | null> {
+    if (!adapter) return null;
+
     try {
+      const accounts = await adapter.getAccounts();
+      if (accounts.length === 0) return null;
+
       const tx = new Transaction();
 
       if (!strategy.faucet) return null;
@@ -36,7 +48,13 @@ const Contract = {
         typeArguments: [strategy.type],
       });
 
-      return tx;
+      const { digest } = await adapter.signAndExecuteTransactionBlock({
+        transactionBlock: tx as any,
+        chain: "sui:testnet",
+        account: accounts[0],
+      });
+
+      return digest;
     } catch (error) {
       return null;
     }
@@ -45,22 +63,35 @@ const Contract = {
   async depositIntoStrategy(
     sender: string,
     strategy: Coin,
-    amount: bigint
-  ): Promise<Transaction | null> {
+    amount: bigint,
+    adapter?: NightlyConnectSuiAdapter
+  ): Promise<string | null> {
+    if (!adapter) return null;
+
     try {
+      const accounts = await adapter.getAccounts();
+      if (accounts.length === 0) return null;
+
       const tx = new Transaction();
 
-      const coins = await CoinAPI.getCoins(sender, strategy.type);
-      const coinsObject = coins.data.map((coin) => coin.coinObjectId);
-      if (coinsObject.length === 0) return null;
-      const destinationInCoin = coinsObject[0];
-      if (coinsObject.length > 1) {
-        const [, ...otherInCoins] = coinsObject;
-        tx.mergeCoins(destinationInCoin, otherInCoins);
+      let coinDesposited;
+      if (strategy.type === SUI_COIN) {
+        const [coinResult] = tx.splitCoins(tx.gas, [amount]);
+        coinDesposited = coinResult;
+      } else {
+        const coins = await CoinAPI.getCoins(sender, strategy.type);
+        const coinsObject = coins.data.map((coin) => coin.coinObjectId);
+        if (coinsObject.length === 0) return null;
+        const destinationInCoin = coinsObject[0];
+        if (coinsObject.length > 1) {
+          const [, ...otherInCoins] = coinsObject;
+          tx.mergeCoins(destinationInCoin, otherInCoins);
+        }
+        const [coinResult] = tx.splitCoins(destinationInCoin, [
+          tx.pure.u64(amount),
+        ]);
+        coinDesposited = coinResult;
       }
-      const [coinDesposited] = tx.splitCoins(destinationInCoin, [
-        tx.pure.u64(amount),
-      ]);
 
       tx.moveCall({
         target: `${this.DeepLayer}::delegation_module::deposit_into_strategy`,
@@ -74,60 +105,120 @@ const Contract = {
         typeArguments: [strategy.type],
       });
 
-      return tx;
+      const { digest } = await adapter.signAndExecuteTransactionBlock({
+        transactionBlock: tx as any,
+        chain: "sui:testnet",
+        account: accounts[0],
+      });
+
+      return digest;
     } catch (error) {
       return null;
     }
   },
 
-  delegate(operator: string): Transaction {
-    const tx = new Transaction();
+  async delegate(
+    operator: string,
+    adapter?: NightlyConnectSuiAdapter
+  ): Promise<string | null> {
+    if (!adapter) return null;
 
-    tx.moveCall({
-      target: `${this.DeepLayer}::delegation_module::delegate`,
-      arguments: [
-        tx.object(this.StrategyManager),
-        tx.object(this.AllocationManager),
-        tx.object(this.DelegationManager),
-        tx.pure.address(operator),
-        tx.object(SUI_CLOCK_OBJECT_ID),
-      ],
-    });
+    try {
+      const accounts = await adapter.getAccounts();
+      if (accounts.length === 0) return null;
 
-    return tx;
+      const tx = new Transaction();
+
+      tx.moveCall({
+        target: `${this.DeepLayer}::delegation_module::delegate`,
+        arguments: [
+          tx.object(this.StrategyManager),
+          tx.object(this.AllocationManager),
+          tx.object(this.DelegationManager),
+          tx.pure.address(operator),
+          tx.object(SUI_CLOCK_OBJECT_ID),
+        ],
+      });
+
+      const { digest } = await adapter.signAndExecuteTransactionBlock({
+        transactionBlock: tx as any,
+        chain: "sui:testnet",
+        account: accounts[0],
+      });
+
+      return digest;
+    } catch (error) {
+      return null;
+    }
   },
 
-  undelegate(staker: string): Transaction {
-    const tx = new Transaction();
+  async undelegate(
+    staker: string,
+    adapter?: NightlyConnectSuiAdapter
+  ): Promise<string | null> {
+    if (!adapter) return null;
 
-    tx.moveCall({
-      target: `${this.DeepLayer}::delegation_module::undelegate`,
-      arguments: [
-        tx.object(this.StrategyManager),
-        tx.object(this.AllocationManager),
-        tx.object(this.DelegationManager),
-        tx.pure.address(staker),
-      ],
-    });
+    try {
+      const accounts = await adapter.getAccounts();
+      if (accounts.length === 0) return null;
 
-    return tx;
+      const tx = new Transaction();
+
+      tx.moveCall({
+        target: `${this.DeepLayer}::delegation_module::undelegate`,
+        arguments: [
+          tx.object(this.StrategyManager),
+          tx.object(this.AllocationManager),
+          tx.object(this.DelegationManager),
+          tx.pure.address(staker),
+        ],
+      });
+
+      const { digest } = await adapter.signAndExecuteTransactionBlock({
+        transactionBlock: tx as any,
+        chain: "sui:testnet",
+        account: accounts[0],
+      });
+
+      return digest;
+    } catch (error) {
+      return null;
+    }
   },
 
-  redelegate(new_operator: string): Transaction {
-    const tx = new Transaction();
+  async redelegate(
+    new_operator: string,
+    adapter?: NightlyConnectSuiAdapter
+  ): Promise<string | null> {
+    if (!adapter) return null;
 
-    tx.moveCall({
-      target: `${this.DeepLayer}::delegation_module::redelegate`,
-      arguments: [
-        tx.object(this.StrategyManager),
-        tx.object(this.AllocationManager),
-        tx.object(this.DelegationManager),
-        tx.pure.address(new_operator),
-        tx.object(SUI_CLOCK_OBJECT_ID),
-      ],
-    });
+    try {
+      const accounts = await adapter.getAccounts();
+      if (accounts.length === 0) return null;
 
-    return tx;
+      const tx = new Transaction();
+
+      tx.moveCall({
+        target: `${this.DeepLayer}::delegation_module::redelegate`,
+        arguments: [
+          tx.object(this.StrategyManager),
+          tx.object(this.AllocationManager),
+          tx.object(this.DelegationManager),
+          tx.pure.address(new_operator),
+          tx.object(SUI_CLOCK_OBJECT_ID),
+        ],
+      });
+
+      const { digest } = await adapter.signAndExecuteTransactionBlock({
+        transactionBlock: tx as any,
+        chain: "sui:testnet",
+        account: accounts[0],
+      });
+
+      return digest;
+    } catch (error) {
+      return null;
+    }
   },
 
   getAllTotalShares(strategyIds: string[]): Transaction {

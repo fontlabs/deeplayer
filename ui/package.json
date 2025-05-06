@@ -11,12 +11,16 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
+    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+    "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
     "@mysten/sui": "^1.25.0",
+    "@nightlylabs/wallet-selector-sui": "^0.4.2",
     "@tanstack/vue-query": "^5.70.0",
+    "buffer": "^6.0.3",
     "firebase": "^11.6.0",
     "openai": "^4.95.1",
     "pinia": "^3.0.1",
-    "sui-dapp-kit-vue": "^0.4.4",
+    "rollup-plugin-node-polyfills": "^0.2.1",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
   },

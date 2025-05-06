@@ -1,8 +1,35 @@
 <script setup lang="ts">
-import { ConnectButton } from 'sui-dapp-kit-vue';
+import { useAdapter } from '@/scripts/config';
+import { Converter } from '@/scripts/converter';
+import { useWalletStore } from '@/stores/wallet';
+import { onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
+const walletStore = useWalletStore();
+const { adapter, initAdapter } = useAdapter();
+
+watch(adapter, (newAdapter) => {
+    newAdapter?.on('connect', (accounts) => {
+        if (accounts.length > 0) {
+            walletStore.setAddress(accounts[0].address);
+        }
+    });
+
+    newAdapter?.on('change', (adapter) => {
+        if (adapter.accounts?.length) {
+            walletStore.setAddress(adapter.accounts?.[0].address);
+        }
+    });
+
+    newAdapter?.on('disconnect', () => {
+        walletStore.setAddress(null);
+    });
+});
+
+onMounted(() => {
+    initAdapter();
+});
 </script>
 
 <template>
@@ -41,7 +68,11 @@ const route = useRoute();
 
                 <div class="actions">
                     <RouterLink to="/ai"><button class="ai">Ask AI</button></RouterLink>
-                    <ConnectButton />
+                    <button class="connect" @click="adapter?.connect()">
+                        {{
+                            walletStore.address ? Converter.trimAddress(walletStore.address, 5) : 'Connect Wallet'
+                        }}
+                    </button>
                 </div>
             </header>
         </div>
@@ -112,6 +143,7 @@ header {
 
 .actions {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
     gap: 20px;
 }
@@ -138,5 +170,16 @@ header {
 
 .ai:active {
     transform: scale(.95);
+}
+
+.connect {
+    cursor: pointer;
+    background: var(--primary);
+    border: none;
+    color: var(--tx-normal);
+    border-radius: 8px;
+    font-size: 16px;
+    height: 40px;
+    padding: 0 20px;
 }
 </style>
