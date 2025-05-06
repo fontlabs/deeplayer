@@ -7,6 +7,8 @@ import UnStakeView from "@/views/restake/UnStakeView.vue";
 import DelegateView from "@/views/operator/DelegateView.vue";
 import AVSInfoView from "@/views/avs/AVSInfoView.vue";
 import AIView from "@/views/AIView.vue";
+import RewardsView from "@/views/RewardsView.vue";
+import WithdrawsView from "@/views/WithdrawsView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -57,6 +59,16 @@ const router = createRouter({
       path: "/ai",
       name: "ai",
       component: AIView,
+    },
+    {
+      path: "/rewards",
+      name: "rewards",
+      component: RewardsView,
+    },
+    {
+      path: "/withdraws",
+      name: "withdraws",
+      component: WithdrawsView,
     },
   ],
 });

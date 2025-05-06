@@ -1,72 +1,75 @@
 <script setup lang="ts">
-import { operators } from '@/scripts/constant';
-import { Converter } from '@/scripts/converter';
-import { useBalanceStore } from '@/stores/balance';
-import { useRouter } from 'vue-router';
+import OutIcon from '@/components/icons/OutIcon.vue';
+import { useWalletStore } from '@/stores/wallet';
 
-const router = useRouter();
-const balanceStore = useBalanceStore();
+const walletStore = useWalletStore();
 </script>
 
 <template>
     <section>
         <div class="app_width">
-            <div class="operators">
+            <div class="rewards">
                 <div class="title">
-                    <h3>Delegate</h3>
+                    <h3>Rewards</h3>
                 </div>
 
-                <div class="operators_wrapper">
+                <div class="rewards_wrapper">
                     <div class="toolbar">
                         <input type="text" placeholder="Search">
 
                         <div class="tabs">
                             <button class="tab tab_active">All</button>
-                            <button class="tab">Active only</button>
+                            <button class="tab">Claimed only</button>
                         </div>
                     </div>
 
-                    <table>
+                    <table v-if="walletStore.address">
                         <thead>
                             <tr>
-                                <td>Operator</td>
-                                <td>Total Restaked (SUI)</td>
-                                <td>Total Shares</td>
-                                <td>AVS Secured</td>
+                                <td>AVS</td>
+                                <td>Allocation</td>
+                                <td>Coin</td>
+                                <td>Expiry on</td>
                                 <td>Actions</td>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="operator in operators" :key="operator.address"
-                                @click="router.push(`/operator/${operator.address}`)">
+                            <tr v-for="reward, index in 1" :key="index">
                                 <td>
-                                    <div class="operator_info">
-                                        <img :src="operator.image" alt="operator">
-                                        <p>{{ operator.name }}</p>
+                                    <RouterLink
+                                        :to="'/avs/0x7b941196e87bbf0f0ee85717c68f49ad88ef598b81943ff4bde11dfea5e1b9a4'">
+                                        <div class="avs">
+                                            <img :src="'/images/colors.png'" alt="reward">
+                                            <p>Nebula</p>
+                                            <OutIcon />
+                                        </div>
+                                    </RouterLink>
+                                </td>
+                                <td>0</td>
+                                <td>
+                                    <div class="reward_info">
+                                        <img :src="'/images/sui.png'" alt="reward">
+                                        <p>{{ 'SUI' }}</p>
                                     </div>
                                 </td>
                                 <td>
-                                    {{
-                                        Converter.toMoney(Converter.fromSUI(balanceStore.total_shares[operator.address])) ||
-                                        0 * 1.12
-                                    }}
+                                    <p class="date">31st May, 2025</p>
                                 </td>
-                                <td>
-                                    {{
-                                        Converter.toMoney(Converter.fromSUI(balanceStore.total_shares[operator.address]))
-                                    }}
-                                </td>
-                                <td>1</td>
                                 <td>
                                     <div class="actions">
-                                        <RouterLink :to="`/operator/${operator.address}`">
-                                            <button>Delegate</button>
-                                        </RouterLink>
+                                        <button>Claim</button>
                                     </div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+
+                    <div v-else>
+                        <div class="empty">
+                            <img src="/images/empty.png" alt="empty">
+                            <p>No rewards</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -74,7 +77,7 @@ const balanceStore = useBalanceStore();
 </template>
 
 <style scoped>
-.operators {
+.rewards {
     padding: 30px 0;
 }
 
@@ -84,7 +87,7 @@ const balanceStore = useBalanceStore();
     font-weight: 500;
 }
 
-.operators_wrapper {
+.rewards_wrapper {
     margin-top: 20px;
     background: var(--bg-light);
     border: 1px solid var(--bg-lighter);
@@ -173,19 +176,20 @@ tbody tr:not(:last-child) {
     border-bottom: 1px solid var(--bg-lighter);
 }
 
-.operator_info {
+.reward_info {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 8px;
 }
 
-.operator_info img {
+.reward_info img {
     height: 24px;
     width: 24px;
     border-radius: 8px;
 }
 
-.operator_info p {
+.reward_info p {
     font-size: 14px;
     color: var(--tx-semi);
 }
@@ -197,7 +201,7 @@ tbody tr:not(:last-child) {
     gap: 10px;
 }
 
-.operators .actions button {
+.rewards .actions button {
     padding: 0 10px;
     height: 30px;
     border-radius: 20px;
@@ -207,5 +211,26 @@ tbody tr:not(:last-child) {
     color: var(--bg);
     cursor: pointer;
     font-weight: 500;
+}
+
+.avs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.avs img {
+    width: 18px;
+    height: 18px;
+}
+
+.avs p {
+    font-size: 14px;
+    color: var(--tx-semi);
+}
+
+.date {
+    font-size: 14px;
+    color: var(--tx-semi);
 }
 </style>

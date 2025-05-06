@@ -16,9 +16,8 @@ export const useBalanceStore = defineStore("balance", {
     total_value_restaked: {} as { [key: string]: bigint },
 
     // operator
-    total_restaked_sui: {} as { [key: string]: bigint },
     your_shares: {} as { [key: string]: bigint },
-    total_shares: {} as { [key: string]: { [key: string]: bigint } },
+    total_shares: {} as { [key: string]: bigint },
     avs_secured: {} as { [key: string]: number },
 
     // avs
@@ -118,14 +117,10 @@ export const useBalanceStore = defineStore("balance", {
           .vector(bcs.U64)
           .parse(Uint8Array.from(results[0].returnValues[0][0]));
 
-        strategies.forEach((strategy, index) => {
-          const shares = {} as { [key: string]: bigint };
-          shares[strategy.type] = BigInt(total_shares[index]);
-          this.total_shares[operator] = {
-            ...this.total_shares[operator],
-            ...shares,
-          };
-        });
+        this.total_shares[operator] = total_shares.reduce(
+          (a, b) => a + BigInt(b),
+          BigInt(0)
+        );
       }
     },
 
