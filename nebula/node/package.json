@@ -4,6 +4,8 @@
   "description": "ZK bridge",
   "main": "index.js",
   "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
     "test": "test"
   },
   "keywords": [
@@ -12,13 +14,12 @@
   "author": "devarogundade",
   "license": "MIT",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
     "@types/node": "^22.13.14",
-    "hardhat": "^2.23.0",
     "typescript": "^5.8.2"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.2.0",
+    "@mysten/sui": "^1.25.0",
+    "axios": "^1.8.4",
     "dotenv": "^16.4.7",
     "viem": "^2.24.2"
   }
