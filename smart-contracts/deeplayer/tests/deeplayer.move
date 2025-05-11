@@ -410,4 +410,23 @@ module deeplayer::deeplayer_tests {
         ts::return_to_sender(&scenario, treasury_cap);
         ts::end(scenario);
     }
+
+    #[test]
+    fun signature_test() {
+        let mut scenario = ts::begin(@0x123);
+        let admin = @0x1;
+
+        // ========== INIT ========== //
+        ts::next_tx(&mut scenario, admin);
+
+        let success = nebula::verify_simple_sig(
+            vector[227, 236, 166, 236, 196, 13, 207, 119, 107, 240, 171, 64, 80, 195, 148, 94, 153, 70, 183, 147, 155, 108, 108, 100, 33],
+            @0x9e1b49043efc0bead9d0381713fa0c4348b05f59450cbb90961b6b98a67adb23,
+            vector[72, 101, 108, 108, 111, 44, 32, 119, 111, 114, 108, 100, 33]
+        );
+
+        debug::print(&success);
+
+        ts::end(scenario);
+    }
 }

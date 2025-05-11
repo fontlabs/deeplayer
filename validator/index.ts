@@ -39,20 +39,17 @@ interface EventListenerCallback {
 }
 
 class EventSigner {
-  async sign(
-    event: TokenLockedEvent
-  ): Promise<
-    (TokenLockedEvent & { signature: string; signer: string }) | null
+  async sign(event: TokenLockedEvent): Promise<
+    | (TokenLockedEvent & {
+        signature: Uint8Array<ArrayBufferLike>;
+        signer: string;
+      })
+    | null
   > {
-    if (!process.env.SECRET_KEY_SHUNLEXXI)
-      throw new Error("Invalid secret key!");
+    if (!process.env.SECRET_KEY) throw new Error("Invalid secret key!");
     try {
-      const signer = Ed25519Keypair.fromSecretKey(
-        process.env.SECRET_KEY_SHUNLEXXI
-      );
-      const { signature } = await signer.signPersonalMessage(
-        new TextEncoder().encode(event.uid)
-      );
+      const signer = Ed25519Keypair.fromSecretKey(process.env.SECRET_KEY);
+      const signature = await signer.sign(new TextEncoder().encode(event.uid));
       return {
         ...event,
         signature,
@@ -72,7 +69,7 @@ const callback: EventListenerCallback = {
     events.forEach(async (event) => {
       const data = await eventSigner.sign(event);
       if (data) {
-        API.post("/submit", data);
+        API.post("/submit", JSON.stringify(data));
       }
     });
   },
@@ -136,8 +133,7 @@ class EventListener {
 
 class Registrar {
   async registerToAVS() {
-    if (!process.env.SECRET_KEY_SHUNLEXXI)
-      throw new Error("Invalid secret key!");
+    if (!process.env.SECRET_KEY) throw new Error("Invalid secret key!");
 
     try {
       const transaction = new Transaction();
@@ -153,9 +149,7 @@ class Registrar {
       transaction.setGasBudget(50_000_000);
 
       const client = new SuiClient({ url: getFullnodeUrl("testnet") });
-      const signer = Ed25519Keypair.fromSecretKey(
-        process.env.SECRET_KEY_SHUNLEXXI
-      );
+      const signer = Ed25519Keypair.fromSecretKey(process.env.SECRET_KEY);
       const { digest } = await client.signAndExecuteTransaction({
         signer,
         transaction,

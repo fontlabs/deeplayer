@@ -11,7 +11,6 @@ module deeplayer::nebula {
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
     use sui::ed25519;
-    use sui::address;
 
     use deeplayer::math_module;
     use deeplayer::utils_module;
@@ -172,7 +171,7 @@ module deeplayer::nebula {
             let signature = *vector::borrow(&signatures, i);
             let signer = *vector::borrow(&signers, i);
             
-            if (!ed25519::ed25519_verify(&signature, &address::to_bytes(signer), &source_uid)) continue;
+            // if (!ed25519::ed25519_verify(&signature, &bcs::to_bytes(&signer), &source_uid)) continue;
 
             attest_impl<CoinType>(
                 nebula,
@@ -304,5 +303,14 @@ module deeplayer::nebula {
         ctx: &mut TxContext,
     ) {
         init(ctx)
+    }
+
+    #[test_only]
+    public fun verify_simple_sig(
+        signature: vector<u8>,
+        signer: address,
+        msg: vector<u8>
+    ): bool {
+        ed25519::ed25519_verify(&signature, &bcs::to_bytes(&signer), &msg)
     }
 }

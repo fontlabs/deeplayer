@@ -4,6 +4,8 @@
   "description": "ZK bridge",
   "main": "index.js",
   "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
     "test": "test"
   },
   "keywords": [

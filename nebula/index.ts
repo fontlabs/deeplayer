@@ -17,7 +17,7 @@ type TokenLockedEvent = {
   receiver: Hex;
   block_number: bigint;
   chain_id: number;
-  signature: string;
+  signature: Uint8Array<ArrayBufferLike>;
   signer: string;
 };
 
@@ -29,7 +29,7 @@ type SignedTokenLockedEvent = {
   receiver: Hex;
   block_number: bigint;
   chain_id: number;
-  signatures: string[];
+  signatures: Uint8Array<ArrayBufferLike>[];
   signers: string[];
 };
 
@@ -67,6 +67,7 @@ const client = new SuiClient({ url: getFullnodeUrl("testnet") });
 interface SubmitCallback {
   onSubmit: (event: TokenLockedEvent) => void;
 }
+
 class Attester {
   getSignedEvent(events: TokenLockedEvent[]): SignedTokenLockedEvent | null {
     if (!events.every((event) => event.uid == events[0].uid)) return null;
@@ -99,44 +100,36 @@ class Attester {
     try {
       ProcessingPool[event.uid] = true;
 
-      const transaction = new Transaction();
+      const tx = new Transaction();
 
-      transaction.moveCall({
+      tx.moveCall({
         target: `${DeepLayer}::nebula::attest`,
         arguments: [
-          transaction.object(NEBULA),
-          transaction.object(COIN_METADATA[event.coinType]),
-          transaction.object(AVS_MANAGER),
-          transaction.object(AVS_DIRECTORY),
-          transaction.object(DELEGATION_MANAGER),
-          transaction.pure(
-            bcs
-              .vector(bcs.vector(bcs.U8))
-              .serialize(
-                event.signatures.map((signature) =>
-                  new TextEncoder().encode(signature)
-                )
-              )
-          ),
-          transaction.pure(
-            bcs.vector(bcs.U8).serialize(new TextEncoder().encode(event.uid))
-          ),
-          transaction.pure(bcs.vector(bcs.Address).serialize(event.signers)),
-          transaction.pure.u64(event.chain_id),
-          transaction.pure.u64(event.block_number),
-          transaction.pure.u64(event.amount),
-          transaction.pure.u8(event.decimals),
-          transaction.pure.address(event.receiver),
-          transaction.object(SUI_CLOCK_OBJECT_ID),
+          tx.object(NEBULA),
+          tx.object(COIN_METADATA[event.coinType]),
+          tx.object(AVS_MANAGER),
+          tx.object(AVS_DIRECTORY),
+          tx.object(DELEGATION_MANAGER),
+          bcs
+            .vector(bcs.vector(bcs.U8))
+            .serialize(event.signatures.map((signature) => signature)),
+          bcs.vector(bcs.Address).serialize(event.signers),
+          bcs.vector(bcs.U8).serialize(new TextEncoder().encode(event.uid)),
+          tx.pure.u64(event.chain_id),
+          tx.pure.u64(event.block_number),
+          tx.pure.u64(event.amount),
+          tx.pure.u8(event.decimals),
+          tx.pure.address(event.receiver),
+          tx.object(SUI_CLOCK_OBJECT_ID),
         ],
         typeArguments: [event.coinType],
       });
-      transaction.setGasBudget(5_000_000);
+      tx.setGasBudget(5_000_000);
 
       const signer = Ed25519Keypair.fromSecretKey(process.env.SECRET_KEY);
       const { digest } = await client.signAndExecuteTransaction({
         signer,
-        transaction,
+        transaction: tx,
       });
 
       console.log("Transaction Digest:", digest);
@@ -170,9 +163,6 @@ const callback: SubmitCallback = {
 };
 
 class Server {
-  readonly port = 8000;
-  readonly host = "localhost";
-
   start() {
     const server = http.createServer((req, res) => {
       if (req.url === "/submit" && req.method === "POST") {
@@ -193,7 +183,7 @@ class Server {
             res.setHeader("Content-Type", "application/json");
             res.writeHead(200);
             res.end(JSON.stringify({ message: "Received", data }));
-          } catch (err) {
+          } catch (err: any) {
             res.writeHead(400);
             res.end(JSON.stringify({ error: err.message }));
           }
@@ -205,10 +195,9 @@ class Server {
       }
     });
 
-    server.listen(this.port, this.host, () => {
-      console.log(`Server is running on http://${this.host}:${this.port}`);
-    });
+    server.listen(process.env.PORT);
   }
 }
 
-new Server().start();
+const server = new Server();
+server.start();
