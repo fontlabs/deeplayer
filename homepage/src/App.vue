@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import AppHeader from './components/icons/AppHeader.vue';
 import { Application } from '@splinetool/runtime';
 import { onMounted } from 'vue';
-import AppHeader from './components/icons/AppHeader.vue';
 
 onMounted(() => {
   const canvas = document.getElementById('canvas3d')! as HTMLCanvasElement;
