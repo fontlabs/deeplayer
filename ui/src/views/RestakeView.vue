@@ -48,9 +48,7 @@ watch(search, () => {
 });
 
 onMounted(() => {
-  if (walletStore.address) {
-    balanceStore.getBalances(walletStore.address);
-  }
+  balanceStore.getBalances(walletStore.address);
 });
 </script>
 

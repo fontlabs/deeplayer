@@ -26,7 +26,7 @@ export const useBalanceStore = defineStore("balance", {
     total_num_stakers: {} as { [key: string]: number },
   }),
   actions: {
-    getBalances(owner: string | undefined) {
+    getBalances(owner: string | null) {
       if (owner) {
         this.getCoinBalances(owner);
         this.getValueRestaked(owner);
