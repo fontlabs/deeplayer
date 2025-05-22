@@ -72,7 +72,15 @@ export const useBalanceStore = defineStore("balance", {
       this.total_balance = BigInt(0);
       strategies.forEach((strategy, index) => {
         this.value_restaked[strategy.type] = BigInt(value_restaked[index]);
-        this.total_balance += BigInt(value_restaked[index]);
+        if (strategy.isBtc) {
+          this.total_balance += BigInt(
+            Number(value_restaked[index]) * 26642.77
+          );
+        } else if (!strategy.isBtc && !strategy.isLst) {
+          this.total_balance += BigInt(Number(value_restaked[index]) * 3.986);
+        } else {
+          this.total_balance += BigInt(value_restaked[index]);
+        }
       });
     },
 
