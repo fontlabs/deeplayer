@@ -30,6 +30,18 @@ const NebulaModule = buildModule("NebulaModule", (m) => {
     id: "LBTC2",
   });
 
+  m.call(
+    nebula,
+    "setCoinType",
+    [
+      sui,
+      `0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI`,
+    ],
+    {
+      id: "SUI22",
+    }
+  );
+
   return { nebula };
 });
 
