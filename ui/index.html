@@ -1,17 +1,27 @@
 <!DOCTYPE html>
 <html lang="">
-  <head>
-    <meta charset="UTF-8">
-    <link rel="icon" href="/favicon.ico">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeepLayer | Restake LSTs, BTC on SUI</title>
-    <meta name="description" content="Restake LSTs, BTC on SUI: Making dApps & Infras on SUI safer than ever!.">
-    <meta name="keywords" content="SUI, Restake, LSTs, BTC, dApps, Infras">
-    <meta name="author" content="DeepLayer">
-    <meta name="theme-color" content="rgba(23, 23, 23, 1)">
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="/favicon.ico">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepLayer | Restake LSTs, BTC on SUI</title>
+  <meta name="description" content="Restake LSTs, BTC on SUI: Making dApps & Infras on SUI safer than ever!.">
+  <meta name="keywords" content="SUI, Restake, LSTs, BTC, dApps, Infras">
+  <meta name="author" content="DeepLayer">
+  <meta name="theme-color" content="rgba(23, 23, 23, 1)">
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <script>
+    if (typeof window !== "undefined" && window.fetch) {
+      window.fetch = window.fetch.bind(window);
+    }
+  </script>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
 </html>
