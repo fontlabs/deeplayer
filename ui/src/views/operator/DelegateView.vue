@@ -77,6 +77,9 @@ const redelegate = async () => {
             description: "You have successfully redelegated your shares.",
             category: "success"
         });
+
+        getIsDelegated();
+        getIsDelegatedTo();
     }
 
     else {
