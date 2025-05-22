@@ -28,9 +28,9 @@ type TokenLockedEvent = {
   uid: Hex;
   coinType: string;
   decimals: number;
-  amount: bigint;
+  amount: string;
   receiver: Hex;
-  block_number: bigint;
+  block_number: string;
   chain_id: number;
 };
 
@@ -103,18 +103,17 @@ class EventListener {
       event: parseAbiItem(
         "event TokenLocked(bytes32 indexed uid, string coinType, uint256 decimals, uint256 amount, bytes32 receiver)"
       ),
-      pollingInterval: 60_000, // 1 Minutes
+      pollingInterval: 15_000, // 15 Secs
       onLogs: (events) => {
-        console.log(events);
         callback.onEvent(
           events.map((event) => {
             return {
               uid: event.args.uid!,
               coinType: event.args.coinType!,
               decimals: Number(event.args.decimals!),
-              amount: event.args.amount!,
+              amount: String(event.args.amount!),
               receiver: event.args.receiver!,
-              block_number: event.blockNumber,
+              block_number: String(event.blockNumber),
               chain_id: 17_000,
             } as TokenLockedEvent;
           })

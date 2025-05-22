@@ -16,7 +16,7 @@ export const tokens: Token[] = [
     symbol: "LBTC",
     decimals: 8,
     price: 94_329.42,
-    address: "0x9DeB5E5E901F84fda356869A58DcB4885FDB7080",
+    address: "0xa73d10452311E05471B1093Ea0DB54520F7b0ba0",
     image: "/images/lbtc.png",
     faucet: 0.5,
   },
