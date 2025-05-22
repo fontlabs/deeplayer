@@ -41,7 +41,7 @@ interface EventListenerCallback {
 class EventSigner {
   async sign(event: TokenLockedEvent): Promise<
     | (TokenLockedEvent & {
-        signature: Uint8Array<ArrayBufferLike>;
+        signature: number[];
         signer: string;
       })
     | null
@@ -50,9 +50,10 @@ class EventSigner {
     try {
       const signer = Ed25519Keypair.fromSecretKey(process.env.SECRET_KEY);
       const signature = await signer.sign(new TextEncoder().encode(event.uid));
+
       return {
         ...event,
-        signature,
+        signature: Array.from(signature),
         signer: signer.getPublicKey().toSuiAddress(),
       };
     } catch (error) {
