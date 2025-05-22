@@ -92,8 +92,4 @@ onMounted(() => {
 .text button:hover {
   filter: brightness(1.05);
 }
-
-.text button:active {
-  transform: scale(.95);
-}
 </style>
