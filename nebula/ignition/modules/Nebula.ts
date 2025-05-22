@@ -6,7 +6,7 @@ import { zeroAddress } from "viem";
 import TokenModule from "./Token";
 
 const DeepLayer =
-  "0x7b941196e87bbf0f0ee85717c68f49ad88ef598b81943ff4bde11dfea5e1b9a4";
+  "0x8c4bcfe5cac89ea732d9f507f46d56a7e37e3d161007060a5686b9399a9ea03c";
 
 const NebulaModule = buildModule("NebulaModule", (m) => {
   const nebula = m.contract("Nebula");

@@ -171,8 +171,6 @@ module deeplayer::nebula {
             let signature = *vector::borrow(&signatures, i);
             let signer = *vector::borrow(&signers, i);
             
-            // if (!ed25519::ed25519_verify(&signature, &bcs::to_bytes(&signer), &source_uid)) continue;
-
             attest_impl<CoinType>(
                 nebula,
                 coin_metadata,
@@ -241,11 +239,7 @@ module deeplayer::nebula {
         vector::push_back(&mut claim.attestations, operator);
 
         if (claim.claimed) {
-            event::emit(ClaimAttested {
-                claim_root,
-                claimed: true,
-                operator: operator
-            });
+            return;
         } else if (!claim.claimed && vector::length(&claim.attestations) >= nebula.min_attestations) {
             let coin_type = utils_module::get_strategy_id<CoinType>();
             let pool = bag::borrow_mut<string::String, Pool<CoinType>>(&mut nebula.pools, coin_type);

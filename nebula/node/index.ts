@@ -40,15 +40,15 @@ const MemPool: Record<string, TokenLockedEvent[]> = {};
 const ProcessingPool: Record<string, boolean> = {};
 
 const DeepLayer: Hex =
-  "0x7b941196e87bbf0f0ee85717c68f49ad88ef598b81943ff4bde11dfea5e1b9a4";
+  "0x8c4bcfe5cac89ea732d9f507f46d56a7e37e3d161007060a5686b9399a9ea03c";
 const NEBULA: Hex =
-  "0x4930528af3c3cab6aaf414d12cd89217f2ab79e3b148ae7cd758c116938346ce";
+  "0x81ef5c1b3b5230372797d09b66ec3c03a90c5058be5d98ee6808fa30a2ad4477";
 const AVS_DIRECTORY: Hex =
-  "0x9cad346e85eea93d429ab78aba5e1547bd9782fe41c30dfbe301a622957910cc";
+  "0x972411f5178b5de7b7616f1a65bdf5ada2c89f62693cbc6b7d2df165669aec37";
 const AVS_MANAGER: Hex =
-  "0x9e792c8287424fd3927f3070a7d3e4537df6543a6405ee25de0ff1b5f9933104";
+  "0xafcde1ad80463f96bb2163935b1669e6d68479b12973ea4286f56295c58a9233";
 const DELEGATION_MANAGER: Hex =
-  "0x4f9789410e46b594e2f67a2b0c5a1cedf4ac453f8083e4f800c5745d8bac1e48";
+  "0x5ce45c986b9b830939998114531c30a84a9da636912e5d9af596614d41364316";
 
 const COIN_METADATA: Record<string, Hex> = {};
 

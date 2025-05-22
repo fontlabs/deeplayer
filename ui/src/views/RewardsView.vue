@@ -37,7 +37,7 @@ const walletStore = useWalletStore();
                             <tr v-for="reward, index in 1" :key="index">
                                 <td>
                                     <RouterLink
-                                        :to="'/avs/0x7b941196e87bbf0f0ee85717c68f49ad88ef598b81943ff4bde11dfea5e1b9a4'">
+                                        :to="'/avs/0x8c4bcfe5cac89ea732d9f507f46d56a7e37e3d161007060a5686b9399a9ea03c'">
                                         <div class="avs">
                                             <img :src="'/images/colors.png'" alt="reward">
                                             <p>Nebula</p>

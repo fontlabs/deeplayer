@@ -6,24 +6,24 @@ dotenv.config();
 
 const Contract = {
   DeepLayer:
-    "0x7b941196e87bbf0f0ee85717c68f49ad88ef598b81943ff4bde11dfea5e1b9a4",
+    "0x8c4bcfe5cac89ea732d9f507f46d56a7e37e3d161007060a5686b9399a9ea03c",
   AVSManager:
-    "0x9e792c8287424fd3927f3070a7d3e4537df6543a6405ee25de0ff1b5f9933104",
+    "0xafcde1ad80463f96bb2163935b1669e6d68479b12973ea4286f56295c58a9233",
   AVSDirectory:
-    "0x9cad346e85eea93d429ab78aba5e1547bd9782fe41c30dfbe301a622957910cc",
+    "0x972411f5178b5de7b7616f1a65bdf5ada2c89f62693cbc6b7d2df165669aec37",
   StrategyFactory:
-    "0x469ae718fda2fcf93fa64ed4e8555ba03c521807ff0eb3ebc90d8ac78eb62aa9",
+    "0xa5a3627871928f2c0c67195f62a3d04d921eb2e3566d9ce030a5badfd421c255",
   StrategyManager:
-    "0x72bc80b016c2d9faebfff315d3dd2e0d3d252f8335c51b09bcec2f1f9ee9a8fc",
+    "0xfd75910c3d514f3bee8e4f5935397d084360ee9198a547b39e05871fafeacc3e",
   RewardsCoordinator:
-    "0x5fe16ed96834f9f01a52e1a2a52d7a7a4a02fe9e8983575de70f92cee9c1fb62",
+    "0xc58c64144c1aa5f92f795cc204cc0476bc9cb91276c34571a5ba95f7cdae3143",
   AllocationManager:
-    "0x3946025d5bb43d7538b5d50b18bf35356dfd4a29036e8253e8c7f548e085d6bc",
+    "0x83ef04924a88e1fd1d0ba5faaef4295babc1e0559a19281978fbd9087cfde3ea",
   DelegationManager:
-    "0x4f9789410e46b594e2f67a2b0c5a1cedf4ac453f8083e4f800c5745d8bac1e48",
-  Nebula: "0x4930528af3c3cab6aaf414d12cd89217f2ab79e3b148ae7cd758c116938346ce",
+    "0x5ce45c986b9b830939998114531c30a84a9da636912e5d9af596614d41364316",
+  Nebula: "0x81ef5c1b3b5230372797d09b66ec3c03a90c5058be5d98ee6808fa30a2ad4477",
   NebulaCap:
-    "0xb2cd019b592ccdccf8ef83399a676b0161ab4eef94588b26f3c2fc7c1fa17322",
+    "0x5de46dc76af4b57fc27f4e502e6ae8f342335ee0e5caf91e302fc100618209b9",
 };
 
 const client = new SuiClient({
@@ -37,57 +37,57 @@ const Coins = [
     module: "afsui",
     coinType: "AFSUI",
     treasuryCap:
-      "0x774fa28be92c76f67b5c2ec5caa0ec9341a0df67101a031eb5b95ec0e96e14ce",
+      "0x825c9a5093a7d686fbb95c6cabaef97e37e4c30dee867a606c62ff5366d3e211",
     faucet:
-      "0x21829c8ca17ff4f6bd64b67fe97753a8319d350a4742c8e0c7466553118ec3c8",
+      "0x4e0e3cae00f77614ad73a508f27316b7bc81c95fc47a6700c1769031824d8d2d",
   },
   {
     module: "hasui",
     coinType: "HASUI",
     treasuryCap:
-      "0x7c84e6226c3018415d1aee792817efa40d97da5cf97b5cbb674aa73b136e7158",
+      "0x5e181d2efbc2b8055dbe541db18a6d3a3a14b0921e803ec2ba0017addafe2b09",
     faucet:
-      "0xfdac848252c3a0afaaf43e03546d695d0c31bd0a23f81fca98f0613d9ce2d148",
+      "0xbbcdc923ff540b739d0e976f54c37403e36e90d8bffe28abcb25d882ae2a467c",
   },
   {
     module: "pyth",
     coinType: "PYTH",
     treasuryCap:
-      "0x08fdd64acc96d6e2327779a795376b54394bae2508e7475b43913614da37c5f1",
+      "0xf38314def6da2ef64cabb8c3d4d3cd8882dc0b04014eb651ef95c39bf43cbffa",
     faucet:
-      "0x7242123351ca5afaf22ef4fe1f76c2a894f1eeb5bed3be17376ac7ddd38ca585",
+      "0xd381851cf0dee6bb81af3fd0b1a8b84c35569a00df437d3c3e0ef5aa80c1d076",
   },
   {
     module: "stsui",
     coinType: "STSUI",
     treasuryCap:
-      "0x368a3f442b233245daf7f7e67d4802e2cf7db391125ff45c144065d58a10c9ac",
+      "0x790da7f0e1d338f2a0b4c2a8f4bfaf0ea4654eab92b90c2baa3b7e134ca531a2",
     faucet:
-      "0x078021c2b29f1ea2f6d2853296bb1bc49ea0df9f05c6e38aa39dade77a75d9c0",
+      "0x25a29d43d7ae60c18fda39359692788345aa5c077affab6b200c3a3afa6f793e",
   },
   {
     module: "cert",
     coinType: "CERT",
     treasuryCap:
-      "0xefdd1fd712c32539da80a491ddfb734d31703e7d8c49af09415435e1fc0cddda",
+      "0xf58017c72fca9e22a07ccd1cfaf1d9c0ed42bb91bfcd7df2f3c1b3724d5fec4e",
     faucet:
-      "0x55c9e2b668bf5259ec306c4fb4d1e3d40300cf9e98e24e3afa4546483bdad115",
+      "0x112cad2de14d528d2c9dc383b4972aa43ce8d19b3b9be86ce3514397617862f1",
   },
   {
     module: "lbtc",
     coinType: "LBTC",
     treasuryCap:
-      "0x46214e41fd1f4b2056222e894993591130163a592d4a78925b4b088cafc74ce9",
+      "0x04227d09ca903d9f18b59bcb12ad6c73183946294b3f6755f442eff8456839e4",
     faucet:
-      "0x2eb5c249c3b460b2ca5c6c126845bc39ef255ff92837d6f7df74ac31b8463335",
+      "0xb27375b69641ee6536da89d401800cc60d676428d4a4b8b84aaf2f317ac2416c",
   },
 ];
 const Eth_Coin = {
   module: "eth",
   coinType: "ETH",
   treasuryCap:
-    "0x93339726a9497b17d2451ad340f17d099ba3f1a9c9f07b0cfc89fe21b1a1f7a8",
-  faucet: "0xf1e97fb47ac8e2567f3c50d30d6bf594ad92dd3684e47b26ad6bc0f12ebd3603",
+    "0xd9d037f91746b4ce75a627474820abeb9833d53842d2115a716b17c9ee1f4030",
+  faucet: "0x9e7bce0635889378d057e9897e3cf0db44ddeb18a89c159f3ff33403faf5c34b",
 };
 
 const Operators = [

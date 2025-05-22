@@ -23,7 +23,7 @@ const strategies: Coin[] = [
       amount: 5,
       module: "stsui",
       object:
-        "0x078021c2b29f1ea2f6d2853296bb1bc49ea0df9f05c6e38aa39dade77a75d9c0",
+        "0x25a29d43d7ae60c18fda39359692788345aa5c077affab6b200c3a3afa6f793e",
     },
   },
   {
@@ -40,7 +40,7 @@ const strategies: Coin[] = [
       amount: 0.5,
       module: "lbtc",
       object:
-        "0x2eb5c249c3b460b2ca5c6c126845bc39ef255ff92837d6f7df74ac31b8463335",
+        "0xb27375b69641ee6536da89d401800cc60d676428d4a4b8b84aaf2f317ac2416c",
     },
   },
   {
@@ -57,7 +57,7 @@ const strategies: Coin[] = [
       amount: 5,
       module: "hasui",
       object:
-        "0xfdac848252c3a0afaaf43e03546d695d0c31bd0a23f81fca98f0613d9ce2d148",
+        "0xbbcdc923ff540b739d0e976f54c37403e36e90d8bffe28abcb25d882ae2a467c",
     },
   },
   {
@@ -74,7 +74,7 @@ const strategies: Coin[] = [
       amount: 5,
       module: "afsui",
       object:
-        "0x21829c8ca17ff4f6bd64b67fe97753a8319d350a4742c8e0c7466553118ec3c8",
+        "0x4e0e3cae00f77614ad73a508f27316b7bc81c95fc47a6700c1769031824d8d2d",
     },
   },
   {
@@ -91,7 +91,7 @@ const strategies: Coin[] = [
       amount: 5,
       module: "cert",
       object:
-        "0x55c9e2b668bf5259ec306c4fb4d1e3d40300cf9e98e24e3afa4546483bdad115",
+        "0x112cad2de14d528d2c9dc383b4972aa43ce8d19b3b9be86ce3514397617862f1",
     },
   },
   {
@@ -107,7 +107,7 @@ const strategies: Coin[] = [
       amount: 20,
       module: "pyth",
       object:
-        "0x7242123351ca5afaf22ef4fe1f76c2a894f1eeb5bed3be17376ac7ddd38ca585",
+        "0xd381851cf0dee6bb81af3fd0b1a8b84c35569a00df437d3c3e0ef5aa80c1d076",
     },
   },
 ];
@@ -149,7 +149,7 @@ const services: AVS[] = [
   {
     name: "Nebula",
     address:
-      "0x7b941196e87bbf0f0ee85717c68f49ad88ef598b81943ff4bde11dfea5e1b9a4",
+      "0x8c4bcfe5cac89ea732d9f507f46d56a7e37e3d161007060a5686b9399a9ea03c",
     description:
       "Nebula is a decentralized bridge that allows users to transfer assets between different blockchains using zero-knowledge proofs.",
     link: "https://nebula.deeplayr.xyz",

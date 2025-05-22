@@ -288,7 +288,7 @@ watch(walletStore, () => {
             Nebula is a decentralized bridge that allows users to transfer assets between different blockchains using
             zero-knowledge proofs.
           </p>
-          <a href="https://beta.deeplayr.xyz/avs/0x7b941196e87bbf0f0ee85717c68f49ad88ef598b81943ff4bde11dfea5e1b9a4"
+          <a href="https://beta.deeplayr.xyz/avs/0x8c4bcfe5cac89ea732d9f507f46d56a7e37e3d161007060a5686b9399a9ea03c"
             target="_blank">
             <button>View AVS on DeepLayr.</button>
           </a>
