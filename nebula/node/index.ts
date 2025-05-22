@@ -127,7 +127,7 @@ class Attester {
         ],
         typeArguments: [event.coinType],
       });
-      tx.setGasBudget(5_000_000);
+      tx.setGasBudget(50_000_000);
 
       const signer = Ed25519Keypair.fromSecretKey(process.env.SECRET_KEY);
       const { digest } = await client.signAndExecuteTransaction({
