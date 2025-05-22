@@ -13,11 +13,11 @@ type TokenLockedEvent = {
   uid: Hex;
   coinType: string;
   decimals: number;
-  amount: bigint;
+  amount: string;
   receiver: Hex;
-  block_number: bigint;
+  block_number: string;
   chain_id: number;
-  signature: Uint8Array<ArrayBufferLike>;
+  signature: number[];
   signer: string;
 };
 
@@ -25,11 +25,11 @@ type SignedTokenLockedEvent = {
   uid: Hex;
   coinType: string;
   decimals: number;
-  amount: bigint;
+  amount: string;
   receiver: Hex;
-  block_number: bigint;
+  block_number: string;
   chain_id: number;
-  signatures: Uint8Array<ArrayBufferLike>[];
+  signatures: number[][];
   signers: string[];
 };
 
