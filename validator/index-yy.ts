@@ -1,11 +1,14 @@
 import dotenv from "dotenv";
 
 import axios from "axios";
-import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
-import { createPublicClient, defineChain, http, parseAbiItem } from "viem";
-import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
+import {
+  createPublicClient,
+  defineChain,
+  http as viemHTTP,
+  parseAbiItem,
+} from "viem";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import http from "http";
 
 import type { Hex, WatchEventReturnType } from "viem";
 
@@ -110,7 +113,7 @@ class EventListener {
           },
         },
       }),
-      transport: http(),
+      transport: viemHTTP(),
     });
 
     const fromBlock = await publicClient.getBlockNumber();
@@ -155,3 +158,18 @@ eventListnerFontLabs.startListening(callbackFontLabs);
 
 const eventListnerShunlexxi = new EventListener();
 eventListnerShunlexxi.startListening(callbackShunlexxi);
+
+class Server {
+  start() {
+    const server = http.createServer((_, res) => {
+      res.setHeader("Content-Type", "application/json");
+      res.writeHead(200);
+      res.end(JSON.stringify({ message: "OK" }));
+    });
+
+    server.listen(process.env.PORT);
+  }
+}
+
+const server = new Server();
+server.start();
