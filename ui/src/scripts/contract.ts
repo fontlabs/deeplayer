@@ -56,6 +56,8 @@ const Contract = {
 
       return digest;
     } catch (error) {
+      console.log(error);
+
       return null;
     }
   },

@@ -51,7 +51,8 @@ const mint = async () => {
     const digest = await Contract.mintCoin(
         walletStore.address,
         strategy.value,
-        value
+        value,
+        adapter.value as any
     );
 
     if (digest) {

@@ -6,19 +6,33 @@ const CoinAPI = {
     owner: string,
     coinTypes: string[]
   ): Promise<{ [key: string]: bigint }> {
-    const coins = await Clients.suiClient.getAllCoins({ owner });
+    let hasNextPage = false;
+    let nextCursor = undefined;
+
     const balances: { [key: string]: bigint } = {};
 
-    for (let index = 0; index < coinTypes.length; index++) {
-      let coinType = coinTypes[index];
+    do {
+      const coins = await Clients.suiClient.getAllCoins({
+        owner,
+        cursor: nextCursor,
+      });
 
-      const innerCoins = coins.data.filter((coin) => coin.coinType == coinType);
+      for (let index = 0; index < coinTypes.length; index++) {
+        let coinType = coinTypes[index];
 
-      balances[coinType] = innerCoins.reduce(
-        (a, b) => a + BigInt(b.balance),
-        BigInt(0)
-      );
-    }
+        const filteredCoins = coins.data.filter(
+          (coin) => coin.coinType == coinType
+        );
+        if (!balances[coinType]) balances[coinType] = BigInt(0);
+        balances[coinType] += filteredCoins.reduce(
+          (a, b) => a + BigInt(b.balance),
+          BigInt(0)
+        );
+      }
+
+      hasNextPage = coins.hasNextPage;
+      nextCursor = coins.nextCursor;
+    } while (hasNextPage);
 
     return balances;
   },
