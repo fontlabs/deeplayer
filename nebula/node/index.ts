@@ -93,11 +93,14 @@ class Attester {
     if (!process.env.SECRET_KEY) throw new Error("Invalid secret key!");
 
     const event = this.getSignedEvent(events);
+    console.log("Last event:", event);
+
     if (!event) return false;
 
     if (ProcessingPool[event.uid]) return false;
 
     try {
+      console.log("Processing");
       ProcessingPool[event.uid] = true;
 
       const tx = new Transaction();
@@ -150,11 +153,9 @@ const attester = new Attester();
 
 const callback: SubmitCallback = {
   onSubmit(event: TokenLockedEvent) {
-    if (!MemPool[event.uid]) {
-      MemPool[event.uid] = [];
-    } else if (!MemPool[event.uid].find((e) => e.signer == event.signer)) {
-      MemPool[event.uid].push(event);
-    }
+    if (!MemPool[event.uid]) MemPool[event.uid] = [];
+
+    MemPool[event.uid].push(event);
 
     if (MemPool[event.uid].length >= MinAttestation) {
       attester.attest(MemPool[event.uid]);
