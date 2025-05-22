@@ -14,15 +14,6 @@ import type { Hex, WatchEventReturnType } from "viem";
 
 dotenv.config();
 
-const DeepLayer: Hex =
-  "0x8c4bcfe5cac89ea732d9f507f46d56a7e37e3d161007060a5686b9399a9ea03c";
-const AVS_DIRECTORY: Hex =
-  "0x972411f5178b5de7b7616f1a65bdf5ada2c89f62693cbc6b7d2df165669aec37";
-const AVS_MANAGER: Hex =
-  "0xafcde1ad80463f96bb2163935b1669e6d68479b12973ea4286f56295c58a9233";
-const DELEGATION_MANAGER: Hex =
-  "0x5ce45c986b9b830939998114531c30a84a9da636912e5d9af596614d41364316";
-
 const HOLESKY_NEBULA: Hex = "0x5629A11542f5582A466d281f3Ce8Aa5309f42837";
 
 const API = axios.create({ baseURL: process.env.MAIN_URL });
