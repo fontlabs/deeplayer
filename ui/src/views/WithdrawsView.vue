@@ -34,7 +34,27 @@ const walletStore = useWalletStore();
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="withdraw, index in 1" :key="index">
+                            <tr>
+                                <td>
+                                    <div class="withdraw_info">
+                                        <img :src="'/images/sui.png'" alt="withdraw">
+                                        <p>{{ 'SUI' }}</p>
+                                    </div>
+                                </td>
+                                <td>0</td>
+                                <td>
+                                    <p class="date">20th May, 2025</p>
+                                </td>
+                                <td>
+                                    <p class="date">27th May, 2025</p>
+                                </td>
+                                <td>
+                                    <div class="actions">
+                                        <button>Claim</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
                                 <td>
                                     <div class="withdraw_info">
                                         <img :src="'/images/sui.png'" alt="withdraw">

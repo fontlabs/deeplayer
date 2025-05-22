@@ -22,10 +22,10 @@ export const tokens: Token[] = [
   },
   {
     name: "Ethereum SUI",
-    symbol: "ethSUI",
+    symbol: "SUI",
     decimals: 9,
     price: 3.42,
-    address: "0x0Ee1010Ea21D15F807e7952927bAd57B367797c0",
+    address: "0xa0b1D1D7f115859c359666d978Edd57698CF8841",
     image: "/images/sui.png",
     faucet: 0.1,
   },
