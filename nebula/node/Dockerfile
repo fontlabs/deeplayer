@@ -10,4 +10,4 @@ COPY . .
 RUN npm run build
 
 # Start the app
-CMD ["npm", "run", "validator"]
+CMD ["npm", "run", "start"]
