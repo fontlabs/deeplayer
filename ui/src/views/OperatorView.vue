@@ -47,8 +47,8 @@ const balanceStore = useBalanceStore();
                                 </td>
                                 <td>
                                     {{
-                                        Converter.toMoney(Converter.fromSUI(balanceStore.total_shares[operator.address])) ||
-                                        0 * 1.12
+                                        Converter.toMoney((Converter.fromSUI(balanceStore.total_shares[operator.address]) ||
+                                            0) * 2654.43)
                                     }}
                                 </td>
                                 <td>
