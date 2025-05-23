@@ -1,4 +1,4 @@
-# DeepLayer
+# DeepLayr
 
 DeepLayr is a restaking platform on Sui that enables users to re-stake Liquid Staking Tokens (LSTs) of both SUI and Bitcoin bridged to Sui. Inspired by EigenLayer on Ethereum, DeepLayr lets users delegate their LSTs to secure new services and protocols while earning additional rewards.
 
